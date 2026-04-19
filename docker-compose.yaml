@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16
+    command: ["postgres", "-p", "${POSTGRES_PORT}"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGPORT: ${POSTGRES_PORT}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h 127.0.0.1 -p ${POSTGRES_PORT} -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./src/backend/db/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      default:
+        aliases:
+          - ${POSTGRES_HOST}
+
+  pypy-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      ENVIRONMENT: ${ENVIRONMENT}
+      DEBUG: ${DEBUG}
+      LOG_LEVEL: ${LOG_LEVEL}
+      SECRET_KEY: ${SECRET_KEY}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${BACKEND_PORT}:8000"
+
+  frontend:
+    image: oven/bun:1.1
+    working_dir: /app
+    depends_on:
+      pypy-app:
+        condition: service_started
+    environment:
+      VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+    volumes:
+      - ./src/frontend:/app
+    command:
+      [
+        "sh",
+        "-c",
+        "bun install && bun run dev -- --host 0.0.0.0 --port 5173",
+      ]
+    ports:
+      - "${FRONTEND_PORT}:5173"
+
+volumes:
+  postgres-data:
