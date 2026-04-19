@@ -11,6 +11,9 @@ build:
 test:
     go test ./...
 
+lint:
+    golangci-lint run ./...
+
 vet:
     go vet ./...
 
@@ -21,6 +24,12 @@ run-edge-agent:
     go run ./cmd/edge-agent
 
 tidy:
+    go mod tidy
+
+# Proto / Connect-RPC
+
+generate:
+    buf generate
     go mod tidy
 
 # Frontend

@@ -14,9 +14,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
+	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/config"
+	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/db"
 	"github.com/bryanbaek/mission/internal/controlplane/handler"
+	"github.com/bryanbaek/mission/internal/controlplane/repository"
 )
 
 func main() {
@@ -38,13 +42,38 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	if err := db.Migrate(cfg.DatabaseURL); err != nil {
+		return fmt.Errorf("migrate db: %w", err)
+	}
+
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("connect db: %w", err)
 	}
 	defer pool.Close()
 
+	// Repositories
+	tenantRepo := repository.NewTenantRepository(pool)
+	tokenRepo := repository.NewTenantTokenRepository(pool)
+
+	// Controllers
+	tenantCtrl := controller.NewTenantController(tenantRepo, tokenRepo)
+
+	// Auth
+	var verifier auth.Verifier
+	if cfg.ClerkSecretKey != "" {
+		verifier = auth.NewClerkVerifier(cfg.ClerkSecretKey)
+	} else {
+		slog.Warn("CLERK_SECRET_KEY not set — auth disabled (dev mode only)")
+		verifier = &auth.FakeVerifier{Tokens: map[string]auth.User{
+			"dev-token": {ID: "dev_user_001"},
+		}}
+	}
+
+	// Handlers
 	healthHandler := handler.NewHealthHandler(pool)
+	tenantHandler := handler.NewTenantHandler(tenantCtrl)
+	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -52,7 +81,14 @@ func run() error {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(30 * time.Second))
 
+	// Public
 	r.Get("/healthz", healthHandler.Healthz)
+
+	// Authenticated (Connect-RPC)
+	r.Group(func(r chi.Router) {
+		r.Use(auth.RequireAuth(verifier))
+		r.Mount(tenantPath, tenantSvc)
+	})
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),

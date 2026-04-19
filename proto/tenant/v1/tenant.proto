@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package tenant.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bryanbaek/mission/gen/go/tenant/v1;tenantv1";
+
+message Tenant {
+  string id = 1;
+  string slug = 2;
+  string name = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message TenantTokenSummary {
+  string id = 1;
+  string label = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp last_used_at = 4;
+  google.protobuf.Timestamp revoked_at = 5;
+}
+
+message CreateTenantRequest {
+  string slug = 1;
+  string name = 2;
+}
+
+message CreateTenantResponse {
+  Tenant tenant = 1;
+}
+
+message ListTenantsRequest {}
+
+message ListTenantsResponse {
+  repeated Tenant tenants = 1;
+}
+
+message IssueAgentTokenRequest {
+  string tenant_id = 1;
+  string label = 2;
+}
+
+message IssueAgentTokenResponse {
+  TenantTokenSummary token = 1;
+  // Plaintext token. Returned exactly once at issuance; never retrievable later.
+  string plaintext = 2;
+}
+
+message ListAgentTokensRequest {
+  string tenant_id = 1;
+}
+
+message ListAgentTokensResponse {
+  repeated TenantTokenSummary tokens = 1;
+}
+
+message RevokeAgentTokenRequest {
+  string tenant_id = 1;
+  string token_id = 2;
+}
+
+message RevokeAgentTokenResponse {}
+
+service TenantService {
+  rpc CreateTenant(CreateTenantRequest) returns (CreateTenantResponse);
+  rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
+  rpc IssueAgentToken(IssueAgentTokenRequest) returns (IssueAgentTokenResponse);
+  rpc ListAgentTokens(ListAgentTokensRequest) returns (ListAgentTokensResponse);
+  rpc RevokeAgentToken(RevokeAgentTokenRequest) returns (RevokeAgentTokenResponse);
+}

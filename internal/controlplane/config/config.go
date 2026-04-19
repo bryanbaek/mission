@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	Env         string
-	HTTPPort    int
-	DatabaseURL string
-	LogLevel    string
+	Env            string
+	HTTPPort       int
+	DatabaseURL    string
+	LogLevel       string
+	ClerkSecretKey string
 }
 
 func Load() (Config, error) {
@@ -19,13 +20,17 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid HTTP_PORT: %w", err)
 	}
 	cfg := Config{
-		Env:         getenv("ENV", "development"),
-		HTTPPort:    port,
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		LogLevel:    getenv("LOG_LEVEL", "info"),
+		Env:            getenv("ENV", "development"),
+		HTTPPort:       port,
+		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		LogLevel:       getenv("LOG_LEVEL", "info"),
+		ClerkSecretKey: os.Getenv("CLERK_SECRET_KEY"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
+	}
+	if cfg.ClerkSecretKey == "" && cfg.Env != "development" {
+		return Config{}, fmt.Errorf("CLERK_SECRET_KEY is required in non-development environments")
 	}
 	return cfg, nil
 }

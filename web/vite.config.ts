@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       "/healthz": "http://localhost:8080",
       "/api": "http://localhost:8080",
+      "/tenant.v1.TenantService": "http://localhost:8080",
     },
   },
 });
