@@ -10,9 +10,13 @@ build:
 
 test:
     go test ./...
+    python3 scripts/check_go_coverage.py
+
 
 lint:
     golangci-lint run ./...
+    python3 scripts/check_line_length.py
+    cd web && npm run lint
 
 vet:
     go vet ./...
@@ -42,6 +46,12 @@ web-dev:
 
 web-build:
     cd web && npm run build
+
+web-lint:
+    cd web && npm run lint
+
+web-test:
+    cd web && npm run test:coverage
 
 web-typecheck:
     cd web && npm run typecheck

@@ -30,7 +30,9 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
 	if cfg.ClerkSecretKey == "" && cfg.Env != "development" {
-		return Config{}, fmt.Errorf("CLERK_SECRET_KEY is required in non-development environments")
+		return Config{}, fmt.Errorf(
+			"CLERK_SECRET_KEY is required in non-development environments",
+		)
 	}
 	return cfg, nil
 }

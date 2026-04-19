@@ -24,7 +24,10 @@ var newMigrationSource = func() (source.Driver, error) {
 	return iofs.New(migrationsFS, "migrations")
 }
 
-var newMigrationRunner = func(src source.Driver, databaseURL string) (migrationRunner, error) {
+var newMigrationRunner = func(
+	src source.Driver,
+	databaseURL string,
+) (migrationRunner, error) {
 	return migrate.NewWithSourceInstance("iofs", src, toPgxURL(databaseURL))
 }
 

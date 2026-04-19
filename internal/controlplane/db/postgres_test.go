@@ -48,6 +48,28 @@ func TestNewPoolReturnsParseError(t *testing.T) {
 	}
 }
 
+func TestDefaultNewPoolWithConfigReturnsPoolAndPinger(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := pgxpool.ParseConfig("postgres://mission:mission@localhost:5432/mission")
+	if err != nil {
+		t.Fatalf("ParseConfig returned error: %v", err)
+	}
+
+	pool, pinger, err := defaultNewPoolWithConfig(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("defaultNewPoolWithConfig returned error: %v", err)
+	}
+	if pool == nil {
+		t.Fatal("defaultNewPoolWithConfig returned nil pool")
+	}
+	if pinger == nil {
+		t.Fatal("defaultNewPoolWithConfig returned nil pinger")
+	}
+
+	pinger.Close()
+}
+
 func TestNewPoolConfiguresPoolAndPings(t *testing.T) {
 	restorePoolSeams(t)
 

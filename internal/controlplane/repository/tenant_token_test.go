@@ -308,3 +308,54 @@ func TestTenantTokenRepositoryLookupActiveByHashMapsAndPropagatesErrors(t *testi
 		t.Fatalf("error = %v, want query failed", err)
 	}
 }
+
+func TestTenantTokenRepositoryTouchLastUsed(t *testing.T) {
+	t.Parallel()
+
+	tokenID := uuid.New()
+	repo := &TenantTokenRepository{
+		db: &fakeTenantTokenDB{
+			execFn: func(_ context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+				if !strings.Contains(sql, "UPDATE tenant_tokens SET last_used_at = NOW()") {
+					t.Fatalf("unexpected SQL: %q", sql)
+				}
+				if len(args) != 1 || args[0] != tokenID {
+					t.Fatalf("unexpected args: %#v", args)
+				}
+				return pgconn.NewCommandTag("UPDATE 1"), nil
+			},
+		},
+	}
+
+	if err := repo.TouchLastUsed(context.Background(), tokenID); err != nil {
+		t.Fatalf("TouchLastUsed returned error: %v", err)
+	}
+}
+
+func TestTenantTokenRepositoryTouchLastUsedMapsAndPropagatesErrors(t *testing.T) {
+	t.Parallel()
+
+	repo := &TenantTokenRepository{
+		db: &fakeTenantTokenDB{
+			execFn: func(context.Context, string, ...any) (pgconn.CommandTag, error) {
+				return pgconn.NewCommandTag("UPDATE 0"), nil
+			},
+		},
+	}
+
+	err := repo.TouchLastUsed(context.Background(), uuid.New())
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("error = %v, want ErrNotFound", err)
+	}
+
+	repo.db = &fakeTenantTokenDB{
+		execFn: func(context.Context, string, ...any) (pgconn.CommandTag, error) {
+			return pgconn.CommandTag{}, errors.New("exec failed")
+		},
+	}
+
+	err = repo.TouchLastUsed(context.Background(), uuid.New())
+	if err == nil || !strings.Contains(err.Error(), "exec failed") {
+		t.Fatalf("error = %v, want exec failed", err)
+	}
+}

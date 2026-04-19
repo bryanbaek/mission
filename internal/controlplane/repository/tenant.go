@@ -30,7 +30,10 @@ func NewTenantRepository(pool *pgxpool.Pool) *TenantRepository {
 
 // CreateWithOwner creates a tenant and inserts the caller as its first owner
 // in a single transaction.
-func (r *TenantRepository) CreateWithOwner(ctx context.Context, slug, name, ownerClerkID string) (model.Tenant, error) {
+func (r *TenantRepository) CreateWithOwner(
+	ctx context.Context,
+	slug, name, ownerClerkID string,
+) (model.Tenant, error) {
 	var t model.Tenant
 	err := pgx.BeginFunc(ctx, r.db, func(tx pgx.Tx) error {
 		row := tx.QueryRow(ctx,
@@ -53,7 +56,10 @@ func (r *TenantRepository) CreateWithOwner(ctx context.Context, slug, name, owne
 }
 
 // ListForUser returns every tenant the given Clerk user is a member of.
-func (r *TenantRepository) ListForUser(ctx context.Context, clerkUserID string) ([]model.Tenant, error) {
+func (r *TenantRepository) ListForUser(
+	ctx context.Context,
+	clerkUserID string,
+) ([]model.Tenant, error) {
 	rows, err := r.db.Query(ctx,
 		`SELECT t.id, t.slug, t.name, t.created_at
 		 FROM tenants t
@@ -79,7 +85,11 @@ func (r *TenantRepository) ListForUser(ctx context.Context, clerkUserID string) 
 
 // GetMembership returns the user's role in the tenant, or ErrNotFound if they
 // aren't a member. This is the authority for tenant-scoped access checks.
-func (r *TenantRepository) GetMembership(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (model.TenantUser, error) {
+func (r *TenantRepository) GetMembership(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+) (model.TenantUser, error) {
 	var tu model.TenantUser
 	var role string
 	err := r.db.QueryRow(ctx,

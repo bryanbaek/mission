@@ -54,9 +54,13 @@ func (f *FakeVerifier) Verify(_ context.Context, token string) (User, error) {
 
 type ctxKey int
 
-const userKey ctxKey = iota
+const (
+	userKey ctxKey = iota
+	agentKey
+)
 
-// WithUser stores u in ctx (test-only convenience; production goes through middleware).
+// WithUser stores u in ctx. Production auth goes through middleware; this is a
+// test convenience.
 func WithUser(ctx context.Context, u User) context.Context {
 	return context.WithValue(ctx, userKey, u)
 }
@@ -72,12 +76,11 @@ func FromContext(ctx context.Context) (User, bool) {
 func RequireAuth(v Verifier) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authz := r.Header.Get("Authorization")
-			if !strings.HasPrefix(authz, "Bearer ") {
+			token, ok := bearerTokenFromHeader(r.Header.Get("Authorization"))
+			if !ok {
 				writeJSONError(w, http.StatusUnauthorized, "missing bearer token")
 				return
 			}
-			token := strings.TrimPrefix(authz, "Bearer ")
 			user, err := v.Verify(r.Context(), token)
 			if err != nil {
 				writeJSONError(w, http.StatusUnauthorized, "invalid token")
@@ -87,6 +90,17 @@ func RequireAuth(v Verifier) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+func bearerTokenFromHeader(header string) (string, bool) {
+	if !strings.HasPrefix(header, "Bearer ") {
+		return "", false
+	}
+	token := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+	if token == "" {
+		return "", false
+	}
+	return token, true
 }
 
 func writeJSONError(w http.ResponseWriter, status int, msg string) {

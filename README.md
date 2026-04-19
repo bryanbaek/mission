@@ -18,6 +18,7 @@ docker compose up --build
 
 - Frontend: http://localhost:5173
 - Backend `/healthz`: http://localhost:8080/healthz
+- Debug agent UI: http://localhost:5173
 - Postgres: `postgres://mission:mission@localhost:5432/mission`
 
 ## Quick start (local processes)
@@ -33,6 +34,11 @@ just run-control-plane        # or: go run ./cmd/control-plane
 # Terminal 3 — web
 just web-install
 just web-dev                   # http://localhost:5173
+
+# Terminal 4 — edge agent (after issuing a tenant token)
+export CONTROL_PLANE_URL=http://localhost:8080
+export TENANT_TOKEN=<issued-agent-token>
+just run-edge-agent
 ```
 
 The Vite dev server proxies `/healthz` and `/api` to `localhost:8080`.

@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package agent.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bryanbaek/mission/gen/go/agent/v1;agentv1";
+
+message OpenCommandStreamRequest {
+  string session_id = 1;
+  string hostname = 2;
+  string agent_version = 3;
+  google.protobuf.Timestamp started_at = 4;
+}
+
+message HeartbeatRequest {
+  string session_id = 1;
+  google.protobuf.Timestamp sent_at = 2;
+}
+
+message HeartbeatResponse {}
+
+message PingCommand {}
+
+message ControlMessage {
+  string session_id = 1;
+  string command_id = 2;
+  google.protobuf.Timestamp issued_at = 3;
+
+  oneof payload {
+    PingCommand ping = 10;
+  }
+}
+
+message PingResult {
+  int64 round_trip_ms = 1;
+}
+
+message SubmitCommandResultRequest {
+  string session_id = 1;
+  string command_id = 2;
+  google.protobuf.Timestamp completed_at = 3;
+
+  oneof result {
+    PingResult ping = 10;
+  }
+}
+
+message SubmitCommandResultResponse {}
+
+service AgentService {
+  rpc OpenCommandStream(OpenCommandStreamRequest)
+      returns (stream ControlMessage);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+  rpc SubmitCommandResult(SubmitCommandResultRequest)
+      returns (SubmitCommandResultResponse);
+}

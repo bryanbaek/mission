@@ -19,7 +19,9 @@ import (
 const tokenPrefix = "mssn_"
 
 var (
-	ErrInvalidSlug  = errors.New("slug must be 3-63 chars, lowercase, alphanumeric or dash")
+	ErrInvalidSlug = errors.New(
+		"slug must be 3-63 chars, lowercase, alphanumeric or dash",
+	)
 	ErrInvalidName  = errors.New("name must be 1-200 chars")
 	ErrInvalidLabel = errors.New("label must be 1-100 chars")
 
@@ -27,14 +29,32 @@ var (
 )
 
 type tenantStore interface {
-	CreateWithOwner(ctx context.Context, slug, name, ownerClerkID string) (model.Tenant, error)
-	ListForUser(ctx context.Context, clerkUserID string) ([]model.Tenant, error)
-	GetMembership(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (model.TenantUser, error)
+	CreateWithOwner(
+		ctx context.Context,
+		slug, name, ownerClerkID string,
+	) (model.Tenant, error)
+	ListForUser(
+		ctx context.Context,
+		clerkUserID string,
+	) ([]model.Tenant, error)
+	GetMembership(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+	) (model.TenantUser, error)
 }
 
 type tenantTokenStore interface {
-	Create(ctx context.Context, tenantID uuid.UUID, label string, tokenHash []byte) (model.TenantToken, error)
-	ListByTenant(ctx context.Context, tenantID uuid.UUID) ([]model.TenantToken, error)
+	Create(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		label string,
+		tokenHash []byte,
+	) (model.TenantToken, error)
+	ListByTenant(
+		ctx context.Context,
+		tenantID uuid.UUID,
+	) ([]model.TenantToken, error)
 	Revoke(ctx context.Context, tenantID, tokenID uuid.UUID) error
 }
 
@@ -43,11 +63,17 @@ type TenantController struct {
 	tokens  tenantTokenStore
 }
 
-func NewTenantController(tenants tenantStore, tokens tenantTokenStore) *TenantController {
+func NewTenantController(
+	tenants tenantStore,
+	tokens tenantTokenStore,
+) *TenantController {
 	return &TenantController{tenants: tenants, tokens: tokens}
 }
 
-func (c *TenantController) Create(ctx context.Context, ownerClerkID, slug, name string) (model.Tenant, error) {
+func (c *TenantController) Create(
+	ctx context.Context,
+	ownerClerkID, slug, name string,
+) (model.Tenant, error) {
 	if !slugRE.MatchString(slug) {
 		return model.Tenant{}, ErrInvalidSlug
 	}
@@ -57,20 +83,31 @@ func (c *TenantController) Create(ctx context.Context, ownerClerkID, slug, name 
 	return c.tenants.CreateWithOwner(ctx, slug, name, ownerClerkID)
 }
 
-func (c *TenantController) ListForUser(ctx context.Context, clerkUserID string) ([]model.Tenant, error) {
+func (c *TenantController) ListForUser(
+	ctx context.Context,
+	clerkUserID string,
+) ([]model.Tenant, error) {
 	return c.tenants.ListForUser(ctx, clerkUserID)
 }
 
 // EnsureMembership verifies the user belongs to the tenant. Returns the
 // membership record or an error suitable for the handler to translate into
 // a permission-denied response.
-func (c *TenantController) EnsureMembership(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (model.TenantUser, error) {
+func (c *TenantController) EnsureMembership(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+) (model.TenantUser, error) {
 	return c.tenants.GetMembership(ctx, tenantID, clerkUserID)
 }
 
 // IssueAgentToken returns the persisted record AND the plaintext token. The
 // plaintext is shown to the user exactly once.
-func (c *TenantController) IssueAgentToken(ctx context.Context, tenantID uuid.UUID, label string) (model.TenantToken, string, error) {
+func (c *TenantController) IssueAgentToken(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	label string,
+) (model.TenantToken, string, error) {
 	if l := len(label); l < 1 || l > 100 {
 		return model.TenantToken{}, "", ErrInvalidLabel
 	}
@@ -86,11 +123,17 @@ func (c *TenantController) IssueAgentToken(ctx context.Context, tenantID uuid.UU
 	return rec, plaintext, nil
 }
 
-func (c *TenantController) ListAgentTokens(ctx context.Context, tenantID uuid.UUID) ([]model.TenantToken, error) {
+func (c *TenantController) ListAgentTokens(
+	ctx context.Context,
+	tenantID uuid.UUID,
+) ([]model.TenantToken, error) {
 	return c.tokens.ListByTenant(ctx, tenantID)
 }
 
-func (c *TenantController) RevokeAgentToken(ctx context.Context, tenantID, tokenID uuid.UUID) error {
+func (c *TenantController) RevokeAgentToken(
+	ctx context.Context,
+	tenantID, tokenID uuid.UUID,
+) error {
 	return c.tokens.Revoke(ctx, tenantID, tokenID)
 }
 

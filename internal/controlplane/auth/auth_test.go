@@ -32,6 +32,14 @@ func TestFakeVerifier(t *testing.T) {
 	}
 }
 
+func TestNewClerkVerifier(t *testing.T) {
+	t.Parallel()
+
+	if NewClerkVerifier("sk_test") == nil {
+		t.Fatal("NewClerkVerifier returned nil")
+	}
+}
+
 func TestWithUserAndFromContext(t *testing.T) {
 	t.Parallel()
 
@@ -47,6 +55,15 @@ func TestWithUserAndFromContext(t *testing.T) {
 	_, ok = FromContext(context.Background())
 	if ok {
 		t.Fatal("FromContext unexpectedly found a user in empty context")
+	}
+}
+
+func TestBearerTokenFromHeaderRejectsEmptyToken(t *testing.T) {
+	t.Parallel()
+
+	token, ok := bearerTokenFromHeader("Bearer   ")
+	if ok {
+		t.Fatalf("ok = true, want false for empty token %q", token)
 	}
 }
 

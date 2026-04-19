@@ -6,9 +6,9 @@ package llm
 import "context"
 
 type CompletionRequest struct {
-	System   string
-	Messages []Message
-	Model    string
+	System    string
+	Messages  []Message
+	Model     string
 	MaxTokens int
 }
 
@@ -24,5 +24,8 @@ type CompletionResponse struct {
 
 type Provider interface {
 	Name() string
-	Complete(ctx context.Context, req CompletionRequest) (CompletionResponse, error)
+	Complete(
+		ctx context.Context,
+		req CompletionRequest,
+	) (CompletionResponse, error)
 }

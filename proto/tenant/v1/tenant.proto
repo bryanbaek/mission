@@ -43,7 +43,8 @@ message IssueAgentTokenRequest {
 
 message IssueAgentTokenResponse {
   TenantTokenSummary token = 1;
-  // Plaintext token. Returned exactly once at issuance; never retrievable later.
+  // Plaintext token. Returned exactly once at issuance; never retrievable
+  // later.
   string plaintext = 2;
 }
 
@@ -67,5 +68,6 @@ service TenantService {
   rpc ListTenants(ListTenantsRequest) returns (ListTenantsResponse);
   rpc IssueAgentToken(IssueAgentTokenRequest) returns (IssueAgentTokenResponse);
   rpc ListAgentTokens(ListAgentTokensRequest) returns (ListAgentTokensResponse);
-  rpc RevokeAgentToken(RevokeAgentTokenRequest) returns (RevokeAgentTokenResponse);
+  rpc RevokeAgentToken(RevokeAgentTokenRequest)
+      returns (RevokeAgentTokenResponse);
 }

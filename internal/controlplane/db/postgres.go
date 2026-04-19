@@ -17,13 +17,18 @@ type poolPinger interface {
 
 var parsePoolConfig = pgxpool.ParseConfig
 
-var newPoolWithConfig = func(ctx context.Context, cfg *pgxpool.Config) (*pgxpool.Pool, poolPinger, error) {
+func defaultNewPoolWithConfig(
+	ctx context.Context,
+	cfg *pgxpool.Config,
+) (*pgxpool.Pool, poolPinger, error) {
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, nil, err
 	}
 	return pool, pool, nil
 }
+
+var newPoolWithConfig = defaultNewPoolWithConfig
 
 func NewPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	cfg, err := parsePoolConfig(databaseURL)
