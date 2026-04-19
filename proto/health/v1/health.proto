@@ -1,0 +1,17 @@
+// Connect-RPC service schemas live here. Wiring up codegen (buf + protoc-gen-connect-go
+// + protoc-gen-es) happens in Week 1.2 when we add the first real RPC.
+// Kept as a placeholder now so the directory shape is committed.
+syntax = "proto3";
+
+package health.v1;
+
+option go_package = "github.com/bryanbaek/mission/gen/health/v1;healthv1";
+
+message CheckRequest {}
+message CheckResponse {
+  string status = 1;
+}
+
+service HealthService {
+  rpc Check(CheckRequest) returns (CheckResponse);
+}

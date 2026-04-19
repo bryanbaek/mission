@@ -1,118 +1,13 @@
-# Version control
 .git
+.github
 .gitignore
-.gitattributes
-
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-env
-pip-log.txt
-pip-delete-this-directory.txt
-.tox
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
-
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.venv/
-.python-version
-
-# Development tools
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Documentation
-README.md
-*.md
-docs/
-!README.md
-
-# Docker
-Dockerfile
 .dockerignore
-docker-compose*.yml
-
-# Development and testing
-tests/
-test_data/
-.pytest_cache/
-.coverage
-.coverage.*
-
-# Logs
-logs/
-*.log
-
-# Data directories (will be mounted as volumes)
-data/
-postgres_data/
-redis_data/
-chromadb_data/
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
-node_modules/
-
-# Dependencies (will be installed in container)
-Pipfile
-Pipfile.lock
-
-# IDE and editor files
-.vscode/
-.idea/
-*.sublime-*
-.vim/
-*.swp
-*.swo
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Temporary files
-*.tmp
-*.temp
-.tmp/
-
-# CI/CD
-.github/
-.gitlab-ci.yml
-.travis.yml
-.circleci/
-
-# Configuration files that should not be in container
-env.example
-.env.example
-docker-compose.override.yml
-
-# SSL certificates (mounted as volumes)
-nginx/ssl/
+.env
+*.env.local
+node_modules
+web/node_modules
+web/dist
+bin
+tmp
+*.md
+!README.md

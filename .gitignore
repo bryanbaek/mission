@@ -1,11 +1,19 @@
-__pycache__/
-*.py[cod]
-*.log
-
-# Environments
-venv/
+# Env
 .env
-*.env
+*.env.local
 
-# VS Code configuration directory
+# Go
+bin/
+/tmp/
+
+# Frontend
+node_modules/
+web/dist/
+
+# Editor
 .vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
