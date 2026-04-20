@@ -35,7 +35,11 @@ func integrationDSN(t *testing.T, readWrite bool) string {
 	if err != nil {
 		t.Fatalf("sql.Open returned error: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("db.Close returned error: %v", err)
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

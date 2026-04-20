@@ -37,7 +37,11 @@ func TestSchemaIntrospectionRoundTripIntegration(t *testing.T) {
 	}
 
 	adminDB := openMySQLOrSkipIntegration(t, mysqlAdminDSNIntegration())
-	defer adminDB.Close()
+	t.Cleanup(func() {
+		if err := adminDB.Close(); err != nil {
+			t.Errorf("adminDB.Close returned error: %v", err)
+		}
+	})
 	loadSchemaFixture(t, adminDB)
 
 	tenantRepo := repository.NewTenantRepository(pool)
@@ -95,7 +99,11 @@ func TestSchemaIntrospectionRoundTripIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mysqlgateway.Open returned error: %v", err)
 	}
-	defer mysqlGateway.Close()
+	t.Cleanup(func() {
+		if err := mysqlGateway.Close(); err != nil {
+			t.Errorf("mysqlGateway.Close returned error: %v", err)
+		}
+	})
 
 	edgeClient := controlplane.NewClient(server.URL, plaintextToken, server.Client())
 	service, err := edgecontroller.NewAgentService(
@@ -233,7 +241,11 @@ func postSchemaIntrospection(
 	if err != nil {
 		t.Fatalf("Do returned error: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("resp.Body.Close returned error: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		var body map[string]any
@@ -314,7 +326,9 @@ func openMySQLOrSkipIntegration(t *testing.T, dsn string) *sql.DB {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			t.Logf("db.Close returned error after PingContext failed: %v", closeErr)
+		}
 		t.Skipf("skipping MySQL integration test: %v", err)
 	}
 	return db

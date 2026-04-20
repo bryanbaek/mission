@@ -13,6 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
@@ -141,11 +143,15 @@ func run() error {
 		r.Post("/api/debug/agents/{sessionID}/ping", debugAgentHandler.PingSession)
 	}
 
+	// h2c lets the agent tunnel use HTTP/2 over cleartext TCP (no TLS required
+	// locally). Connect server-streaming requires HTTP/2; without this the
+	// server falls back to HTTP/1.1 and the stream closes immediately.
+	// ReadTimeout is disabled because long-lived streams would be cut at 30s.
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler:           r,
+		Handler:           h2c.NewHandler(r, &http2.Server{}),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       30 * time.Second,
+		ReadTimeout:       0,
 		WriteTimeout:      0,
 		IdleTimeout:       120 * time.Second,
 	}

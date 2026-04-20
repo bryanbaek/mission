@@ -2,11 +2,18 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
+
+	"golang.org/x/net/http2"
 
 	edgeconfig "github.com/bryanbaek/mission/internal/edgeagent/config"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
@@ -22,7 +29,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (err error) {
 	logger := slog.New(
 		slog.NewJSONHandler(
 			os.Stdout,
@@ -47,9 +54,17 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("open mysql gateway: %w", err)
 	}
-	defer mysqlGateway.Close()
+	defer func() {
+		if closeErr := mysqlGateway.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close mysql gateway: %w", closeErr))
+		}
+	}()
 
-	client := controlplane.NewClient(cfg.ControlPlaneURL, cfg.TenantToken, nil)
+	client := controlplane.NewClient(
+		cfg.ControlPlaneURL,
+		cfg.TenantToken,
+		httpClientForURL(cfg.ControlPlaneURL),
+	)
 	mysqlRuntime := mysqlRuntime{gateway: mysqlGateway}
 	service, err := edgecontroller.NewAgentService(
 		client,
@@ -108,4 +123,26 @@ func (e mysqlRuntime) IntrospectSchema(
 	error,
 ) {
 	return e.gateway.IntrospectSchema(ctx)
+}
+
+// httpClientForURL returns an HTTP client appropriate for the given URL scheme.
+// For http:// (no TLS) the client uses an HTTP/2 cleartext (h2c) transport so
+// that Connect server-streaming RPCs work without a TLS certificate. For
+// https:// the default client is returned; HTTP/2 is negotiated via TLS ALPN.
+func httpClientForURL(rawURL string) *http.Client {
+	if strings.HasPrefix(rawURL, "https://") {
+		return http.DefaultClient
+	}
+	return &http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLSContext: func(
+				ctx context.Context,
+				network, addr string,
+				_ *tls.Config,
+			) (net.Conn, error) {
+				return (&net.Dialer{}).DialContext(ctx, network, addr)
+			},
+		},
+	}
 }

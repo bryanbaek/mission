@@ -143,7 +143,10 @@ func (g *Gateway) Close() error {
 	return g.db.Close()
 }
 
-func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, error) {
+func (g *Gateway) ExecuteQuery(
+	ctx context.Context,
+	sqlText string,
+) (result Result, err error) {
 	// sqlguard is the suspenders to the read-only user's belt. Every
 	// LLM-emitted SQL passes through an allowlist-only parser before it
 	// can touch the database. Anything that is not a single SELECT/WITH
@@ -160,7 +163,9 @@ func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, err
 	if err != nil {
 		return Result{}, fmt.Errorf("acquire mysql connection: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		appendCloseError(&err, "close mysql connection", conn.Close)
+	}()
 
 	if _, err := conn.ExecContext(
 		queryCtx,
@@ -180,7 +185,9 @@ func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, err
 		}
 		return Result{}, fmt.Errorf("execute query: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		appendCloseError(&err, "close query rows", rows.Close)
+	}()
 
 	resultRows, columns, err := scanRows(rows)
 	if err != nil {
@@ -235,14 +242,15 @@ func validateConnection(ctx context.Context, db *sql.DB) (string, string, error)
 	return databaseUser, databaseName.String, nil
 }
 
-func loadGrants(ctx context.Context, db *sql.DB) ([]string, error) {
+func loadGrants(ctx context.Context, db *sql.DB) (grants []string, err error) {
 	rows, err := db.QueryContext(ctx, "SHOW GRANTS")
 	if err != nil {
 		return nil, fmt.Errorf("show grants: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		appendCloseError(&err, "close grant rows", rows.Close)
+	}()
 
-	var grants []string
 	for rows.Next() {
 		var grant string
 		if err := rows.Scan(&grant); err != nil {
@@ -254,6 +262,17 @@ func loadGrants(ctx context.Context, db *sql.DB) ([]string, error) {
 		return nil, fmt.Errorf("iterate show grants: %w", err)
 	}
 	return grants, nil
+}
+
+func appendCloseError(target *error, label string, closeFn func() error) {
+	if closeErr := closeFn(); closeErr != nil {
+		wrapped := fmt.Errorf("%s: %w", label, closeErr)
+		if *target == nil {
+			*target = wrapped
+			return
+		}
+		*target = errors.Join(*target, wrapped)
+	}
 }
 
 func scanRows(rows *sql.Rows) ([]map[string]any, []string, error) {

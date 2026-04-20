@@ -15,7 +15,9 @@ func TestLoadEmptySchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	defer db.Close()
+	t.Cleanup(func() {
+		closeAndReport(t, "sqlmock db", db.Close)
+	})
 
 	expectSchemaQueries(
 		mock,
@@ -69,7 +71,9 @@ func TestLoadCapturesForeignKeysAndSorts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	defer db.Close()
+	t.Cleanup(func() {
+		closeAndReport(t, "sqlmock db", db.Close)
+	})
 
 	expectSchemaQueries(
 		mock,
@@ -130,7 +134,9 @@ func TestLoadCapturesComments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	defer db.Close()
+	t.Cleanup(func() {
+		closeAndReport(t, "sqlmock db", db.Close)
+	})
 
 	expectSchemaQueries(
 		mock,
@@ -187,7 +193,9 @@ func TestLoadCapturesColumnTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	defer db.Close()
+	t.Cleanup(func() {
+		closeAndReport(t, "sqlmock db", db.Close)
+	})
 
 	expectSchemaQueries(
 		mock,
@@ -259,4 +267,11 @@ func expectSchemaQueries(
 		WillReturnRows(primaryKeys)
 	mock.ExpectQuery(regexp.QuoteMeta("FROM information_schema.table_constraints tc")).
 		WillReturnRows(foreignKeys)
+}
+
+func closeAndReport(t *testing.T, name string, closeFn func() error) {
+	t.Helper()
+	if err := closeFn(); err != nil {
+		t.Errorf("close %s: %v", name, err)
+	}
 }

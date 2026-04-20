@@ -13,12 +13,16 @@ import (
 
 func TestLoadIntegration(t *testing.T) {
 	admin := openMySQLOrSkip(t, mysqlAdminDSN())
-	defer admin.Close()
+	t.Cleanup(func() {
+		closeAndReport(t, "admin", admin.Close)
+	})
 
 	loadFixture(t, admin)
 
 	readonly := openMySQLOrSkip(t, mysqlReadOnlyDSN())
-	defer readonly.Close()
+	t.Cleanup(func() {
+		closeAndReport(t, "readonly", readonly.Close)
+	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -101,7 +105,9 @@ func openMySQLOrSkip(t *testing.T, dsn string) *sql.DB {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			t.Logf("db.Close returned error after PingContext failed: %v", closeErr)
+		}
 		t.Skipf("skipping MySQL integration test: %v", err)
 	}
 	return db

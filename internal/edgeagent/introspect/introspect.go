@@ -3,6 +3,7 @@ package introspect
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 )
@@ -100,7 +101,7 @@ func loadTables(
 	ctx context.Context,
 	db *sql.DB,
 	databaseName string,
-) ([]SchemaTable, error) {
+) (tables []SchemaTable, err error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT
 			TABLE_SCHEMA,
@@ -115,7 +116,9 @@ func loadTables(
 	if err != nil {
 		return nil, fmt.Errorf("load tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		appendCloseError(&err, "close table rows", rows.Close)
+	}()
 
 	var out []SchemaTable
 	for rows.Next() {
@@ -140,7 +143,7 @@ func loadColumns(
 	ctx context.Context,
 	db *sql.DB,
 	databaseName string,
-) ([]SchemaColumn, error) {
+) (columns []SchemaColumn, err error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT
 			TABLE_SCHEMA,
@@ -159,7 +162,9 @@ func loadColumns(
 	if err != nil {
 		return nil, fmt.Errorf("load columns: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		appendCloseError(&err, "close column rows", rows.Close)
+	}()
 
 	var out []SchemaColumn
 	for rows.Next() {
@@ -198,7 +203,7 @@ func loadPrimaryKeys(
 	ctx context.Context,
 	db *sql.DB,
 	databaseName string,
-) ([]SchemaPrimaryKey, error) {
+) (primaryKeys []SchemaPrimaryKey, err error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT
 			kcu.TABLE_SCHEMA,
@@ -223,7 +228,9 @@ func loadPrimaryKeys(
 	if err != nil {
 		return nil, fmt.Errorf("load primary keys: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		appendCloseError(&err, "close primary key rows", rows.Close)
+	}()
 
 	var out []SchemaPrimaryKey
 	for rows.Next() {
@@ -249,7 +256,7 @@ func loadForeignKeys(
 	ctx context.Context,
 	db *sql.DB,
 	databaseName string,
-) ([]SchemaForeignKey, error) {
+) (foreignKeys []SchemaForeignKey, err error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT
 			kcu.TABLE_SCHEMA,
@@ -277,7 +284,9 @@ func loadForeignKeys(
 	if err != nil {
 		return nil, fmt.Errorf("load foreign keys: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		appendCloseError(&err, "close foreign key rows", rows.Close)
+	}()
 
 	var out []SchemaForeignKey
 	for rows.Next() {
@@ -300,6 +309,17 @@ func loadForeignKeys(
 		return nil, fmt.Errorf("iterate foreign keys: %w", err)
 	}
 	return out, nil
+}
+
+func appendCloseError(target *error, label string, closeFn func() error) {
+	if closeErr := closeFn(); closeErr != nil {
+		wrapped := fmt.Errorf("%s: %w", label, closeErr)
+		if *target == nil {
+			*target = wrapped
+			return
+		}
+		*target = errors.Join(*target, wrapped)
+	}
 }
 
 func sortSchema(blob *SchemaBlob) {
