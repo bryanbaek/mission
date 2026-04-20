@@ -6,6 +6,7 @@ require (
 	connectrpc.com/connect v1.19.1
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/clerk/clerk-sdk-go/v2 v2.5.1
+	github.com/getsentry/sentry-go v0.45.1
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
@@ -19,7 +20,6 @@ require (
 
 require (
 	github.com/coreos/go-semver v0.3.1 // indirect
-	github.com/getsentry/sentry-go v0.45.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

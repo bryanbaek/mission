@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go/attribute"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/http2"
@@ -335,9 +336,11 @@ func sentryMiddleware() func(http.Handler) http.Handler {
 			if recorder.statusCode >= http.StatusInternalServerError {
 				hub.WithScope(func(scope *sentry.Scope) {
 					scope.SetLevel(sentry.LevelError)
-					scope.SetExtra("status_code", recorder.statusCode)
-					scope.SetExtra("method", r.Method)
-					scope.SetExtra("path", r.URL.Path)
+					scope.SetAttributes(
+						attribute.Int("status_code", recorder.statusCode),
+						attribute.String("method", r.Method),
+						attribute.String("path", r.URL.Path),
+					)
 					scope.SetTag("http.status_code", fmt.Sprintf("%d", recorder.statusCode))
 					hub.CaptureMessage("control-plane request returned 5xx")
 				})

@@ -71,7 +71,7 @@ func (l *FileLogger) LogQueryEvent(
 	if err != nil {
 		return fmt.Errorf("open audit log: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := f.Write(append(body, '\n')); err != nil {
 		return fmt.Errorf("write audit log: %w", err)
