@@ -13,6 +13,7 @@ import (
 	mysql "github.com/go-sql-driver/mysql"
 
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	"github.com/bryanbaek/mission/internal/sqlguard"
 )
 
 const (
@@ -28,11 +29,13 @@ var allowedPrivileges = map[string]struct{}{
 }
 
 type Result struct {
-	Columns      []string
-	Rows         []map[string]any
-	ElapsedMS    int64
-	DatabaseUser string
-	DatabaseName string
+	Columns       []string
+	Rows          []map[string]any
+	ElapsedMS     int64
+	DatabaseUser  string
+	DatabaseName  string
+	RewrittenSQL  string
+	LimitInjected bool
 }
 
 type Gateway struct {
@@ -141,6 +144,15 @@ func (g *Gateway) Close() error {
 }
 
 func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, error) {
+	// sqlguard is the suspenders to the read-only user's belt. Every
+	// LLM-emitted SQL passes through an allowlist-only parser before it
+	// can touch the database. Anything that is not a single SELECT/WITH
+	// is rejected here without opening a connection.
+	guarded, err := sqlguard.Validate(sqlText)
+	if err != nil {
+		return Result{}, fmt.Errorf("sqlguard reject: %w", err)
+	}
+
 	queryCtx, cancel := withTimeoutCap(ctx, queryTimeout)
 	defer cancel()
 
@@ -158,7 +170,7 @@ func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, err
 	}
 
 	startedAt := time.Now()
-	rows, err := conn.QueryContext(queryCtx, sqlText)
+	rows, err := conn.QueryContext(queryCtx, guarded.RewrittenSQL)
 	if err != nil {
 		if errors.Is(queryCtx.Err(), context.DeadlineExceeded) {
 			return Result{}, fmt.Errorf("execute query: %w", queryCtx.Err())
@@ -176,11 +188,13 @@ func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, err
 	}
 
 	return Result{
-		Columns:      columns,
-		Rows:         resultRows,
-		ElapsedMS:    time.Since(startedAt).Milliseconds(),
-		DatabaseUser: g.databaseUser,
-		DatabaseName: g.databaseName,
+		Columns:       columns,
+		Rows:          resultRows,
+		ElapsedMS:     time.Since(startedAt).Milliseconds(),
+		DatabaseUser:  g.databaseUser,
+		DatabaseName:  g.databaseName,
+		RewrittenSQL:  guarded.RewrittenSQL,
+		LimitInjected: guarded.LimitInjected,
 	}, nil
 }
 

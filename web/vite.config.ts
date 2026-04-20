@@ -1,8 +1,15 @@
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
   plugins: [react()],
+  // Load env vars from the repo root so a single .env drives both Go and Vite.
+  envDir: resolve(__dirname, ".."),
   server: {
     port: 5173,
     proxy: {
