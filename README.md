@@ -64,9 +64,12 @@ Docker mount pattern:
 docker run \
   -e CONTROL_PLANE_URL=http://host.docker.internal:8080 \
   -e TENANT_TOKEN=<issued-agent-token> \
-  -e MYSQL_DSN_FILE=/etc/mission/mysql.dsn \
-  -v /absolute/path/mysql.dsn:/etc/mission/mysql.dsn:ro \
-  mission/edge-agent:latest
+  -e AGENT_VERSION=v0.1.0 \
+  -e MYSQL_DSN_FILE=/etc/agent/mysql.dsn \
+  -e AGENT_AUDIT_LOG_PATH=/var/lib/agent/audit/query-events.jsonl \
+  -v /absolute/path/mysql.dsn:/etc/agent/mysql.dsn:ro \
+  -v /absolute/path/agent-data:/var/lib/agent \
+  registry.digitalocean.com/mission/edge-agent:v0.1.0
 ```
 
 Local docker-compose MySQL users:

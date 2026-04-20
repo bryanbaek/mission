@@ -12,6 +12,9 @@ import (
 
 type fakeMigrationRunner struct {
 	upErr       error
+	version     uint
+	dirty       bool
+	versionErr  error
 	upCalled    bool
 	closeCalled bool
 }
@@ -19,6 +22,10 @@ type fakeMigrationRunner struct {
 func (f *fakeMigrationRunner) Up() error {
 	f.upCalled = true
 	return f.upErr
+}
+
+func (f *fakeMigrationRunner) Version() (uint, bool, error) {
+	return f.version, f.dirty, f.versionErr
 }
 
 func (f *fakeMigrationRunner) Close() (error, error) {
@@ -182,5 +189,123 @@ func TestMigrateUpError(t *testing.T) {
 	}
 	if !runner.closeCalled {
 		t.Fatal("Close was not called")
+	}
+}
+
+func TestMigrationStateAtHead(t *testing.T) {
+	restoreMigrateSeams(t)
+
+	runner := &fakeMigrationRunner{version: 6}
+	newMigrationSource = func() (source.Driver, error) {
+		return fakeSourceDriver{}, nil
+	}
+	newMigrationRunner = func(source.Driver, string) (migrationRunner, error) {
+		return runner, nil
+	}
+
+	status, err := MigrationState("postgres://mission")
+	if err != nil {
+		t.Fatalf("MigrationState returned error: %v", err)
+	}
+	if status.CurrentVersion != 6 {
+		t.Fatalf("CurrentVersion = %d, want 6", status.CurrentVersion)
+	}
+	if status.HeadVersion != 6 {
+		t.Fatalf("HeadVersion = %d, want 6", status.HeadVersion)
+	}
+	if status.Dirty {
+		t.Fatal("Dirty = true, want false")
+	}
+	if !status.AtHead {
+		t.Fatal("AtHead = false, want true")
+	}
+}
+
+func TestMigrationStateDirty(t *testing.T) {
+	restoreMigrateSeams(t)
+
+	runner := &fakeMigrationRunner{version: 1, dirty: true}
+	newMigrationSource = func() (source.Driver, error) {
+		return fakeSourceDriver{}, nil
+	}
+	newMigrationRunner = func(source.Driver, string) (migrationRunner, error) {
+		return runner, nil
+	}
+
+	status, err := MigrationState("postgres://mission")
+	if err != nil {
+		t.Fatalf("MigrationState returned error: %v", err)
+	}
+	if !status.Dirty {
+		t.Fatal("Dirty = false, want true")
+	}
+	if status.AtHead {
+		t.Fatal("AtHead = true, want false")
+	}
+}
+
+func TestMigrationStateHandlesNilVersion(t *testing.T) {
+	restoreMigrateSeams(t)
+
+	runner := &fakeMigrationRunner{versionErr: migrate.ErrNilVersion}
+	newMigrationSource = func() (source.Driver, error) {
+		return fakeSourceDriver{}, nil
+	}
+	newMigrationRunner = func(source.Driver, string) (migrationRunner, error) {
+		return runner, nil
+	}
+
+	status, err := MigrationState("postgres://mission")
+	if err != nil {
+		t.Fatalf("MigrationState returned error: %v", err)
+	}
+	if status.CurrentVersion != 0 {
+		t.Fatalf("CurrentVersion = %d, want 0", status.CurrentVersion)
+	}
+	if status.AtHead {
+		t.Fatal("AtHead = true, want false when no migrations are applied")
+	}
+}
+
+func TestMigrationStateVersionError(t *testing.T) {
+	restoreMigrateSeams(t)
+
+	runner := &fakeMigrationRunner{versionErr: errors.New("version failed")}
+	newMigrationSource = func() (source.Driver, error) {
+		return fakeSourceDriver{}, nil
+	}
+	newMigrationRunner = func(source.Driver, string) (migrationRunner, error) {
+		return runner, nil
+	}
+
+	_, err := MigrationState("postgres://mission")
+	if err == nil {
+		t.Fatal("MigrationState returned nil error")
+	}
+	if !strings.Contains(err.Error(), "read migration version") {
+		t.Fatalf("error = %v, want wrapped version error", err)
+	}
+}
+
+func TestMigrationVersionFromFilename(t *testing.T) {
+	t.Parallel()
+
+	version, ok, err := migrationVersionFromFilename("0006_tenant_starter_questions.up.sql")
+	if err != nil {
+		t.Fatalf("migrationVersionFromFilename returned error: %v", err)
+	}
+	if !ok {
+		t.Fatal("ok = false, want true")
+	}
+	if version != 6 {
+		t.Fatalf("version = %d, want 6", version)
+	}
+
+	_, ok, err = migrationVersionFromFilename("0006_tenant_starter_questions.down.sql")
+	if err != nil {
+		t.Fatalf("migrationVersionFromFilename down file returned error: %v", err)
+	}
+	if ok {
+		t.Fatal("ok = true, want false for down migration")
 	}
 }

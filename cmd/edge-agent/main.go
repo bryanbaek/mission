@@ -15,6 +15,7 @@ import (
 
 	"golang.org/x/net/http2"
 
+	"github.com/bryanbaek/mission/internal/edgeagent/auditlog"
 	edgeconfig "github.com/bryanbaek/mission/internal/edgeagent/config"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
 	controlplane "github.com/bryanbaek/mission/internal/edgeagent/gateway/controlplane"
@@ -68,6 +69,7 @@ func run() (err error) {
 		cfg.TenantToken,
 		httpClientForURL(cfg.ControlPlaneURL),
 	)
+	queryAuditLogger := auditlog.NewFileLogger(cfg.AuditLogPath)
 	service, err := edgecontroller.NewAgentService(
 		client,
 		edgecontroller.AgentServiceConfig{
@@ -77,6 +79,7 @@ func run() (err error) {
 			ReconnectMax:       cfg.ReconnectMax,
 			Logger:             logger,
 			QueryExecutor:      mysqlRuntime,
+			QueryAuditor:       queryAuditLogger,
 			SchemaIntrospector: mysqlRuntime,
 			DatabaseConfigurer: mysqlRuntime,
 		},
@@ -91,6 +94,8 @@ func run() (err error) {
 		cfg.ControlPlaneURL,
 		"agent_version",
 		cfg.AgentVersion,
+		"audit_log_path",
+		cfg.AuditLogPath,
 	)
 	return service.Run(ctx)
 }

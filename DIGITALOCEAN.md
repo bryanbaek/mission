@@ -34,15 +34,12 @@ Use an immutable tag instead of `latest` for production rollouts.
 doctl auth init
 doctl registry login
 
-docker build \
-  -f Dockerfile.edge-agent \
-  -t registry.digitalocean.com/<registry>/edge-agent:<tag> \
-  .
-
-docker push registry.digitalocean.com/<registry>/edge-agent:<tag>
+EDGE_AGENT_IMAGE_REPOSITORY=registry.digitalocean.com/<registry>/edge-agent \
+EDGE_AGENT_VERSION=v0.1.0 \
+./scripts/release_edge_agent.sh
 ```
 
-Set `EDGE_AGENT_IMAGE=registry.digitalocean.com/<registry>/edge-agent:<tag>` on the control-plane service so onboarding shows the correct install image.
+Set `EDGE_AGENT_IMAGE_REPOSITORY=registry.digitalocean.com/<registry>/edge-agent` and `EDGE_AGENT_VERSION=v0.1.0` on the control-plane service so onboarding shows the pinned install image. `EDGE_AGENT_IMAGE` still works as a legacy full-image override when needed.
 
 ## Create the App Platform components
 

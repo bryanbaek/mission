@@ -14,6 +14,7 @@ type Config struct {
 	ControlPlaneURL   string
 	TenantToken       string
 	AgentVersion      string
+	AuditLogPath      string
 	HeartbeatInterval time.Duration
 	ReconnectBase     time.Duration
 	ReconnectMax      time.Duration
@@ -42,6 +43,7 @@ func Load() (Config, error) {
 		ControlPlaneURL:   os.Getenv("CONTROL_PLANE_URL"),
 		TenantToken:       os.Getenv("TENANT_TOKEN"),
 		AgentVersion:      getenv("AGENT_VERSION", "dev"),
+		AuditLogPath:      getenv("AGENT_AUDIT_LOG_PATH", "/var/lib/agent/audit/query-events.jsonl"),
 		HeartbeatInterval: getenvDurationSeconds("HEARTBEAT_INTERVAL_SECONDS", 10),
 		ReconnectBase:     getenvDurationSeconds("RECONNECT_BASE_SECONDS", 1),
 		ReconnectMax:      getenvDurationSeconds("RECONNECT_MAX_SECONDS", 30),

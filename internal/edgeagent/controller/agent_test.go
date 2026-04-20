@@ -127,6 +127,20 @@ func (i fakeSchemaIntrospector) IntrospectSchema(
 	return i.introspectFn(ctx)
 }
 
+type fakeQueryAuditor struct {
+	logFn func(context.Context, QueryAuditEvent) error
+}
+
+func (a fakeQueryAuditor) LogQueryEvent(
+	ctx context.Context,
+	event QueryAuditEvent,
+) error {
+	if a.logFn == nil {
+		return nil
+	}
+	return a.logFn(ctx, event)
+}
+
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
@@ -387,6 +401,7 @@ func TestAgentServiceHandleExecuteQuery(t *testing.T) {
 
 	now := time.Unix(1_700_000_000, 0).UTC()
 	var submitted SubmitExecuteQueryResultRequest
+	var audited QueryAuditEvent
 	service, err := NewAgentService(
 		fakeControlPlaneClient{
 			openFn: func(context.Context, OpenCommandStreamRequest) (CommandStream, error) {
@@ -422,6 +437,12 @@ func TestAgentServiceHandleExecuteQuery(t *testing.T) {
 					}, nil
 				},
 			},
+			QueryAuditor: fakeQueryAuditor{
+				logFn: func(_ context.Context, event QueryAuditEvent) error {
+					audited = event
+					return nil
+				},
+			},
 		},
 	)
 	if err != nil {
@@ -445,6 +466,27 @@ func TestAgentServiceHandleExecuteQuery(t *testing.T) {
 	}
 	if submitted.DatabaseName != "mission_app" {
 		t.Fatalf("DatabaseName = %q, want mission_app", submitted.DatabaseName)
+	}
+	if audited.SessionID != "session-1" {
+		t.Fatalf("audited SessionID = %q, want session-1", audited.SessionID)
+	}
+	if audited.CommandID != "command-1" {
+		t.Fatalf("audited CommandID = %q, want command-1", audited.CommandID)
+	}
+	if audited.SQL != "SELECT 1" {
+		t.Fatalf("audited SQL = %q, want SELECT 1", audited.SQL)
+	}
+	if audited.DatabaseUser != "mission_ro@%" {
+		t.Fatalf("audited DatabaseUser = %q, want mission_ro@%%", audited.DatabaseUser)
+	}
+	if audited.DatabaseName != "mission_app" {
+		t.Fatalf("audited DatabaseName = %q, want mission_app", audited.DatabaseName)
+	}
+	if audited.ElapsedMS != 12 {
+		t.Fatalf("audited ElapsedMS = %d, want 12", audited.ElapsedMS)
+	}
+	if audited.RowCount != 1 {
+		t.Fatalf("audited RowCount = %d, want 1", audited.RowCount)
 	}
 }
 
@@ -504,6 +546,7 @@ func TestAgentServiceHandleExecuteQueryPermissionDenied(t *testing.T) {
 
 	now := time.Unix(1_700_000_000, 0).UTC()
 	var submitted SubmitExecuteQueryResultRequest
+	var audited QueryAuditEvent
 	var logs bytes.Buffer
 	service, err := NewAgentService(
 		fakeControlPlaneClient{
@@ -527,6 +570,12 @@ func TestAgentServiceHandleExecuteQueryPermissionDenied(t *testing.T) {
 						"SQL comments are not allowed",
 						[]string{"comment"},
 					)
+				},
+			},
+			QueryAuditor: fakeQueryAuditor{
+				logFn: func(_ context.Context, event QueryAuditEvent) error {
+					audited = event
+					return nil
 				},
 			},
 		},
@@ -561,6 +610,19 @@ func TestAgentServiceHandleExecuteQueryPermissionDenied(t *testing.T) {
 	if submitted.Error != "SQL comments are not allowed" {
 		t.Fatalf("Error = %q, want SQL comments are not allowed", submitted.Error)
 	}
+	if audited.ErrorCode != queryerror.CodePermissionDenied.String() {
+		t.Fatalf(
+			"audited ErrorCode = %q, want %q",
+			audited.ErrorCode,
+			queryerror.CodePermissionDenied.String(),
+		)
+	}
+	if audited.ErrorReason != "SQL comments are not allowed" {
+		t.Fatalf("audited ErrorReason = %q, want SQL comments are not allowed", audited.ErrorReason)
+	}
+	if len(audited.BlockedConstructs) != 1 || audited.BlockedConstructs[0] != "comment" {
+		t.Fatalf("audited BlockedConstructs = %#v, want [comment]", audited.BlockedConstructs)
+	}
 
 	logOutput := logs.String()
 	for _, want := range []string{
@@ -573,6 +635,67 @@ func TestAgentServiceHandleExecuteQueryPermissionDenied(t *testing.T) {
 		if !strings.Contains(logOutput, want) {
 			t.Fatalf("log output %q missing %q", logOutput, want)
 		}
+	}
+}
+
+func TestAgentServiceHandleExecuteQueryAuditFailureDoesNotBlockResult(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	var submitted SubmitExecuteQueryResultRequest
+	var logs bytes.Buffer
+	service, err := NewAgentService(
+		fakeControlPlaneClient{
+			submitQueryFn: func(
+				_ context.Context,
+				req SubmitExecuteQueryResultRequest,
+			) error {
+				submitted = req
+				return nil
+			},
+		},
+		AgentServiceConfig{
+			Hostname: "host-a",
+			Now: func() time.Time {
+				return now
+			},
+			Logger: slog.New(slog.NewTextHandler(&logs, nil)),
+			QueryExecutor: fakeQueryExecutor{
+				executeFn: func(context.Context, string) (QueryResult, error) {
+					return QueryResult{
+						Columns:      []string{"1"},
+						Rows:         []map[string]any{{"1": int64(1)}},
+						ElapsedMS:    5,
+						DatabaseUser: "mission_ro@%",
+						DatabaseName: "mission_app",
+					}, nil
+				},
+			},
+			QueryAuditor: fakeQueryAuditor{
+				logFn: func(context.Context, QueryAuditEvent) error {
+					return errors.New("disk full")
+				},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewAgentService returned error: %v", err)
+	}
+
+	err = service.handleCommand(context.Background(), ControlMessage{
+		SessionID: "session-1",
+		CommandID: "command-1",
+		Kind:      CommandKindExecuteQuery,
+		SQL:       "SELECT 1",
+	})
+	if err != nil {
+		t.Fatalf("handleCommand returned error: %v", err)
+	}
+	if submitted.DatabaseName != "mission_app" {
+		t.Fatalf("DatabaseName = %q, want mission_app", submitted.DatabaseName)
+	}
+	if !strings.Contains(logs.String(), "failed to write local audit log") {
+		t.Fatalf("expected audit warning log, got %q", logs.String())
 	}
 }
 

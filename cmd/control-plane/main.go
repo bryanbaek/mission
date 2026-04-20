@@ -8,9 +8,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/http2"
@@ -64,6 +66,10 @@ func run() error {
 	if err := db.Migrate(cfg.DatabaseURL); err != nil {
 		return fmt.Errorf("migrate db: %w", err)
 	}
+	if err := initSentry(cfg); err != nil {
+		return fmt.Errorf("init sentry: %w", err)
+	}
+	defer sentry.Flush(2 * time.Second)
 
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
@@ -147,7 +153,9 @@ func run() error {
 		schemaCtrl,
 		semanticLayerRepo,
 		controller.OnboardingControllerConfig{
-			EdgeAgentImage: cfg.EdgeAgentImage,
+			EdgeAgentImage:        cfg.EdgeAgentImage,
+			EdgeAgentVersion:      cfg.EdgeAgentVersion,
+			PublicControlPlaneURL: cfg.PublicControlPlaneURL,
 		},
 	)
 
@@ -192,6 +200,7 @@ func run() error {
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
+	r.Use(sentryMiddleware())
 
 	// Public
 	r.With(middleware.Timeout(30*time.Second)).
@@ -284,4 +293,72 @@ func run() error {
 	}
 	slog.Info("control-plane stopped")
 	return nil
+}
+
+func initSentry(cfg config.Config) error {
+	if cfg.SentryDSN == "" {
+		return nil
+	}
+	return sentry.Init(sentry.ClientOptions{
+		Dsn:         cfg.SentryDSN,
+		Environment: cfg.SentryEnvironment,
+		Release:     cfg.SentryRelease,
+	})
+}
+
+func sentryMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hub := sentry.CurrentHub().Clone()
+			hub.ConfigureScope(func(scope *sentry.Scope) {
+				scope.SetRequest(r)
+				scope.SetTag("request_id", middleware.GetReqID(r.Context()))
+			})
+			ctx := sentry.SetHubOnContext(r.Context(), hub)
+			recorder := &statusRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					eventID := hub.RecoverWithContext(
+						ctx,
+						fmt.Errorf("panic: %v\n%s", recovered, debug.Stack()),
+					)
+					if eventID != nil {
+						hub.Flush(2 * time.Second)
+					}
+					panic(recovered)
+				}
+			}()
+
+			next.ServeHTTP(recorder, r.WithContext(ctx))
+
+			if recorder.statusCode >= http.StatusInternalServerError {
+				hub.WithScope(func(scope *sentry.Scope) {
+					scope.SetLevel(sentry.LevelError)
+					scope.SetExtra("status_code", recorder.statusCode)
+					scope.SetExtra("method", r.Method)
+					scope.SetExtra("path", r.URL.Path)
+					scope.SetTag("http.status_code", fmt.Sprintf("%d", recorder.statusCode))
+					hub.CaptureMessage("control-plane request returned 5xx")
+				})
+			}
+		})
+	}
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (r *statusRecorder) WriteHeader(statusCode int) {
+	r.statusCode = statusCode
+	r.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (r *statusRecorder) Write(body []byte) (int, error) {
+	if r.statusCode == 0 {
+		r.statusCode = http.StatusOK
+	}
+	return r.ResponseWriter.Write(body)
 }

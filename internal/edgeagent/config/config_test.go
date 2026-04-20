@@ -44,6 +44,9 @@ func TestLoad(t *testing.T) {
 	if cfg.AgentVersion != "v1" {
 		t.Fatalf("AgentVersion = %q, want v1", cfg.AgentVersion)
 	}
+	if cfg.AuditLogPath != "/var/lib/agent/audit/query-events.jsonl" {
+		t.Fatalf("AuditLogPath = %q, want default path", cfg.AuditLogPath)
+	}
 	if cfg.HeartbeatInterval != 12*time.Second {
 		t.Fatalf("HeartbeatInterval = %s, want 12s", cfg.HeartbeatInterval)
 	}
@@ -65,6 +68,7 @@ func TestLoadMySQLDSNDirectEnvVar(t *testing.T) {
 	// MYSQL_DSN env var should be used directly without reading a file.
 	t.Setenv("CONTROL_PLANE_URL", "http://localhost:8080")
 	t.Setenv("TENANT_TOKEN", "secret")
+	t.Setenv("AGENT_AUDIT_LOG_PATH", "/tmp/mission-audit.jsonl")
 	t.Setenv("MYSQL_DSN", "root:pw@tcp(localhost:3306)/db")
 	t.Setenv("MYSQL_DSN_FILE", "") // explicitly absent
 
@@ -77,6 +81,9 @@ func TestLoadMySQLDSNDirectEnvVar(t *testing.T) {
 	}
 	if cfg.MySQLDSNFile != "" {
 		t.Fatalf("MySQLDSNFile = %q, want empty when MYSQL_DSN is set", cfg.MySQLDSNFile)
+	}
+	if cfg.AuditLogPath != "/tmp/mission-audit.jsonl" {
+		t.Fatalf("AuditLogPath = %q, want explicit value", cfg.AuditLogPath)
 	}
 }
 

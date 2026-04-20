@@ -29,7 +29,14 @@ function makeState(overrides?: Record<string, unknown>) {
     currentStep: 2,
     primaryLanguage: "ko",
     installSlug: "ecotech",
-    dockerRunCommand: "docker run -d --name ecotech-agent",
+    dockerRunCommand: `docker run -d --name ecotech-agent
+--restart unless-stopped
+-e CONTROL_PLANE_URL=https://mission.example.com
+-e TENANT_TOKEN=mssn_plaintext
+-e AGENT_VERSION=v0.1.0
+-v /etc/ecotech-agent:/etc/agent
+-v /var/lib/ecotech-agent:/var/lib/agent
+registry.digitalocean.com/mission/edge-agent:v0.1.0`,
     agentTokenId: "token-1",
     agentTokenPlaintext: "mssn_plaintext",
     agentSessionId: "",

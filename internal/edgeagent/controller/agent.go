@@ -141,6 +141,24 @@ type QueryExecutor interface {
 	ExecuteQuery(ctx context.Context, sql string) (QueryResult, error)
 }
 
+type QueryAuditEvent struct {
+	CompletedAt       time.Time
+	SessionID         string
+	CommandID         string
+	SQL               string
+	DatabaseUser      string
+	DatabaseName      string
+	ElapsedMS         int64
+	RowCount          int
+	ErrorCode         string
+	ErrorReason       string
+	BlockedConstructs []string
+}
+
+type QueryAuditor interface {
+	LogQueryEvent(ctx context.Context, event QueryAuditEvent) error
+}
+
 type SchemaIntrospector interface {
 	IntrospectSchema(
 		ctx context.Context,
@@ -172,6 +190,7 @@ type AgentServiceConfig struct {
 	Sleep              func(context.Context, time.Duration) error
 	Rand               *rand.Rand
 	QueryExecutor      QueryExecutor
+	QueryAuditor       QueryAuditor
 	SchemaIntrospector SchemaIntrospector
 	DatabaseConfigurer DatabaseConfigurer
 }
@@ -190,6 +209,7 @@ type AgentService struct {
 	sleep              func(context.Context, time.Duration) error
 	rand               *rand.Rand
 	queryExecutor      QueryExecutor
+	queryAuditor       QueryAuditor
 	schemaIntrospector SchemaIntrospector
 	databaseConfigurer DatabaseConfigurer
 }
@@ -263,6 +283,7 @@ func NewAgentService(
 		sleep:              sleep,
 		rand:               random,
 		queryExecutor:      cfg.QueryExecutor,
+		queryAuditor:       cfg.QueryAuditor,
 		schemaIntrospector: cfg.SchemaIntrospector,
 		databaseConfigurer: cfg.DatabaseConfigurer,
 	}, nil
@@ -425,12 +446,20 @@ func (s *AgentService) handleExecuteQuery(
 	command ControlMessage,
 ) error {
 	if s.queryExecutor == nil {
+		completedAt := s.now().UTC()
+		s.recordQueryAudit(ctx, QueryAuditEvent{
+			CompletedAt: completedAt,
+			SessionID:   command.SessionID,
+			CommandID:   command.CommandID,
+			SQL:         command.SQL,
+			ErrorReason: "query executor is not configured",
+		})
 		return s.client.SubmitExecuteQueryResult(
 			ctx,
 			SubmitExecuteQueryResultRequest{
 				SessionID:   command.SessionID,
 				CommandID:   command.CommandID,
-				CompletedAt: s.now().UTC(),
+				CompletedAt: completedAt,
 				Error:       "query executor is not configured",
 			},
 		)
@@ -440,11 +469,12 @@ func (s *AgentService) handleExecuteQuery(
 	result, err := s.queryExecutor.ExecuteQuery(ctx, command.SQL)
 	if err != nil {
 		var queryErr *queryerror.Error
+		completedAt := s.now().UTC()
 		req := SubmitExecuteQueryResultRequest{
 			SessionID:   command.SessionID,
 			CommandID:   command.CommandID,
-			CompletedAt: s.now().UTC(),
-			ElapsedMS:   s.now().UTC().Sub(startedAt).Milliseconds(),
+			CompletedAt: completedAt,
+			ElapsedMS:   completedAt.Sub(startedAt).Milliseconds(),
 			Error:       err.Error(),
 		}
 		if errors.As(err, &queryErr) {
@@ -468,18 +498,39 @@ func (s *AgentService) handleExecuteQuery(
 				)
 			}
 		}
+		s.recordQueryAudit(ctx, QueryAuditEvent{
+			CompletedAt:       req.CompletedAt,
+			SessionID:         command.SessionID,
+			CommandID:         command.CommandID,
+			SQL:               command.SQL,
+			ElapsedMS:         req.ElapsedMS,
+			ErrorCode:         req.ErrorCode.String(),
+			ErrorReason:       firstNonEmpty(req.ErrorReason, req.Error),
+			BlockedConstructs: append([]string(nil), req.BlockedConstructs...),
+		})
 		return s.client.SubmitExecuteQueryResult(
 			ctx,
 			req,
 		)
 	}
 
+	completedAt := s.now().UTC()
+	s.recordQueryAudit(ctx, QueryAuditEvent{
+		CompletedAt:  completedAt,
+		SessionID:    command.SessionID,
+		CommandID:    command.CommandID,
+		SQL:          command.SQL,
+		DatabaseUser: result.DatabaseUser,
+		DatabaseName: result.DatabaseName,
+		ElapsedMS:    result.ElapsedMS,
+		RowCount:     len(result.Rows),
+	})
 	return s.client.SubmitExecuteQueryResult(
 		ctx,
 		SubmitExecuteQueryResultRequest{
 			SessionID:    command.SessionID,
 			CommandID:    command.CommandID,
-			CompletedAt:  s.now().UTC(),
+			CompletedAt:  completedAt,
 			Columns:      result.Columns,
 			Rows:         result.Rows,
 			ElapsedMS:    result.ElapsedMS,
@@ -487,6 +538,35 @@ func (s *AgentService) handleExecuteQuery(
 			DatabaseName: result.DatabaseName,
 		},
 	)
+}
+
+func (s *AgentService) recordQueryAudit(
+	ctx context.Context,
+	event QueryAuditEvent,
+) {
+	if s.queryAuditor == nil {
+		return
+	}
+	if err := s.queryAuditor.LogQueryEvent(ctx, event); err != nil {
+		s.logger.Warn(
+			"failed to write local audit log",
+			"err",
+			err,
+			"session_id",
+			event.SessionID,
+			"command_id",
+			event.CommandID,
+		)
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func (s *AgentService) handleIntrospectSchema(

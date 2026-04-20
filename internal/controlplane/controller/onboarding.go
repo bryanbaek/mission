@@ -28,7 +28,8 @@ const (
 	defaultDBPort               int32 = 3306
 	defaultDatabaseUsername           = "okta_ai_ro"
 	defaultOnboardingTokenLabel       = "onboarding-agent"
-	defaultEdgeAgentImage             = "registry.digitalocean.com/mission/edge-agent:latest"
+	defaultEdgeAgentVersion           = "v0.1.0"
+	defaultEdgeAgentImage             = "registry.digitalocean.com/mission/edge-agent:v0.1.0"
 )
 
 var (
@@ -82,8 +83,10 @@ type onboardingSemanticStore interface {
 }
 
 type OnboardingControllerConfig struct {
-	Now            func() time.Time
-	EdgeAgentImage string
+	Now                   func() time.Time
+	EdgeAgentImage        string
+	EdgeAgentVersion      string
+	PublicControlPlaneURL string
 }
 
 type OnboardingStateView struct {
@@ -100,14 +103,16 @@ type OnboardingStateView struct {
 }
 
 type OnboardingController struct {
-	states         onboardingStateStore
-	invites        onboardingInviteStore
-	tenants        onboardingTenantController
-	sessions       onboardingAgentSessions
-	schemas        onboardingSchemaCapturer
-	semanticLayers onboardingSemanticStore
-	now            func() time.Time
-	edgeAgentImage string
+	states                onboardingStateStore
+	invites               onboardingInviteStore
+	tenants               onboardingTenantController
+	sessions              onboardingAgentSessions
+	schemas               onboardingSchemaCapturer
+	semanticLayers        onboardingSemanticStore
+	now                   func() time.Time
+	edgeAgentImage        string
+	edgeAgentVersion      string
+	publicControlPlaneURL string
 }
 
 func NewOnboardingController(
@@ -127,15 +132,22 @@ func NewOnboardingController(
 	if edgeAgentImage == "" {
 		edgeAgentImage = defaultEdgeAgentImage
 	}
+	edgeAgentVersion := strings.TrimSpace(cfg.EdgeAgentVersion)
+	if edgeAgentVersion == "" {
+		edgeAgentVersion = defaultEdgeAgentVersion
+	}
+	publicControlPlaneURL := strings.TrimSpace(cfg.PublicControlPlaneURL)
 	return &OnboardingController{
-		states:         states,
-		invites:        invites,
-		tenants:        tenants,
-		sessions:       sessions,
-		schemas:        schemas,
-		semanticLayers: semanticLayers,
-		now:            now,
-		edgeAgentImage: edgeAgentImage,
+		states:                states,
+		invites:               invites,
+		tenants:               tenants,
+		sessions:              sessions,
+		schemas:               schemas,
+		semanticLayers:        semanticLayers,
+		now:                   now,
+		edgeAgentImage:        edgeAgentImage,
+		edgeAgentVersion:      edgeAgentVersion,
+		publicControlPlaneURL: publicControlPlaneURL,
 	}
 }
 
@@ -758,12 +770,12 @@ func (c *OnboardingController) buildStateView(
 		return OnboardingStateView{}, err
 	}
 	dockerRunCommand := ""
-	if payload.InstallSlug != "" && payload.AgentTokenPlain != "" {
-		dockerRunCommand = fmt.Sprintf(
-			"docker run -d --name %s-agent \\\n  -e TENANT_TOKEN=%s \\\n  -v /etc/%s-agent:/etc/agent \\\n  %s",
+	if payload.InstallSlug != "" && payload.AgentTokenPlain != "" && c.publicControlPlaneURL != "" {
+		dockerRunCommand = buildDockerRunCommand(
 			payload.InstallSlug,
+			c.publicControlPlaneURL,
 			payload.AgentTokenPlain,
-			payload.InstallSlug,
+			c.edgeAgentVersion,
 			c.edgeAgentImage,
 		)
 	}
@@ -786,6 +798,21 @@ func (c *OnboardingController) buildStateView(
 		CanEdit:                 workspace.Role == model.WorkspaceRoleOwner,
 		WaitingForOwner:         workspace.Role == model.WorkspaceRoleMember && !workspace.OnboardingComplete,
 	}, nil
+}
+
+func buildDockerRunCommand(
+	installSlug, controlPlaneURL, tenantToken, agentVersion, edgeAgentImage string,
+) string {
+	return fmt.Sprintf(
+		"docker run -d --name %s-agent \\\n  --restart unless-stopped \\\n  -e CONTROL_PLANE_URL=%s \\\n  -e TENANT_TOKEN=%s \\\n  -e AGENT_VERSION=%s \\\n  -v /etc/%s-agent:/etc/agent \\\n  -v /var/lib/%s-agent:/var/lib/agent \\\n  %s",
+		installSlug,
+		controlPlaneURL,
+		tenantToken,
+		agentVersion,
+		installSlug,
+		installSlug,
+		edgeAgentImage,
+	)
 }
 
 func (c *OnboardingController) persistState(

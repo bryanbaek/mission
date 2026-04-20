@@ -297,7 +297,7 @@ const onboardingEn = {
     "As soon as the outbound stream opens, onboarding moves to database setup automatically.",
   "onboarding.step2.commandTitle": "Copy this Docker command",
   "onboarding.step2.commandBody":
-    "Paste this command into the server where the agent should run. No extra flags are required for onboarding.",
+    "Paste this command exactly into the server where the agent should run. It already includes the control-plane URL, pinned agent version, and the persistent /etc/agent and /var/lib/agent mounts.",
   "onboarding.step2.statusTitle": "Live connection status",
   "onboarding.step2.statusWaiting":
     "We are polling every 5 seconds for the agent session opened by this onboarding token.",
@@ -750,7 +750,7 @@ const onboardingKo: Record<keyof typeof onboardingEn, string> = {
     "아웃바운드 스트림이 열리는 즉시 데이터베이스 설정 단계로 자동 이동합니다.",
   "onboarding.step2.commandTitle": "이 Docker 명령을 복사하세요",
   "onboarding.step2.commandBody":
-    "에이전트를 실행할 서버에서 그대로 붙여 넣으세요. 온보딩에서는 추가 플래그가 필요 없습니다.",
+    "에이전트를 실행할 서버에서 이 명령을 그대로 붙여 넣으세요. 컨트롤 플레인 URL, 고정된 에이전트 버전, 그리고 /etc/agent 및 /var/lib/agent 영구 마운트가 이미 포함되어 있습니다.",
   "onboarding.step2.statusTitle": "실시간 연결 상태",
   "onboarding.step2.statusWaiting":
     "이 온보딩 토큰으로 열린 에이전트 세션을 5초마다 확인하고 있습니다.",
