@@ -20,10 +20,18 @@ type Config struct {
 }
 
 func Load() (Config, error) {
-	mysqlDSNFile := getenv("MYSQL_DSN_FILE", "/etc/mission/mysql.dsn")
-	mysqlDSN, err := loadDSNFile(mysqlDSNFile)
-	if err != nil {
-		return Config{}, err
+	// MYSQL_DSN can be supplied inline (dev/testing). If absent, the DSN is
+	// read from MYSQL_DSN_FILE (production mounts a secret file there).
+	var mysqlDSN, mysqlDSNFile string
+	if direct := os.Getenv("MYSQL_DSN"); direct != "" {
+		mysqlDSN = direct
+	} else {
+		mysqlDSNFile = getenv("MYSQL_DSN_FILE", "/etc/mission/mysql.dsn")
+		var err error
+		mysqlDSN, err = loadDSNFile(mysqlDSNFile)
+		if err != nil {
+			return Config{}, err
+		}
 	}
 
 	cfg := Config{

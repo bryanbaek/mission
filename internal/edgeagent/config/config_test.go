@@ -61,6 +61,25 @@ func TestLoad(t *testing.T) {
 	}
 }
 
+func TestLoadMySQLDSNDirectEnvVar(t *testing.T) {
+	// MYSQL_DSN env var should be used directly without reading a file.
+	t.Setenv("CONTROL_PLANE_URL", "http://localhost:8080")
+	t.Setenv("TENANT_TOKEN", "secret")
+	t.Setenv("MYSQL_DSN", "root:pw@tcp(localhost:3306)/db")
+	t.Setenv("MYSQL_DSN_FILE", "") // explicitly absent
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.MySQLDSN != "root:pw@tcp(localhost:3306)/db" {
+		t.Fatalf("MySQLDSN = %q, want inline value", cfg.MySQLDSN)
+	}
+	if cfg.MySQLDSNFile != "" {
+		t.Fatalf("MySQLDSNFile = %q, want empty when MYSQL_DSN is set", cfg.MySQLDSNFile)
+	}
+}
+
 func TestGetenvDurationSeconds(t *testing.T) {
 	t.Setenv("SECONDS", "bad")
 	if got := getenvDurationSeconds("SECONDS", 5); got != -1 {
