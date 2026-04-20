@@ -229,6 +229,84 @@ func TestAgentSessionManagerExecuteQueryRoundTrip(t *testing.T) {
 	}
 }
 
+func TestAgentSessionManagerIntrospectSchemaRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	manager := NewAgentSessionManager(AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+
+	stream, err := manager.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	resultCh := make(chan AgentIntrospectSchemaResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		result, captureErr := manager.IntrospectSchema(
+			context.Background(),
+			tenantID,
+		)
+		if captureErr != nil {
+			errCh <- captureErr
+			return
+		}
+		resultCh <- result
+	}()
+
+	command := <-stream.Commands
+	if command.Kind != AgentCommandKindIntrospectSchema {
+		t.Fatalf("Kind = %q, want introspect_schema", command.Kind)
+	}
+
+	completedAt := now.Add(2 * time.Second)
+	if err := manager.SubmitIntrospectSchemaResult(
+		token.ID,
+		"session-1",
+		command.CommandID,
+		completedAt,
+		model.SchemaBlob{
+			DatabaseName: "mission_app",
+			Tables: []model.SchemaTable{{
+				TableSchema: "mission_app",
+				TableName:   "customers",
+				TableType:   "BASE TABLE",
+			}},
+		},
+		17,
+		"mission_ro@%",
+		"mission_app",
+		"",
+	); err != nil {
+		t.Fatalf("SubmitIntrospectSchemaResult returned error: %v", err)
+	}
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("IntrospectSchema returned error: %v", err)
+	case result := <-resultCh:
+		if result.CommandID != command.CommandID {
+			t.Fatalf("CommandID = %q, want %q", result.CommandID, command.CommandID)
+		}
+		if result.DatabaseName != "mission_app" {
+			t.Fatalf("DatabaseName = %q, want mission_app", result.DatabaseName)
+		}
+		if len(result.Schema.Tables) != 1 {
+			t.Fatalf("table count = %d, want 1", len(result.Schema.Tables))
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for schema result")
+	}
+}
+
 func TestAgentSessionManagerErrors(t *testing.T) {
 	t.Parallel()
 

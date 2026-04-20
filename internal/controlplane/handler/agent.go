@@ -147,6 +147,18 @@ func (h *AgentHandler) SubmitCommandResult(
 			result.ExecuteQuery.GetDatabaseName(),
 			result.ExecuteQuery.GetError(),
 		)
+	case *agentv1.SubmitCommandResultRequest_IntrospectSchema:
+		err = h.sessions.SubmitIntrospectSchemaResult(
+			agent.TokenID,
+			req.Msg.GetSessionId(),
+			req.Msg.GetCommandId(),
+			completedAt,
+			protoSchemaToModel(result.IntrospectSchema.GetSchema()),
+			result.IntrospectSchema.GetElapsedMs(),
+			result.IntrospectSchema.GetDatabaseUser(),
+			result.IntrospectSchema.GetDatabaseName(),
+			result.IntrospectSchema.GetError(),
+		)
 	default:
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
@@ -171,6 +183,10 @@ func commandToProto(command controller.AgentCommand) *agentv1.ControlMessage {
 	case controller.AgentCommandKindExecuteQuery:
 		out.Payload = &agentv1.ControlMessage_ExecuteQuery{
 			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: command.SQL},
+		}
+	case controller.AgentCommandKindIntrospectSchema:
+		out.Payload = &agentv1.ControlMessage_IntrospectSchema{
+			IntrospectSchema: &agentv1.IntrospectSchemaCommand{},
 		}
 	}
 	return out
@@ -201,6 +217,64 @@ func protoRowsToMaps(rows []*agentv1.ExecuteQueryRow) []map[string]any {
 			values[key] = value.AsInterface()
 		}
 		out = append(out, values)
+	}
+	return out
+}
+
+func protoSchemaToModel(in *agentv1.SchemaBlob) model.SchemaBlob {
+	if in == nil {
+		return model.SchemaBlob{}
+	}
+
+	out := model.SchemaBlob{
+		DatabaseName: in.GetDatabaseName(),
+		Tables:       make([]model.SchemaTable, 0, len(in.GetTables())),
+		Columns:      make([]model.SchemaColumn, 0, len(in.GetColumns())),
+		PrimaryKeys:  make([]model.SchemaPrimaryKey, 0, len(in.GetPrimaryKeys())),
+		ForeignKeys:  make([]model.SchemaForeignKey, 0, len(in.GetForeignKeys())),
+	}
+	for _, table := range in.GetTables() {
+		out.Tables = append(out.Tables, model.SchemaTable{
+			TableSchema:  table.GetTableSchema(),
+			TableName:    table.GetTableName(),
+			TableType:    table.GetTableType(),
+			TableComment: table.GetTableComment(),
+		})
+	}
+	for _, column := range in.GetColumns() {
+		out.Columns = append(out.Columns, model.SchemaColumn{
+			TableSchema:     column.GetTableSchema(),
+			TableName:       column.GetTableName(),
+			ColumnName:      column.GetColumnName(),
+			OrdinalPosition: column.GetOrdinalPosition(),
+			DataType:        column.GetDataType(),
+			ColumnType:      column.GetColumnType(),
+			IsNullable:      column.GetIsNullable(),
+			HasDefault:      column.GetHasDefault(),
+			DefaultValue:    column.GetDefaultValue(),
+			ColumnComment:   column.GetColumnComment(),
+		})
+	}
+	for _, key := range in.GetPrimaryKeys() {
+		out.PrimaryKeys = append(out.PrimaryKeys, model.SchemaPrimaryKey{
+			TableSchema:     key.GetTableSchema(),
+			TableName:       key.GetTableName(),
+			ConstraintName:  key.GetConstraintName(),
+			ColumnName:      key.GetColumnName(),
+			OrdinalPosition: key.GetOrdinalPosition(),
+		})
+	}
+	for _, key := range in.GetForeignKeys() {
+		out.ForeignKeys = append(out.ForeignKeys, model.SchemaForeignKey{
+			TableSchema:           key.GetTableSchema(),
+			TableName:             key.GetTableName(),
+			ConstraintName:        key.GetConstraintName(),
+			ColumnName:            key.GetColumnName(),
+			OrdinalPosition:       key.GetOrdinalPosition(),
+			ReferencedTableSchema: key.GetReferencedTableSchema(),
+			ReferencedTableName:   key.GetReferencedTableName(),
+			ReferencedColumnName:  key.GetReferencedColumnName(),
+		})
 	}
 	return out
 }

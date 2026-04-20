@@ -259,6 +259,478 @@ func (x *ExecuteQueryCommand) GetSql() string {
 	return ""
 }
 
+type IntrospectSchemaCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IntrospectSchemaCommand) Reset() {
+	*x = IntrospectSchemaCommand{}
+	mi := &file_agent_v1_agent_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IntrospectSchemaCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntrospectSchemaCommand) ProtoMessage() {}
+
+func (x *IntrospectSchemaCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntrospectSchemaCommand.ProtoReflect.Descriptor instead.
+func (*IntrospectSchemaCommand) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{5}
+}
+
+type SchemaTable struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TableSchema   string                 `protobuf:"bytes,1,opt,name=table_schema,json=tableSchema,proto3" json:"table_schema,omitempty"`
+	TableName     string                 `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	TableType     string                 `protobuf:"bytes,3,opt,name=table_type,json=tableType,proto3" json:"table_type,omitempty"`
+	TableComment  string                 `protobuf:"bytes,4,opt,name=table_comment,json=tableComment,proto3" json:"table_comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SchemaTable) Reset() {
+	*x = SchemaTable{}
+	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SchemaTable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaTable) ProtoMessage() {}
+
+func (x *SchemaTable) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaTable.ProtoReflect.Descriptor instead.
+func (*SchemaTable) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SchemaTable) GetTableSchema() string {
+	if x != nil {
+		return x.TableSchema
+	}
+	return ""
+}
+
+func (x *SchemaTable) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *SchemaTable) GetTableType() string {
+	if x != nil {
+		return x.TableType
+	}
+	return ""
+}
+
+func (x *SchemaTable) GetTableComment() string {
+	if x != nil {
+		return x.TableComment
+	}
+	return ""
+}
+
+type SchemaColumn struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TableSchema     string                 `protobuf:"bytes,1,opt,name=table_schema,json=tableSchema,proto3" json:"table_schema,omitempty"`
+	TableName       string                 `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	ColumnName      string                 `protobuf:"bytes,3,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
+	OrdinalPosition int32                  `protobuf:"varint,4,opt,name=ordinal_position,json=ordinalPosition,proto3" json:"ordinal_position,omitempty"`
+	DataType        string                 `protobuf:"bytes,5,opt,name=data_type,json=dataType,proto3" json:"data_type,omitempty"`
+	ColumnType      string                 `protobuf:"bytes,6,opt,name=column_type,json=columnType,proto3" json:"column_type,omitempty"`
+	IsNullable      bool                   `protobuf:"varint,7,opt,name=is_nullable,json=isNullable,proto3" json:"is_nullable,omitempty"`
+	HasDefault      bool                   `protobuf:"varint,8,opt,name=has_default,json=hasDefault,proto3" json:"has_default,omitempty"`
+	DefaultValue    string                 `protobuf:"bytes,9,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+	ColumnComment   string                 `protobuf:"bytes,10,opt,name=column_comment,json=columnComment,proto3" json:"column_comment,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SchemaColumn) Reset() {
+	*x = SchemaColumn{}
+	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SchemaColumn) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaColumn) ProtoMessage() {}
+
+func (x *SchemaColumn) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaColumn.ProtoReflect.Descriptor instead.
+func (*SchemaColumn) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SchemaColumn) GetTableSchema() string {
+	if x != nil {
+		return x.TableSchema
+	}
+	return ""
+}
+
+func (x *SchemaColumn) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *SchemaColumn) GetColumnName() string {
+	if x != nil {
+		return x.ColumnName
+	}
+	return ""
+}
+
+func (x *SchemaColumn) GetOrdinalPosition() int32 {
+	if x != nil {
+		return x.OrdinalPosition
+	}
+	return 0
+}
+
+func (x *SchemaColumn) GetDataType() string {
+	if x != nil {
+		return x.DataType
+	}
+	return ""
+}
+
+func (x *SchemaColumn) GetColumnType() string {
+	if x != nil {
+		return x.ColumnType
+	}
+	return ""
+}
+
+func (x *SchemaColumn) GetIsNullable() bool {
+	if x != nil {
+		return x.IsNullable
+	}
+	return false
+}
+
+func (x *SchemaColumn) GetHasDefault() bool {
+	if x != nil {
+		return x.HasDefault
+	}
+	return false
+}
+
+func (x *SchemaColumn) GetDefaultValue() string {
+	if x != nil {
+		return x.DefaultValue
+	}
+	return ""
+}
+
+func (x *SchemaColumn) GetColumnComment() string {
+	if x != nil {
+		return x.ColumnComment
+	}
+	return ""
+}
+
+type SchemaPrimaryKey struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TableSchema     string                 `protobuf:"bytes,1,opt,name=table_schema,json=tableSchema,proto3" json:"table_schema,omitempty"`
+	TableName       string                 `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	ConstraintName  string                 `protobuf:"bytes,3,opt,name=constraint_name,json=constraintName,proto3" json:"constraint_name,omitempty"`
+	ColumnName      string                 `protobuf:"bytes,4,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
+	OrdinalPosition int32                  `protobuf:"varint,5,opt,name=ordinal_position,json=ordinalPosition,proto3" json:"ordinal_position,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SchemaPrimaryKey) Reset() {
+	*x = SchemaPrimaryKey{}
+	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SchemaPrimaryKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaPrimaryKey) ProtoMessage() {}
+
+func (x *SchemaPrimaryKey) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaPrimaryKey.ProtoReflect.Descriptor instead.
+func (*SchemaPrimaryKey) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SchemaPrimaryKey) GetTableSchema() string {
+	if x != nil {
+		return x.TableSchema
+	}
+	return ""
+}
+
+func (x *SchemaPrimaryKey) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *SchemaPrimaryKey) GetConstraintName() string {
+	if x != nil {
+		return x.ConstraintName
+	}
+	return ""
+}
+
+func (x *SchemaPrimaryKey) GetColumnName() string {
+	if x != nil {
+		return x.ColumnName
+	}
+	return ""
+}
+
+func (x *SchemaPrimaryKey) GetOrdinalPosition() int32 {
+	if x != nil {
+		return x.OrdinalPosition
+	}
+	return 0
+}
+
+type SchemaForeignKey struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	TableSchema           string                 `protobuf:"bytes,1,opt,name=table_schema,json=tableSchema,proto3" json:"table_schema,omitempty"`
+	TableName             string                 `protobuf:"bytes,2,opt,name=table_name,json=tableName,proto3" json:"table_name,omitempty"`
+	ConstraintName        string                 `protobuf:"bytes,3,opt,name=constraint_name,json=constraintName,proto3" json:"constraint_name,omitempty"`
+	ColumnName            string                 `protobuf:"bytes,4,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
+	OrdinalPosition       int32                  `protobuf:"varint,5,opt,name=ordinal_position,json=ordinalPosition,proto3" json:"ordinal_position,omitempty"`
+	ReferencedTableSchema string                 `protobuf:"bytes,6,opt,name=referenced_table_schema,json=referencedTableSchema,proto3" json:"referenced_table_schema,omitempty"`
+	ReferencedTableName   string                 `protobuf:"bytes,7,opt,name=referenced_table_name,json=referencedTableName,proto3" json:"referenced_table_name,omitempty"`
+	ReferencedColumnName  string                 `protobuf:"bytes,8,opt,name=referenced_column_name,json=referencedColumnName,proto3" json:"referenced_column_name,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *SchemaForeignKey) Reset() {
+	*x = SchemaForeignKey{}
+	mi := &file_agent_v1_agent_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SchemaForeignKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaForeignKey) ProtoMessage() {}
+
+func (x *SchemaForeignKey) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaForeignKey.ProtoReflect.Descriptor instead.
+func (*SchemaForeignKey) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SchemaForeignKey) GetTableSchema() string {
+	if x != nil {
+		return x.TableSchema
+	}
+	return ""
+}
+
+func (x *SchemaForeignKey) GetTableName() string {
+	if x != nil {
+		return x.TableName
+	}
+	return ""
+}
+
+func (x *SchemaForeignKey) GetConstraintName() string {
+	if x != nil {
+		return x.ConstraintName
+	}
+	return ""
+}
+
+func (x *SchemaForeignKey) GetColumnName() string {
+	if x != nil {
+		return x.ColumnName
+	}
+	return ""
+}
+
+func (x *SchemaForeignKey) GetOrdinalPosition() int32 {
+	if x != nil {
+		return x.OrdinalPosition
+	}
+	return 0
+}
+
+func (x *SchemaForeignKey) GetReferencedTableSchema() string {
+	if x != nil {
+		return x.ReferencedTableSchema
+	}
+	return ""
+}
+
+func (x *SchemaForeignKey) GetReferencedTableName() string {
+	if x != nil {
+		return x.ReferencedTableName
+	}
+	return ""
+}
+
+func (x *SchemaForeignKey) GetReferencedColumnName() string {
+	if x != nil {
+		return x.ReferencedColumnName
+	}
+	return ""
+}
+
+type SchemaBlob struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DatabaseName  string                 `protobuf:"bytes,1,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Tables        []*SchemaTable         `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+	Columns       []*SchemaColumn        `protobuf:"bytes,3,rep,name=columns,proto3" json:"columns,omitempty"`
+	PrimaryKeys   []*SchemaPrimaryKey    `protobuf:"bytes,4,rep,name=primary_keys,json=primaryKeys,proto3" json:"primary_keys,omitempty"`
+	ForeignKeys   []*SchemaForeignKey    `protobuf:"bytes,5,rep,name=foreign_keys,json=foreignKeys,proto3" json:"foreign_keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SchemaBlob) Reset() {
+	*x = SchemaBlob{}
+	mi := &file_agent_v1_agent_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SchemaBlob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SchemaBlob) ProtoMessage() {}
+
+func (x *SchemaBlob) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SchemaBlob.ProtoReflect.Descriptor instead.
+func (*SchemaBlob) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SchemaBlob) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *SchemaBlob) GetTables() []*SchemaTable {
+	if x != nil {
+		return x.Tables
+	}
+	return nil
+}
+
+func (x *SchemaBlob) GetColumns() []*SchemaColumn {
+	if x != nil {
+		return x.Columns
+	}
+	return nil
+}
+
+func (x *SchemaBlob) GetPrimaryKeys() []*SchemaPrimaryKey {
+	if x != nil {
+		return x.PrimaryKeys
+	}
+	return nil
+}
+
+func (x *SchemaBlob) GetForeignKeys() []*SchemaForeignKey {
+	if x != nil {
+		return x.ForeignKeys
+	}
+	return nil
+}
+
 type ControlMessage struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -268,6 +740,7 @@ type ControlMessage struct {
 	//
 	//	*ControlMessage_Ping
 	//	*ControlMessage_ExecuteQuery
+	//	*ControlMessage_IntrospectSchema
 	Payload       isControlMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -275,7 +748,7 @@ type ControlMessage struct {
 
 func (x *ControlMessage) Reset() {
 	*x = ControlMessage{}
-	mi := &file_agent_v1_agent_proto_msgTypes[5]
+	mi := &file_agent_v1_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -287,7 +760,7 @@ func (x *ControlMessage) String() string {
 func (*ControlMessage) ProtoMessage() {}
 
 func (x *ControlMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[5]
+	mi := &file_agent_v1_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -300,7 +773,7 @@ func (x *ControlMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ControlMessage.ProtoReflect.Descriptor instead.
 func (*ControlMessage) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ControlMessage) GetSessionId() string {
@@ -349,6 +822,15 @@ func (x *ControlMessage) GetExecuteQuery() *ExecuteQueryCommand {
 	return nil
 }
 
+func (x *ControlMessage) GetIntrospectSchema() *IntrospectSchemaCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_IntrospectSchema); ok {
+			return x.IntrospectSchema
+		}
+	}
+	return nil
+}
+
 type isControlMessage_Payload interface {
 	isControlMessage_Payload()
 }
@@ -361,9 +843,15 @@ type ControlMessage_ExecuteQuery struct {
 	ExecuteQuery *ExecuteQueryCommand `protobuf:"bytes,11,opt,name=execute_query,json=executeQuery,proto3,oneof"`
 }
 
+type ControlMessage_IntrospectSchema struct {
+	IntrospectSchema *IntrospectSchemaCommand `protobuf:"bytes,12,opt,name=introspect_schema,json=introspectSchema,proto3,oneof"`
+}
+
 func (*ControlMessage_Ping) isControlMessage_Payload() {}
 
 func (*ControlMessage_ExecuteQuery) isControlMessage_Payload() {}
+
+func (*ControlMessage_IntrospectSchema) isControlMessage_Payload() {}
 
 type PingResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -374,7 +862,7 @@ type PingResult struct {
 
 func (x *PingResult) Reset() {
 	*x = PingResult{}
-	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	mi := &file_agent_v1_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -386,7 +874,7 @@ func (x *PingResult) String() string {
 func (*PingResult) ProtoMessage() {}
 
 func (x *PingResult) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	mi := &file_agent_v1_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -399,7 +887,7 @@ func (x *PingResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingResult.ProtoReflect.Descriptor instead.
 func (*PingResult) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *PingResult) GetRoundTripMs() int64 {
@@ -418,7 +906,7 @@ type ExecuteQueryRow struct {
 
 func (x *ExecuteQueryRow) Reset() {
 	*x = ExecuteQueryRow{}
-	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	mi := &file_agent_v1_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -430,7 +918,7 @@ func (x *ExecuteQueryRow) String() string {
 func (*ExecuteQueryRow) ProtoMessage() {}
 
 func (x *ExecuteQueryRow) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	mi := &file_agent_v1_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -443,7 +931,7 @@ func (x *ExecuteQueryRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteQueryRow.ProtoReflect.Descriptor instead.
 func (*ExecuteQueryRow) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ExecuteQueryRow) GetValues() map[string]*structpb.Value {
@@ -467,7 +955,7 @@ type ExecuteQueryResult struct {
 
 func (x *ExecuteQueryResult) Reset() {
 	*x = ExecuteQueryResult{}
-	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	mi := &file_agent_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -479,7 +967,7 @@ func (x *ExecuteQueryResult) String() string {
 func (*ExecuteQueryResult) ProtoMessage() {}
 
 func (x *ExecuteQueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	mi := &file_agent_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -492,7 +980,7 @@ func (x *ExecuteQueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteQueryResult.ProtoReflect.Descriptor instead.
 func (*ExecuteQueryResult) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ExecuteQueryResult) GetColumns() []string {
@@ -537,6 +1025,82 @@ func (x *ExecuteQueryResult) GetError() string {
 	return ""
 }
 
+type IntrospectSchemaResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Schema        *SchemaBlob            `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
+	ElapsedMs     int64                  `protobuf:"varint,2,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
+	DatabaseUser  string                 `protobuf:"bytes,3,opt,name=database_user,json=databaseUser,proto3" json:"database_user,omitempty"`
+	DatabaseName  string                 `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IntrospectSchemaResult) Reset() {
+	*x = IntrospectSchemaResult{}
+	mi := &file_agent_v1_agent_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IntrospectSchemaResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntrospectSchemaResult) ProtoMessage() {}
+
+func (x *IntrospectSchemaResult) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntrospectSchemaResult.ProtoReflect.Descriptor instead.
+func (*IntrospectSchemaResult) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *IntrospectSchemaResult) GetSchema() *SchemaBlob {
+	if x != nil {
+		return x.Schema
+	}
+	return nil
+}
+
+func (x *IntrospectSchemaResult) GetElapsedMs() int64 {
+	if x != nil {
+		return x.ElapsedMs
+	}
+	return 0
+}
+
+func (x *IntrospectSchemaResult) GetDatabaseUser() string {
+	if x != nil {
+		return x.DatabaseUser
+	}
+	return ""
+}
+
+func (x *IntrospectSchemaResult) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *IntrospectSchemaResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type SubmitCommandResultRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	SessionId   string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -546,6 +1110,7 @@ type SubmitCommandResultRequest struct {
 	//
 	//	*SubmitCommandResultRequest_Ping
 	//	*SubmitCommandResultRequest_ExecuteQuery
+	//	*SubmitCommandResultRequest_IntrospectSchema
 	Result        isSubmitCommandResultRequest_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -553,7 +1118,7 @@ type SubmitCommandResultRequest struct {
 
 func (x *SubmitCommandResultRequest) Reset() {
 	*x = SubmitCommandResultRequest{}
-	mi := &file_agent_v1_agent_proto_msgTypes[9]
+	mi := &file_agent_v1_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -565,7 +1130,7 @@ func (x *SubmitCommandResultRequest) String() string {
 func (*SubmitCommandResultRequest) ProtoMessage() {}
 
 func (x *SubmitCommandResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[9]
+	mi := &file_agent_v1_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -578,7 +1143,7 @@ func (x *SubmitCommandResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitCommandResultRequest.ProtoReflect.Descriptor instead.
 func (*SubmitCommandResultRequest) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{9}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SubmitCommandResultRequest) GetSessionId() string {
@@ -627,6 +1192,15 @@ func (x *SubmitCommandResultRequest) GetExecuteQuery() *ExecuteQueryResult {
 	return nil
 }
 
+func (x *SubmitCommandResultRequest) GetIntrospectSchema() *IntrospectSchemaResult {
+	if x != nil {
+		if x, ok := x.Result.(*SubmitCommandResultRequest_IntrospectSchema); ok {
+			return x.IntrospectSchema
+		}
+	}
+	return nil
+}
+
 type isSubmitCommandResultRequest_Result interface {
 	isSubmitCommandResultRequest_Result()
 }
@@ -639,9 +1213,15 @@ type SubmitCommandResultRequest_ExecuteQuery struct {
 	ExecuteQuery *ExecuteQueryResult `protobuf:"bytes,11,opt,name=execute_query,json=executeQuery,proto3,oneof"`
 }
 
+type SubmitCommandResultRequest_IntrospectSchema struct {
+	IntrospectSchema *IntrospectSchemaResult `protobuf:"bytes,12,opt,name=introspect_schema,json=introspectSchema,proto3,oneof"`
+}
+
 func (*SubmitCommandResultRequest_Ping) isSubmitCommandResultRequest_Result() {}
 
 func (*SubmitCommandResultRequest_ExecuteQuery) isSubmitCommandResultRequest_Result() {}
+
+func (*SubmitCommandResultRequest_IntrospectSchema) isSubmitCommandResultRequest_Result() {}
 
 type SubmitCommandResultResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -651,7 +1231,7 @@ type SubmitCommandResultResponse struct {
 
 func (x *SubmitCommandResultResponse) Reset() {
 	*x = SubmitCommandResultResponse{}
-	mi := &file_agent_v1_agent_proto_msgTypes[10]
+	mi := &file_agent_v1_agent_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -663,7 +1243,7 @@ func (x *SubmitCommandResultResponse) String() string {
 func (*SubmitCommandResultResponse) ProtoMessage() {}
 
 func (x *SubmitCommandResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[10]
+	mi := &file_agent_v1_agent_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -676,7 +1256,7 @@ func (x *SubmitCommandResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitCommandResultResponse.ProtoReflect.Descriptor instead.
 func (*SubmitCommandResultResponse) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{17}
 }
 
 var File_agent_v1_agent_proto protoreflect.FileDescriptor
@@ -698,7 +1278,58 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x11HeartbeatResponse\"\r\n" +
 	"\vPingCommand\"'\n" +
 	"\x13ExecuteQueryCommand\x12\x10\n" +
-	"\x03sql\x18\x01 \x01(\tR\x03sql\"\x85\x02\n" +
+	"\x03sql\x18\x01 \x01(\tR\x03sql\"\x19\n" +
+	"\x17IntrospectSchemaCommand\"\x93\x01\n" +
+	"\vSchemaTable\x12!\n" +
+	"\ftable_schema\x18\x01 \x01(\tR\vtableSchema\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x02 \x01(\tR\ttableName\x12\x1d\n" +
+	"\n" +
+	"table_type\x18\x03 \x01(\tR\ttableType\x12#\n" +
+	"\rtable_comment\x18\x04 \x01(\tR\ftableComment\"\xe8\x02\n" +
+	"\fSchemaColumn\x12!\n" +
+	"\ftable_schema\x18\x01 \x01(\tR\vtableSchema\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x02 \x01(\tR\ttableName\x12\x1f\n" +
+	"\vcolumn_name\x18\x03 \x01(\tR\n" +
+	"columnName\x12)\n" +
+	"\x10ordinal_position\x18\x04 \x01(\x05R\x0fordinalPosition\x12\x1b\n" +
+	"\tdata_type\x18\x05 \x01(\tR\bdataType\x12\x1f\n" +
+	"\vcolumn_type\x18\x06 \x01(\tR\n" +
+	"columnType\x12\x1f\n" +
+	"\vis_nullable\x18\a \x01(\bR\n" +
+	"isNullable\x12\x1f\n" +
+	"\vhas_default\x18\b \x01(\bR\n" +
+	"hasDefault\x12#\n" +
+	"\rdefault_value\x18\t \x01(\tR\fdefaultValue\x12%\n" +
+	"\x0ecolumn_comment\x18\n" +
+	" \x01(\tR\rcolumnComment\"\xc9\x01\n" +
+	"\x10SchemaPrimaryKey\x12!\n" +
+	"\ftable_schema\x18\x01 \x01(\tR\vtableSchema\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x02 \x01(\tR\ttableName\x12'\n" +
+	"\x0fconstraint_name\x18\x03 \x01(\tR\x0econstraintName\x12\x1f\n" +
+	"\vcolumn_name\x18\x04 \x01(\tR\n" +
+	"columnName\x12)\n" +
+	"\x10ordinal_position\x18\x05 \x01(\x05R\x0fordinalPosition\"\xeb\x02\n" +
+	"\x10SchemaForeignKey\x12!\n" +
+	"\ftable_schema\x18\x01 \x01(\tR\vtableSchema\x12\x1d\n" +
+	"\n" +
+	"table_name\x18\x02 \x01(\tR\ttableName\x12'\n" +
+	"\x0fconstraint_name\x18\x03 \x01(\tR\x0econstraintName\x12\x1f\n" +
+	"\vcolumn_name\x18\x04 \x01(\tR\n" +
+	"columnName\x12)\n" +
+	"\x10ordinal_position\x18\x05 \x01(\x05R\x0fordinalPosition\x126\n" +
+	"\x17referenced_table_schema\x18\x06 \x01(\tR\x15referencedTableSchema\x122\n" +
+	"\x15referenced_table_name\x18\a \x01(\tR\x13referencedTableName\x124\n" +
+	"\x16referenced_column_name\x18\b \x01(\tR\x14referencedColumnName\"\x90\x02\n" +
+	"\n" +
+	"SchemaBlob\x12#\n" +
+	"\rdatabase_name\x18\x01 \x01(\tR\fdatabaseName\x12-\n" +
+	"\x06tables\x18\x02 \x03(\v2\x15.agent.v1.SchemaTableR\x06tables\x120\n" +
+	"\acolumns\x18\x03 \x03(\v2\x16.agent.v1.SchemaColumnR\acolumns\x12=\n" +
+	"\fprimary_keys\x18\x04 \x03(\v2\x1a.agent.v1.SchemaPrimaryKeyR\vprimaryKeys\x12=\n" +
+	"\fforeign_keys\x18\x05 \x03(\v2\x1a.agent.v1.SchemaForeignKeyR\vforeignKeys\"\xd7\x02\n" +
 	"\x0eControlMessage\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
@@ -707,7 +1338,8 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\tissued_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x12+\n" +
 	"\x04ping\x18\n" +
 	" \x01(\v2\x15.agent.v1.PingCommandH\x00R\x04ping\x12D\n" +
-	"\rexecute_query\x18\v \x01(\v2\x1d.agent.v1.ExecuteQueryCommandH\x00R\fexecuteQueryB\t\n" +
+	"\rexecute_query\x18\v \x01(\v2\x1d.agent.v1.ExecuteQueryCommandH\x00R\fexecuteQuery\x12P\n" +
+	"\x11introspect_schema\x18\f \x01(\v2!.agent.v1.IntrospectSchemaCommandH\x00R\x10introspectSchemaB\t\n" +
 	"\apayload\"0\n" +
 	"\n" +
 	"PingResult\x12\"\n" +
@@ -724,7 +1356,14 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"elapsed_ms\x18\x03 \x01(\x03R\telapsedMs\x12#\n" +
 	"\rdatabase_user\x18\x04 \x01(\tR\fdatabaseUser\x12#\n" +
 	"\rdatabase_name\x18\x05 \x01(\tR\fdatabaseName\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\"\x94\x02\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"\xc5\x01\n" +
+	"\x16IntrospectSchemaResult\x12,\n" +
+	"\x06schema\x18\x01 \x01(\v2\x14.agent.v1.SchemaBlobR\x06schema\x12\x1d\n" +
+	"\n" +
+	"elapsed_ms\x18\x02 \x01(\x03R\telapsedMs\x12#\n" +
+	"\rdatabase_user\x18\x03 \x01(\tR\fdatabaseUser\x12#\n" +
+	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12\x14\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\"\xe5\x02\n" +
 	"\x1aSubmitCommandResultRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
@@ -733,7 +1372,8 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\fcompleted_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12*\n" +
 	"\x04ping\x18\n" +
 	" \x01(\v2\x14.agent.v1.PingResultH\x00R\x04ping\x12C\n" +
-	"\rexecute_query\x18\v \x01(\v2\x1c.agent.v1.ExecuteQueryResultH\x00R\fexecuteQueryB\b\n" +
+	"\rexecute_query\x18\v \x01(\v2\x1c.agent.v1.ExecuteQueryResultH\x00R\fexecuteQuery\x12O\n" +
+	"\x11introspect_schema\x18\f \x01(\v2 .agent.v1.IntrospectSchemaResultH\x00R\x10introspectSchemaB\b\n" +
 	"\x06result\"\x1d\n" +
 	"\x1bSubmitCommandResultResponse2\x8d\x02\n" +
 	"\fAgentService\x12S\n" +
@@ -755,46 +1395,60 @@ func file_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_agent_v1_agent_proto_rawDescData
 }
 
-var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_agent_v1_agent_proto_goTypes = []any{
 	(*OpenCommandStreamRequest)(nil),    // 0: agent.v1.OpenCommandStreamRequest
 	(*HeartbeatRequest)(nil),            // 1: agent.v1.HeartbeatRequest
 	(*HeartbeatResponse)(nil),           // 2: agent.v1.HeartbeatResponse
 	(*PingCommand)(nil),                 // 3: agent.v1.PingCommand
 	(*ExecuteQueryCommand)(nil),         // 4: agent.v1.ExecuteQueryCommand
-	(*ControlMessage)(nil),              // 5: agent.v1.ControlMessage
-	(*PingResult)(nil),                  // 6: agent.v1.PingResult
-	(*ExecuteQueryRow)(nil),             // 7: agent.v1.ExecuteQueryRow
-	(*ExecuteQueryResult)(nil),          // 8: agent.v1.ExecuteQueryResult
-	(*SubmitCommandResultRequest)(nil),  // 9: agent.v1.SubmitCommandResultRequest
-	(*SubmitCommandResultResponse)(nil), // 10: agent.v1.SubmitCommandResultResponse
-	nil,                                 // 11: agent.v1.ExecuteQueryRow.ValuesEntry
-	(*timestamppb.Timestamp)(nil),       // 12: google.protobuf.Timestamp
-	(*structpb.Value)(nil),              // 13: google.protobuf.Value
+	(*IntrospectSchemaCommand)(nil),     // 5: agent.v1.IntrospectSchemaCommand
+	(*SchemaTable)(nil),                 // 6: agent.v1.SchemaTable
+	(*SchemaColumn)(nil),                // 7: agent.v1.SchemaColumn
+	(*SchemaPrimaryKey)(nil),            // 8: agent.v1.SchemaPrimaryKey
+	(*SchemaForeignKey)(nil),            // 9: agent.v1.SchemaForeignKey
+	(*SchemaBlob)(nil),                  // 10: agent.v1.SchemaBlob
+	(*ControlMessage)(nil),              // 11: agent.v1.ControlMessage
+	(*PingResult)(nil),                  // 12: agent.v1.PingResult
+	(*ExecuteQueryRow)(nil),             // 13: agent.v1.ExecuteQueryRow
+	(*ExecuteQueryResult)(nil),          // 14: agent.v1.ExecuteQueryResult
+	(*IntrospectSchemaResult)(nil),      // 15: agent.v1.IntrospectSchemaResult
+	(*SubmitCommandResultRequest)(nil),  // 16: agent.v1.SubmitCommandResultRequest
+	(*SubmitCommandResultResponse)(nil), // 17: agent.v1.SubmitCommandResultResponse
+	nil,                                 // 18: agent.v1.ExecuteQueryRow.ValuesEntry
+	(*timestamppb.Timestamp)(nil),       // 19: google.protobuf.Timestamp
+	(*structpb.Value)(nil),              // 20: google.protobuf.Value
 }
 var file_agent_v1_agent_proto_depIdxs = []int32{
-	12, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
-	12, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
-	12, // 2: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
-	3,  // 3: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
-	4,  // 4: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
-	11, // 5: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
-	7,  // 6: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
-	12, // 7: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
-	6,  // 8: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
-	8,  // 9: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
-	13, // 10: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
-	0,  // 11: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
-	1,  // 12: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
-	9,  // 13: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
-	5,  // 14: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
-	2,  // 15: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
-	10, // 16: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
-	14, // [14:17] is the sub-list for method output_type
-	11, // [11:14] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	19, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
+	19, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
+	6,  // 2: agent.v1.SchemaBlob.tables:type_name -> agent.v1.SchemaTable
+	7,  // 3: agent.v1.SchemaBlob.columns:type_name -> agent.v1.SchemaColumn
+	8,  // 4: agent.v1.SchemaBlob.primary_keys:type_name -> agent.v1.SchemaPrimaryKey
+	9,  // 5: agent.v1.SchemaBlob.foreign_keys:type_name -> agent.v1.SchemaForeignKey
+	19, // 6: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
+	3,  // 7: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
+	4,  // 8: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
+	5,  // 9: agent.v1.ControlMessage.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
+	18, // 10: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
+	13, // 11: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
+	10, // 12: agent.v1.IntrospectSchemaResult.schema:type_name -> agent.v1.SchemaBlob
+	19, // 13: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
+	12, // 14: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
+	14, // 15: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
+	15, // 16: agent.v1.SubmitCommandResultRequest.introspect_schema:type_name -> agent.v1.IntrospectSchemaResult
+	20, // 17: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
+	0,  // 18: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
+	1,  // 19: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
+	16, // 20: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
+	11, // 21: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
+	2,  // 22: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
+	17, // 23: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
+	21, // [21:24] is the sub-list for method output_type
+	18, // [18:21] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_agent_v1_agent_proto_init() }
@@ -802,13 +1456,15 @@ func file_agent_v1_agent_proto_init() {
 	if File_agent_v1_agent_proto != nil {
 		return
 	}
-	file_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
+	file_agent_v1_agent_proto_msgTypes[11].OneofWrappers = []any{
 		(*ControlMessage_Ping)(nil),
 		(*ControlMessage_ExecuteQuery)(nil),
+		(*ControlMessage_IntrospectSchema)(nil),
 	}
-	file_agent_v1_agent_proto_msgTypes[9].OneofWrappers = []any{
+	file_agent_v1_agent_proto_msgTypes[16].OneofWrappers = []any{
 		(*SubmitCommandResultRequest_Ping)(nil),
 		(*SubmitCommandResultRequest_ExecuteQuery)(nil),
+		(*SubmitCommandResultRequest_IntrospectSchema)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -816,7 +1472,7 @@ func file_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_v1_agent_proto_rawDesc), len(file_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

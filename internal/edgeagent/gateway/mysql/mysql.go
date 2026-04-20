@@ -11,11 +11,14 @@ import (
 	"time"
 
 	mysql "github.com/go-sql-driver/mysql"
+
+	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 )
 
 const (
 	connectTimeout = 5 * time.Second
 	queryTimeout   = 30 * time.Second
+	schemaTimeout  = 55 * time.Second
 )
 
 var allowedPrivileges = map[string]struct{}{
@@ -179,6 +182,21 @@ func (g *Gateway) ExecuteQuery(ctx context.Context, sqlText string) (Result, err
 		DatabaseUser: g.databaseUser,
 		DatabaseName: g.databaseName,
 	}, nil
+}
+
+func (g *Gateway) IntrospectSchema(
+	ctx context.Context,
+) (introspect.SchemaBlob, int64, string, string, error) {
+	schemaCtx, cancel := withTimeoutCap(ctx, schemaTimeout)
+	defer cancel()
+
+	startedAt := time.Now()
+	schema, err := introspect.Load(schemaCtx, g.db, g.databaseName)
+	if err != nil {
+		return introspect.SchemaBlob{}, 0, "", "", err
+	}
+
+	return schema, time.Since(startedAt).Milliseconds(), g.databaseUser, g.databaseName, nil
 }
 
 func validateConnection(ctx context.Context, db *sql.DB) (string, string, error) {

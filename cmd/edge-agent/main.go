@@ -12,6 +12,7 @@ import (
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
 	controlplane "github.com/bryanbaek/mission/internal/edgeagent/gateway/controlplane"
 	mysqlgateway "github.com/bryanbaek/mission/internal/edgeagent/gateway/mysql"
+	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 )
 
 func main() {
@@ -49,15 +50,17 @@ func run() error {
 	defer mysqlGateway.Close()
 
 	client := controlplane.NewClient(cfg.ControlPlaneURL, cfg.TenantToken, nil)
+	mysqlRuntime := mysqlRuntime{gateway: mysqlGateway}
 	service, err := edgecontroller.NewAgentService(
 		client,
 		edgecontroller.AgentServiceConfig{
-			AgentVersion:      cfg.AgentVersion,
-			HeartbeatInterval: cfg.HeartbeatInterval,
-			ReconnectBase:     cfg.ReconnectBase,
-			ReconnectMax:      cfg.ReconnectMax,
-			Logger:            logger,
-			QueryExecutor:     mysqlQueryExecutor{gateway: mysqlGateway},
+			AgentVersion:       cfg.AgentVersion,
+			HeartbeatInterval:  cfg.HeartbeatInterval,
+			ReconnectBase:      cfg.ReconnectBase,
+			ReconnectMax:       cfg.ReconnectMax,
+			Logger:             logger,
+			QueryExecutor:      mysqlRuntime,
+			SchemaIntrospector: mysqlRuntime,
 		},
 	)
 	if err != nil {
@@ -74,11 +77,11 @@ func run() error {
 	return service.Run(ctx)
 }
 
-type mysqlQueryExecutor struct {
+type mysqlRuntime struct {
 	gateway *mysqlgateway.Gateway
 }
 
-func (e mysqlQueryExecutor) ExecuteQuery(
+func (e mysqlRuntime) ExecuteQuery(
 	ctx context.Context,
 	sql string,
 ) (edgecontroller.QueryResult, error) {
@@ -93,4 +96,16 @@ func (e mysqlQueryExecutor) ExecuteQuery(
 		DatabaseUser: result.DatabaseUser,
 		DatabaseName: result.DatabaseName,
 	}, nil
+}
+
+func (e mysqlRuntime) IntrospectSchema(
+	ctx context.Context,
+) (
+	introspect.SchemaBlob,
+	int64,
+	string,
+	string,
+	error,
+) {
+	return e.gateway.IntrospectSchema(ctx)
 }

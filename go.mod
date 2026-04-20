@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	connectrpc.com/connect v1.19.1
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/clerk/clerk-sdk-go/v2 v2.5.1
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-sql-driver/mysql v1.5.0

@@ -12,6 +12,7 @@ import (
 	agentv1 "github.com/bryanbaek/mission/gen/go/agent/v1"
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
+	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 )
 
 type Client struct {
@@ -105,6 +106,25 @@ func (c *Client) SubmitExecuteQueryResult(
 	return err
 }
 
+func (c *Client) SubmitIntrospectSchemaResult(
+	ctx context.Context,
+	req edgecontroller.SubmitIntrospectSchemaResultRequest,
+) error {
+	result := schemaResultToProto(req)
+	_, err := c.client.SubmitCommandResult(
+		ctx,
+		connect.NewRequest(&agentv1.SubmitCommandResultRequest{
+			SessionId:   req.SessionID,
+			CommandId:   req.CommandID,
+			CompletedAt: timestamppb.New(req.CompletedAt),
+			Result: &agentv1.SubmitCommandResultRequest_IntrospectSchema{
+				IntrospectSchema: result,
+			},
+		}),
+	)
+	return err
+}
+
 type commandStream struct {
 	stream *connect.ServerStreamForClient[agentv1.ControlMessage]
 }
@@ -172,6 +192,8 @@ func commandKind(msg *agentv1.ControlMessage) edgecontroller.CommandKind {
 		return edgecontroller.CommandKindPing
 	case *agentv1.ControlMessage_ExecuteQuery:
 		return edgecontroller.CommandKindExecuteQuery
+	case *agentv1.ControlMessage_IntrospectSchema:
+		return edgecontroller.CommandKindIntrospectSchema
 	default:
 		return ""
 	}
@@ -210,4 +232,70 @@ func queryResultToProto(
 		DatabaseName: req.DatabaseName,
 		Error:        req.Error,
 	}, nil
+}
+
+func schemaResultToProto(
+	req edgecontroller.SubmitIntrospectSchemaResultRequest,
+) *agentv1.IntrospectSchemaResult {
+	return &agentv1.IntrospectSchemaResult{
+		Schema:       schemaBlobToProto(req.Schema),
+		ElapsedMs:    req.ElapsedMS,
+		DatabaseUser: req.DatabaseUser,
+		DatabaseName: req.DatabaseName,
+		Error:        req.Error,
+	}
+}
+
+func schemaBlobToProto(blob introspect.SchemaBlob) *agentv1.SchemaBlob {
+	out := &agentv1.SchemaBlob{
+		DatabaseName: blob.DatabaseName,
+		Tables:       make([]*agentv1.SchemaTable, 0, len(blob.Tables)),
+		Columns:      make([]*agentv1.SchemaColumn, 0, len(blob.Columns)),
+		PrimaryKeys:  make([]*agentv1.SchemaPrimaryKey, 0, len(blob.PrimaryKeys)),
+		ForeignKeys:  make([]*agentv1.SchemaForeignKey, 0, len(blob.ForeignKeys)),
+	}
+	for _, table := range blob.Tables {
+		out.Tables = append(out.Tables, &agentv1.SchemaTable{
+			TableSchema:  table.TableSchema,
+			TableName:    table.TableName,
+			TableType:    table.TableType,
+			TableComment: table.TableComment,
+		})
+	}
+	for _, column := range blob.Columns {
+		out.Columns = append(out.Columns, &agentv1.SchemaColumn{
+			TableSchema:     column.TableSchema,
+			TableName:       column.TableName,
+			ColumnName:      column.ColumnName,
+			OrdinalPosition: column.OrdinalPosition,
+			DataType:        column.DataType,
+			ColumnType:      column.ColumnType,
+			IsNullable:      column.IsNullable,
+			HasDefault:      column.HasDefault,
+			DefaultValue:    column.DefaultValue,
+			ColumnComment:   column.ColumnComment,
+		})
+	}
+	for _, key := range blob.PrimaryKeys {
+		out.PrimaryKeys = append(out.PrimaryKeys, &agentv1.SchemaPrimaryKey{
+			TableSchema:     key.TableSchema,
+			TableName:       key.TableName,
+			ConstraintName:  key.ConstraintName,
+			ColumnName:      key.ColumnName,
+			OrdinalPosition: key.OrdinalPosition,
+		})
+	}
+	for _, key := range blob.ForeignKeys {
+		out.ForeignKeys = append(out.ForeignKeys, &agentv1.SchemaForeignKey{
+			TableSchema:           key.TableSchema,
+			TableName:             key.TableName,
+			ConstraintName:        key.ConstraintName,
+			ColumnName:            key.ColumnName,
+			OrdinalPosition:       key.OrdinalPosition,
+			ReferencedTableSchema: key.ReferencedTableSchema,
+			ReferencedTableName:   key.ReferencedTableName,
+			ReferencedColumnName:  key.ReferencedColumnName,
+		})
+	}
+	return out
 }

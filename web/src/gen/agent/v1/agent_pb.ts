@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file agent/v1/agent.proto.
  */
 export const file_agent_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChRhZ2VudC92MS9hZ2VudC5wcm90bxIIYWdlbnQudjEihwEKGE9wZW5Db21tYW5kU3RyZWFtUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGhvc3RuYW1lGAIgASgJEhUKDWFnZW50X3ZlcnNpb24YAyABKAkSLgoKc3RhcnRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUwoQSGVhcnRiZWF0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEisKB3NlbnRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhMKEUhlYXJ0YmVhdFJlc3BvbnNlIg0KC1BpbmdDb21tYW5kIiIKE0V4ZWN1dGVRdWVyeUNvbW1hbmQSCwoDc3FsGAEgASgJItEBCg5Db250cm9sTWVzc2FnZRISCgpzZXNzaW9uX2lkGAEgASgJEhIKCmNvbW1hbmRfaWQYAiABKAkSLQoJaXNzdWVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIlCgRwaW5nGAogASgLMhUuYWdlbnQudjEuUGluZ0NvbW1hbmRIABI2Cg1leGVjdXRlX3F1ZXJ5GAsgASgLMh0uYWdlbnQudjEuRXhlY3V0ZVF1ZXJ5Q29tbWFuZEgAQgkKB3BheWxvYWQiIwoKUGluZ1Jlc3VsdBIVCg1yb3VuZF90cmlwX21zGAEgASgDIo8BCg9FeGVjdXRlUXVlcnlSb3cSNQoGdmFsdWVzGAEgAygLMiUuYWdlbnQudjEuRXhlY3V0ZVF1ZXJ5Um93LlZhbHVlc0VudHJ5GkUKC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRIlCgV2YWx1ZRgCIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZToCOAEinwEKEkV4ZWN1dGVRdWVyeVJlc3VsdBIPCgdjb2x1bW5zGAEgAygJEicKBHJvd3MYAiADKAsyGS5hZ2VudC52MS5FeGVjdXRlUXVlcnlSb3cSEgoKZWxhcHNlZF9tcxgDIAEoAxIVCg1kYXRhYmFzZV91c2VyGAQgASgJEhUKDWRhdGFiYXNlX25hbWUYBSABKAkSDQoFZXJyb3IYBiABKAki3QEKGlN1Ym1pdENvbW1hbmRSZXN1bHRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEgoKY29tbWFuZF9pZBgCIAEoCRIwCgxjb21wbGV0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiQKBHBpbmcYCiABKAsyFC5hZ2VudC52MS5QaW5nUmVzdWx0SAASNQoNZXhlY3V0ZV9xdWVyeRgLIAEoCzIcLmFnZW50LnYxLkV4ZWN1dGVRdWVyeVJlc3VsdEgAQggKBnJlc3VsdCIdChtTdWJtaXRDb21tYW5kUmVzdWx0UmVzcG9uc2UyjQIKDEFnZW50U2VydmljZRJTChFPcGVuQ29tbWFuZFN0cmVhbRIiLmFnZW50LnYxLk9wZW5Db21tYW5kU3RyZWFtUmVxdWVzdBoYLmFnZW50LnYxLkNvbnRyb2xNZXNzYWdlMAESRAoJSGVhcnRiZWF0EhouYWdlbnQudjEuSGVhcnRiZWF0UmVxdWVzdBobLmFnZW50LnYxLkhlYXJ0YmVhdFJlc3BvbnNlEmIKE1N1Ym1pdENvbW1hbmRSZXN1bHQSJC5hZ2VudC52MS5TdWJtaXRDb21tYW5kUmVzdWx0UmVxdWVzdBolLmFnZW50LnYxLlN1Ym1pdENvbW1hbmRSZXN1bHRSZXNwb25zZUKRAQoMY29tLmFnZW50LnYxQgpBZ2VudFByb3RvUAFaNGdpdGh1Yi5jb20vYnJ5YW5iYWVrL21pc3Npb24vZ2VuL2dvL2FnZW50L3YxO2FnZW50djGiAgNBWFiqAghBZ2VudC5WMcoCCEFnZW50XFYx4gIUQWdlbnRcVjFcR1BCTWV0YWRhdGHqAglBZ2VudDo6VjFiBnByb3RvMw", [file_google_protobuf_struct, file_google_protobuf_timestamp]);
+  fileDesc("ChRhZ2VudC92MS9hZ2VudC5wcm90bxIIYWdlbnQudjEihwEKGE9wZW5Db21tYW5kU3RyZWFtUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGhvc3RuYW1lGAIgASgJEhUKDWFnZW50X3ZlcnNpb24YAyABKAkSLgoKc3RhcnRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUwoQSGVhcnRiZWF0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEisKB3NlbnRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhMKEUhlYXJ0YmVhdFJlc3BvbnNlIg0KC1BpbmdDb21tYW5kIiIKE0V4ZWN1dGVRdWVyeUNvbW1hbmQSCwoDc3FsGAEgASgJIhkKF0ludHJvc3BlY3RTY2hlbWFDb21tYW5kImIKC1NjaGVtYVRhYmxlEhQKDHRhYmxlX3NjaGVtYRgBIAEoCRISCgp0YWJsZV9uYW1lGAIgASgJEhIKCnRhYmxlX3R5cGUYAyABKAkSFQoNdGFibGVfY29tbWVudBgEIAEoCSLoAQoMU2NoZW1hQ29sdW1uEhQKDHRhYmxlX3NjaGVtYRgBIAEoCRISCgp0YWJsZV9uYW1lGAIgASgJEhMKC2NvbHVtbl9uYW1lGAMgASgJEhgKEG9yZGluYWxfcG9zaXRpb24YBCABKAUSEQoJZGF0YV90eXBlGAUgASgJEhMKC2NvbHVtbl90eXBlGAYgASgJEhMKC2lzX251bGxhYmxlGAcgASgIEhMKC2hhc19kZWZhdWx0GAggASgIEhUKDWRlZmF1bHRfdmFsdWUYCSABKAkSFgoOY29sdW1uX2NvbW1lbnQYCiABKAkihAEKEFNjaGVtYVByaW1hcnlLZXkSFAoMdGFibGVfc2NoZW1hGAEgASgJEhIKCnRhYmxlX25hbWUYAiABKAkSFwoPY29uc3RyYWludF9uYW1lGAMgASgJEhMKC2NvbHVtbl9uYW1lGAQgASgJEhgKEG9yZGluYWxfcG9zaXRpb24YBSABKAUi5AEKEFNjaGVtYUZvcmVpZ25LZXkSFAoMdGFibGVfc2NoZW1hGAEgASgJEhIKCnRhYmxlX25hbWUYAiABKAkSFwoPY29uc3RyYWludF9uYW1lGAMgASgJEhMKC2NvbHVtbl9uYW1lGAQgASgJEhgKEG9yZGluYWxfcG9zaXRpb24YBSABKAUSHwoXcmVmZXJlbmNlZF90YWJsZV9zY2hlbWEYBiABKAkSHQoVcmVmZXJlbmNlZF90YWJsZV9uYW1lGAcgASgJEh4KFnJlZmVyZW5jZWRfY29sdW1uX25hbWUYCCABKAki1wEKClNjaGVtYUJsb2ISFQoNZGF0YWJhc2VfbmFtZRgBIAEoCRIlCgZ0YWJsZXMYAiADKAsyFS5hZ2VudC52MS5TY2hlbWFUYWJsZRInCgdjb2x1bW5zGAMgAygLMhYuYWdlbnQudjEuU2NoZW1hQ29sdW1uEjAKDHByaW1hcnlfa2V5cxgEIAMoCzIaLmFnZW50LnYxLlNjaGVtYVByaW1hcnlLZXkSMAoMZm9yZWlnbl9rZXlzGAUgAygLMhouYWdlbnQudjEuU2NoZW1hRm9yZWlnbktleSKRAgoOQ29udHJvbE1lc3NhZ2USEgoKc2Vzc2lvbl9pZBgBIAEoCRISCgpjb21tYW5kX2lkGAIgASgJEi0KCWlzc3VlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJQoEcGluZxgKIAEoCzIVLmFnZW50LnYxLlBpbmdDb21tYW5kSAASNgoNZXhlY3V0ZV9xdWVyeRgLIAEoCzIdLmFnZW50LnYxLkV4ZWN1dGVRdWVyeUNvbW1hbmRIABI+ChFpbnRyb3NwZWN0X3NjaGVtYRgMIAEoCzIhLmFnZW50LnYxLkludHJvc3BlY3RTY2hlbWFDb21tYW5kSABCCQoHcGF5bG9hZCIjCgpQaW5nUmVzdWx0EhUKDXJvdW5kX3RyaXBfbXMYASABKAMijwEKD0V4ZWN1dGVRdWVyeVJvdxI1CgZ2YWx1ZXMYASADKAsyJS5hZ2VudC52MS5FeGVjdXRlUXVlcnlSb3cuVmFsdWVzRW50cnkaRQoLVmFsdWVzRW50cnkSCwoDa2V5GAEgASgJEiUKBXZhbHVlGAIgASgLMhYuZ29vZ2xlLnByb3RvYnVmLlZhbHVlOgI4ASKfAQoSRXhlY3V0ZVF1ZXJ5UmVzdWx0Eg8KB2NvbHVtbnMYASADKAkSJwoEcm93cxgCIAMoCzIZLmFnZW50LnYxLkV4ZWN1dGVRdWVyeVJvdxISCgplbGFwc2VkX21zGAMgASgDEhUKDWRhdGFiYXNlX3VzZXIYBCABKAkSFQoNZGF0YWJhc2VfbmFtZRgFIAEoCRINCgVlcnJvchgGIAEoCSKPAQoWSW50cm9zcGVjdFNjaGVtYVJlc3VsdBIkCgZzY2hlbWEYASABKAsyFC5hZ2VudC52MS5TY2hlbWFCbG9iEhIKCmVsYXBzZWRfbXMYAiABKAMSFQoNZGF0YWJhc2VfdXNlchgDIAEoCRIVCg1kYXRhYmFzZV9uYW1lGAQgASgJEg0KBWVycm9yGAUgASgJIpwCChpTdWJtaXRDb21tYW5kUmVzdWx0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhIKCmNvbW1hbmRfaWQYAiABKAkSMAoMY29tcGxldGVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIkCgRwaW5nGAogASgLMhQuYWdlbnQudjEuUGluZ1Jlc3VsdEgAEjUKDWV4ZWN1dGVfcXVlcnkYCyABKAsyHC5hZ2VudC52MS5FeGVjdXRlUXVlcnlSZXN1bHRIABI9ChFpbnRyb3NwZWN0X3NjaGVtYRgMIAEoCzIgLmFnZW50LnYxLkludHJvc3BlY3RTY2hlbWFSZXN1bHRIAEIICgZyZXN1bHQiHQobU3VibWl0Q29tbWFuZFJlc3VsdFJlc3BvbnNlMo0CCgxBZ2VudFNlcnZpY2USUwoRT3BlbkNvbW1hbmRTdHJlYW0SIi5hZ2VudC52MS5PcGVuQ29tbWFuZFN0cmVhbVJlcXVlc3QaGC5hZ2VudC52MS5Db250cm9sTWVzc2FnZTABEkQKCUhlYXJ0YmVhdBIaLmFnZW50LnYxLkhlYXJ0YmVhdFJlcXVlc3QaGy5hZ2VudC52MS5IZWFydGJlYXRSZXNwb25zZRJiChNTdWJtaXRDb21tYW5kUmVzdWx0EiQuYWdlbnQudjEuU3VibWl0Q29tbWFuZFJlc3VsdFJlcXVlc3QaJS5hZ2VudC52MS5TdWJtaXRDb21tYW5kUmVzdWx0UmVzcG9uc2VCkQEKDGNvbS5hZ2VudC52MUIKQWdlbnRQcm90b1ABWjRnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9hZ2VudC92MTthZ2VudHYxogIDQVhYqgIIQWdlbnQuVjHKAghBZ2VudFxWMeICFEFnZW50XFYxXEdQQk1ldGFkYXRh6gIJQWdlbnQ6OlYxYgZwcm90bzM", [file_google_protobuf_struct, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message agent.v1.OpenCommandStreamRequest
@@ -112,6 +112,239 @@ export const ExecuteQueryCommandSchema: GenMessage<ExecuteQueryCommand> = /*@__P
   messageDesc(file_agent_v1_agent, 4);
 
 /**
+ * @generated from message agent.v1.IntrospectSchemaCommand
+ */
+export type IntrospectSchemaCommand = Message<"agent.v1.IntrospectSchemaCommand"> & {
+};
+
+/**
+ * Describes the message agent.v1.IntrospectSchemaCommand.
+ * Use `create(IntrospectSchemaCommandSchema)` to create a new message.
+ */
+export const IntrospectSchemaCommandSchema: GenMessage<IntrospectSchemaCommand> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 5);
+
+/**
+ * @generated from message agent.v1.SchemaTable
+ */
+export type SchemaTable = Message<"agent.v1.SchemaTable"> & {
+  /**
+   * @generated from field: string table_schema = 1;
+   */
+  tableSchema: string;
+
+  /**
+   * @generated from field: string table_name = 2;
+   */
+  tableName: string;
+
+  /**
+   * @generated from field: string table_type = 3;
+   */
+  tableType: string;
+
+  /**
+   * @generated from field: string table_comment = 4;
+   */
+  tableComment: string;
+};
+
+/**
+ * Describes the message agent.v1.SchemaTable.
+ * Use `create(SchemaTableSchema)` to create a new message.
+ */
+export const SchemaTableSchema: GenMessage<SchemaTable> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 6);
+
+/**
+ * @generated from message agent.v1.SchemaColumn
+ */
+export type SchemaColumn = Message<"agent.v1.SchemaColumn"> & {
+  /**
+   * @generated from field: string table_schema = 1;
+   */
+  tableSchema: string;
+
+  /**
+   * @generated from field: string table_name = 2;
+   */
+  tableName: string;
+
+  /**
+   * @generated from field: string column_name = 3;
+   */
+  columnName: string;
+
+  /**
+   * @generated from field: int32 ordinal_position = 4;
+   */
+  ordinalPosition: number;
+
+  /**
+   * @generated from field: string data_type = 5;
+   */
+  dataType: string;
+
+  /**
+   * @generated from field: string column_type = 6;
+   */
+  columnType: string;
+
+  /**
+   * @generated from field: bool is_nullable = 7;
+   */
+  isNullable: boolean;
+
+  /**
+   * @generated from field: bool has_default = 8;
+   */
+  hasDefault: boolean;
+
+  /**
+   * @generated from field: string default_value = 9;
+   */
+  defaultValue: string;
+
+  /**
+   * @generated from field: string column_comment = 10;
+   */
+  columnComment: string;
+};
+
+/**
+ * Describes the message agent.v1.SchemaColumn.
+ * Use `create(SchemaColumnSchema)` to create a new message.
+ */
+export const SchemaColumnSchema: GenMessage<SchemaColumn> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 7);
+
+/**
+ * @generated from message agent.v1.SchemaPrimaryKey
+ */
+export type SchemaPrimaryKey = Message<"agent.v1.SchemaPrimaryKey"> & {
+  /**
+   * @generated from field: string table_schema = 1;
+   */
+  tableSchema: string;
+
+  /**
+   * @generated from field: string table_name = 2;
+   */
+  tableName: string;
+
+  /**
+   * @generated from field: string constraint_name = 3;
+   */
+  constraintName: string;
+
+  /**
+   * @generated from field: string column_name = 4;
+   */
+  columnName: string;
+
+  /**
+   * @generated from field: int32 ordinal_position = 5;
+   */
+  ordinalPosition: number;
+};
+
+/**
+ * Describes the message agent.v1.SchemaPrimaryKey.
+ * Use `create(SchemaPrimaryKeySchema)` to create a new message.
+ */
+export const SchemaPrimaryKeySchema: GenMessage<SchemaPrimaryKey> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 8);
+
+/**
+ * @generated from message agent.v1.SchemaForeignKey
+ */
+export type SchemaForeignKey = Message<"agent.v1.SchemaForeignKey"> & {
+  /**
+   * @generated from field: string table_schema = 1;
+   */
+  tableSchema: string;
+
+  /**
+   * @generated from field: string table_name = 2;
+   */
+  tableName: string;
+
+  /**
+   * @generated from field: string constraint_name = 3;
+   */
+  constraintName: string;
+
+  /**
+   * @generated from field: string column_name = 4;
+   */
+  columnName: string;
+
+  /**
+   * @generated from field: int32 ordinal_position = 5;
+   */
+  ordinalPosition: number;
+
+  /**
+   * @generated from field: string referenced_table_schema = 6;
+   */
+  referencedTableSchema: string;
+
+  /**
+   * @generated from field: string referenced_table_name = 7;
+   */
+  referencedTableName: string;
+
+  /**
+   * @generated from field: string referenced_column_name = 8;
+   */
+  referencedColumnName: string;
+};
+
+/**
+ * Describes the message agent.v1.SchemaForeignKey.
+ * Use `create(SchemaForeignKeySchema)` to create a new message.
+ */
+export const SchemaForeignKeySchema: GenMessage<SchemaForeignKey> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 9);
+
+/**
+ * @generated from message agent.v1.SchemaBlob
+ */
+export type SchemaBlob = Message<"agent.v1.SchemaBlob"> & {
+  /**
+   * @generated from field: string database_name = 1;
+   */
+  databaseName: string;
+
+  /**
+   * @generated from field: repeated agent.v1.SchemaTable tables = 2;
+   */
+  tables: SchemaTable[];
+
+  /**
+   * @generated from field: repeated agent.v1.SchemaColumn columns = 3;
+   */
+  columns: SchemaColumn[];
+
+  /**
+   * @generated from field: repeated agent.v1.SchemaPrimaryKey primary_keys = 4;
+   */
+  primaryKeys: SchemaPrimaryKey[];
+
+  /**
+   * @generated from field: repeated agent.v1.SchemaForeignKey foreign_keys = 5;
+   */
+  foreignKeys: SchemaForeignKey[];
+};
+
+/**
+ * Describes the message agent.v1.SchemaBlob.
+ * Use `create(SchemaBlobSchema)` to create a new message.
+ */
+export const SchemaBlobSchema: GenMessage<SchemaBlob> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 10);
+
+/**
  * @generated from message agent.v1.ControlMessage
  */
 export type ControlMessage = Message<"agent.v1.ControlMessage"> & {
@@ -145,6 +378,12 @@ export type ControlMessage = Message<"agent.v1.ControlMessage"> & {
      */
     value: ExecuteQueryCommand;
     case: "executeQuery";
+  } | {
+    /**
+     * @generated from field: agent.v1.IntrospectSchemaCommand introspect_schema = 12;
+     */
+    value: IntrospectSchemaCommand;
+    case: "introspectSchema";
   } | { case: undefined; value?: undefined };
 };
 
@@ -153,7 +392,7 @@ export type ControlMessage = Message<"agent.v1.ControlMessage"> & {
  * Use `create(ControlMessageSchema)` to create a new message.
  */
 export const ControlMessageSchema: GenMessage<ControlMessage> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 5);
+  messageDesc(file_agent_v1_agent, 11);
 
 /**
  * @generated from message agent.v1.PingResult
@@ -170,7 +409,7 @@ export type PingResult = Message<"agent.v1.PingResult"> & {
  * Use `create(PingResultSchema)` to create a new message.
  */
 export const PingResultSchema: GenMessage<PingResult> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 6);
+  messageDesc(file_agent_v1_agent, 12);
 
 /**
  * @generated from message agent.v1.ExecuteQueryRow
@@ -187,7 +426,7 @@ export type ExecuteQueryRow = Message<"agent.v1.ExecuteQueryRow"> & {
  * Use `create(ExecuteQueryRowSchema)` to create a new message.
  */
 export const ExecuteQueryRowSchema: GenMessage<ExecuteQueryRow> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 7);
+  messageDesc(file_agent_v1_agent, 13);
 
 /**
  * @generated from message agent.v1.ExecuteQueryResult
@@ -229,7 +468,44 @@ export type ExecuteQueryResult = Message<"agent.v1.ExecuteQueryResult"> & {
  * Use `create(ExecuteQueryResultSchema)` to create a new message.
  */
 export const ExecuteQueryResultSchema: GenMessage<ExecuteQueryResult> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 8);
+  messageDesc(file_agent_v1_agent, 14);
+
+/**
+ * @generated from message agent.v1.IntrospectSchemaResult
+ */
+export type IntrospectSchemaResult = Message<"agent.v1.IntrospectSchemaResult"> & {
+  /**
+   * @generated from field: agent.v1.SchemaBlob schema = 1;
+   */
+  schema?: SchemaBlob;
+
+  /**
+   * @generated from field: int64 elapsed_ms = 2;
+   */
+  elapsedMs: bigint;
+
+  /**
+   * @generated from field: string database_user = 3;
+   */
+  databaseUser: string;
+
+  /**
+   * @generated from field: string database_name = 4;
+   */
+  databaseName: string;
+
+  /**
+   * @generated from field: string error = 5;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message agent.v1.IntrospectSchemaResult.
+ * Use `create(IntrospectSchemaResultSchema)` to create a new message.
+ */
+export const IntrospectSchemaResultSchema: GenMessage<IntrospectSchemaResult> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 15);
 
 /**
  * @generated from message agent.v1.SubmitCommandResultRequest
@@ -265,6 +541,12 @@ export type SubmitCommandResultRequest = Message<"agent.v1.SubmitCommandResultRe
      */
     value: ExecuteQueryResult;
     case: "executeQuery";
+  } | {
+    /**
+     * @generated from field: agent.v1.IntrospectSchemaResult introspect_schema = 12;
+     */
+    value: IntrospectSchemaResult;
+    case: "introspectSchema";
   } | { case: undefined; value?: undefined };
 };
 
@@ -273,7 +555,7 @@ export type SubmitCommandResultRequest = Message<"agent.v1.SubmitCommandResultRe
  * Use `create(SubmitCommandResultRequestSchema)` to create a new message.
  */
 export const SubmitCommandResultRequestSchema: GenMessage<SubmitCommandResultRequest> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 9);
+  messageDesc(file_agent_v1_agent, 16);
 
 /**
  * @generated from message agent.v1.SubmitCommandResultResponse
@@ -286,7 +568,7 @@ export type SubmitCommandResultResponse = Message<"agent.v1.SubmitCommandResultR
  * Use `create(SubmitCommandResultResponseSchema)` to create a new message.
  */
 export const SubmitCommandResultResponseSchema: GenMessage<SubmitCommandResultResponse> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 10);
+  messageDesc(file_agent_v1_agent, 17);
 
 /**
  * @generated from service agent.v1.AgentService

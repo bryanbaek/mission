@@ -12,6 +12,7 @@ import (
 	agentv1 "github.com/bryanbaek/mission/gen/go/agent/v1"
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
+	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 )
 
 type recordingAgentService struct {
@@ -149,6 +150,37 @@ func TestClientRoundTripsRequests(t *testing.T) {
 	if service.lastResult.GetExecuteQuery().GetRows()[0].GetValues()["label"].GetStringValue() != "ok" {
 		t.Fatalf("label = %q, want ok", service.lastResult.GetExecuteQuery().GetRows()[0].GetValues()["label"].GetStringValue())
 	}
+
+	if err := client.SubmitIntrospectSchemaResult(
+		context.Background(),
+		edgecontroller.SubmitIntrospectSchemaResultRequest{
+			SessionID:   "session-1",
+			CommandID:   "command-3",
+			CompletedAt: time.Unix(1_700_000_004, 0).UTC(),
+			Schema: introspect.SchemaBlob{
+				DatabaseName: "mission_app",
+				Tables: []introspect.SchemaTable{{
+					TableSchema: "mission_app",
+					TableName:   "customers",
+					TableType:   "BASE TABLE",
+				}},
+			},
+			ElapsedMS:    25,
+			DatabaseUser: "mission_ro@%",
+			DatabaseName: "mission_app",
+		},
+	); err != nil {
+		t.Fatalf("SubmitIntrospectSchemaResult returned error: %v", err)
+	}
+	if service.lastResult.GetIntrospectSchema().GetElapsedMs() != 25 {
+		t.Fatalf(
+			"ElapsedMs = %d, want 25",
+			service.lastResult.GetIntrospectSchema().GetElapsedMs(),
+		)
+	}
+	if got := service.lastResult.GetIntrospectSchema().GetSchema().GetTables()[0].GetTableName(); got != "customers" {
+		t.Fatalf("table name = %q, want customers", got)
+	}
 }
 
 func TestBearerInterceptorWrapStreamingHandler(t *testing.T) {
@@ -184,6 +216,13 @@ func TestCommandKindUnknownPayload(t *testing.T) {
 		},
 	}); got != edgecontroller.CommandKindExecuteQuery {
 		t.Fatalf("commandKind = %q, want execute_query", got)
+	}
+	if got := commandKind(&agentv1.ControlMessage{
+		Payload: &agentv1.ControlMessage_IntrospectSchema{
+			IntrospectSchema: &agentv1.IntrospectSchemaCommand{},
+		},
+	}); got != edgecontroller.CommandKindIntrospectSchema {
+		t.Fatalf("commandKind = %q, want introspect_schema", got)
 	}
 
 	if got := commandSQL(&agentv1.ControlMessage{

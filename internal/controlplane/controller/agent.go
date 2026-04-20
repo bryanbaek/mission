@@ -47,6 +47,8 @@ const AgentCommandKindPing AgentCommandKind = "ping"
 
 const AgentCommandKindExecuteQuery AgentCommandKind = "execute_query"
 
+const AgentCommandKindIntrospectSchema AgentCommandKind = "introspect_schema"
+
 type AgentPingResult struct {
 	SessionID   string
 	CommandID   string
@@ -60,6 +62,17 @@ type AgentExecuteQueryResult struct {
 	CompletedAt  time.Time
 	Columns      []string
 	Rows         []map[string]any
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
+}
+
+type AgentIntrospectSchemaResult struct {
+	SessionID    string
+	CommandID    string
+	CompletedAt  time.Time
+	Schema       model.SchemaBlob
 	ElapsedMS    int64
 	DatabaseUser string
 	DatabaseName string
@@ -95,6 +108,7 @@ type agentSession struct {
 	done           chan struct{}
 	pendingPings   map[string]chan AgentPingResult
 	pendingQueries map[string]chan AgentExecuteQueryResult
+	pendingSchemas map[string]chan AgentIntrospectSchemaResult
 }
 
 func NewAgentSessionManager(
@@ -161,6 +175,7 @@ func (m *AgentSessionManager) RegisterSession(
 		done:           make(chan struct{}),
 		pendingPings:   make(map[string]chan AgentPingResult),
 		pendingQueries: make(map[string]chan AgentExecuteQueryResult),
+		pendingSchemas: make(map[string]chan AgentIntrospectSchemaResult),
 	}
 
 	m.byToken[token.ID] = session
@@ -319,6 +334,45 @@ func (m *AgentSessionManager) SubmitExecuteQueryResult(
 	return nil
 }
 
+func (m *AgentSessionManager) SubmitIntrospectSchemaResult(
+	tokenID uuid.UUID,
+	sessionID, commandID string,
+	completedAt time.Time,
+	schema model.SchemaBlob,
+	elapsedMS int64,
+	databaseUser, databaseName, commandError string,
+) error {
+	var waiter chan AgentIntrospectSchemaResult
+
+	m.mu.Lock()
+	session, err := m.sessionLocked(tokenID, sessionID)
+	if err != nil {
+		m.mu.Unlock()
+		return err
+	}
+
+	waiter, ok := session.pendingSchemas[commandID]
+	if !ok {
+		m.mu.Unlock()
+		return ErrCommandNotFound
+	}
+	delete(session.pendingSchemas, commandID)
+	m.mu.Unlock()
+
+	waiter <- AgentIntrospectSchemaResult{
+		SessionID:    sessionID,
+		CommandID:    commandID,
+		CompletedAt:  completedAt.UTC(),
+		Schema:       cloneSchemaBlob(schema),
+		ElapsedMS:    elapsedMS,
+		DatabaseUser: databaseUser,
+		DatabaseName: databaseName,
+		Error:        commandError,
+	}
+	close(waiter)
+	return nil
+}
+
 func (m *AgentSessionManager) ExecuteQuery(
 	ctx context.Context,
 	tenantID uuid.UUID,
@@ -364,6 +418,52 @@ func (m *AgentSessionManager) ExecuteQuery(
 		}
 		m.mu.Unlock()
 		return AgentExecuteQueryResult{}, ctx.Err()
+	}
+}
+
+func (m *AgentSessionManager) IntrospectSchema(
+	ctx context.Context,
+	tenantID uuid.UUID,
+) (AgentIntrospectSchemaResult, error) {
+	command := AgentCommand{
+		CommandID: uuid.NewString(),
+		IssuedAt:  m.now().UTC(),
+		Kind:      AgentCommandKindIntrospectSchema,
+	}
+	waiter := make(chan AgentIntrospectSchemaResult, 1)
+
+	m.mu.Lock()
+	session, ok := m.activeTenantSessionLocked(tenantID)
+	switch {
+	case !ok:
+		m.mu.Unlock()
+		return AgentIntrospectSchemaResult{}, ErrTenantNotConnected
+	}
+
+	command.SessionID = session.snapshot.SessionID
+	session.pendingSchemas[command.CommandID] = waiter
+	select {
+	case session.commands <- command:
+	default:
+		delete(session.pendingSchemas, command.CommandID)
+		m.mu.Unlock()
+		return AgentIntrospectSchemaResult{}, ErrCommandRejected
+	}
+	m.mu.Unlock()
+
+	select {
+	case result, ok := <-waiter:
+		if !ok {
+			return AgentIntrospectSchemaResult{}, ErrSessionNotActive
+		}
+		return result, nil
+	case <-ctx.Done():
+		m.mu.Lock()
+		if current, ok := m.byID[command.SessionID]; ok && current == session {
+			delete(current.pendingSchemas, command.CommandID)
+		}
+		m.mu.Unlock()
+		return AgentIntrospectSchemaResult{}, ctx.Err()
 	}
 }
 
@@ -473,6 +573,10 @@ func (m *AgentSessionManager) closeSessionLocked(
 		delete(session.pendingQueries, commandID)
 		close(waiter)
 	}
+	for commandID, waiter := range session.pendingSchemas {
+		delete(session.pendingSchemas, commandID)
+		close(waiter)
+	}
 }
 
 func (m *AgentSessionManager) activeTenantSessionLocked(
@@ -502,6 +606,17 @@ func cloneRows(rows []map[string]any) []map[string]any {
 			cloned[key] = value
 		}
 		out = append(out, cloned)
+	}
+	return out
+}
+
+func cloneSchemaBlob(blob model.SchemaBlob) model.SchemaBlob {
+	out := model.SchemaBlob{
+		DatabaseName: blob.DatabaseName,
+		Tables:       append([]model.SchemaTable(nil), blob.Tables...),
+		Columns:      append([]model.SchemaColumn(nil), blob.Columns...),
+		PrimaryKeys:  append([]model.SchemaPrimaryKey(nil), blob.PrimaryKeys...),
+		ForeignKeys:  append([]model.SchemaForeignKey(nil), blob.ForeignKeys...),
 	}
 	return out
 }

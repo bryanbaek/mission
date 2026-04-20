@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 )
 
 type fakeCommandStream struct {
@@ -33,16 +35,20 @@ func (s *fakeCommandStream) Err() error {
 }
 
 type fakeControlPlaneClient struct {
-	openFn        func(context.Context, OpenCommandStreamRequest) (CommandStream, error)
-	beatFn        func(context.Context, HeartbeatRequest) error
-	submitFn      func(context.Context, SubmitPingResultRequest) error
-	submitQueryFn func(context.Context, SubmitExecuteQueryResultRequest) error
+	openFn         func(context.Context, OpenCommandStreamRequest) (CommandStream, error)
+	beatFn         func(context.Context, HeartbeatRequest) error
+	submitFn       func(context.Context, SubmitPingResultRequest) error
+	submitQueryFn  func(context.Context, SubmitExecuteQueryResultRequest) error
+	submitSchemaFn func(context.Context, SubmitIntrospectSchemaResultRequest) error
 }
 
 func (c fakeControlPlaneClient) OpenCommandStream(
 	ctx context.Context,
 	req OpenCommandStreamRequest,
 ) (CommandStream, error) {
+	if c.openFn == nil {
+		return nil, nil
+	}
 	return c.openFn(ctx, req)
 }
 
@@ -50,6 +56,9 @@ func (c fakeControlPlaneClient) Heartbeat(
 	ctx context.Context,
 	req HeartbeatRequest,
 ) error {
+	if c.beatFn == nil {
+		return nil
+	}
 	return c.beatFn(ctx, req)
 }
 
@@ -57,6 +66,9 @@ func (c fakeControlPlaneClient) SubmitPingResult(
 	ctx context.Context,
 	req SubmitPingResultRequest,
 ) error {
+	if c.submitFn == nil {
+		return nil
+	}
 	return c.submitFn(ctx, req)
 }
 
@@ -64,7 +76,20 @@ func (c fakeControlPlaneClient) SubmitExecuteQueryResult(
 	ctx context.Context,
 	req SubmitExecuteQueryResultRequest,
 ) error {
+	if c.submitQueryFn == nil {
+		return nil
+	}
 	return c.submitQueryFn(ctx, req)
+}
+
+func (c fakeControlPlaneClient) SubmitIntrospectSchemaResult(
+	ctx context.Context,
+	req SubmitIntrospectSchemaResultRequest,
+) error {
+	if c.submitSchemaFn == nil {
+		return nil
+	}
+	return c.submitSchemaFn(ctx, req)
 }
 
 type fakeQueryExecutor struct {
@@ -76,6 +101,16 @@ func (e fakeQueryExecutor) ExecuteQuery(
 	sql string,
 ) (QueryResult, error) {
 	return e.executeFn(ctx, sql)
+}
+
+type fakeSchemaIntrospector struct {
+	introspectFn func(context.Context) (introspect.SchemaBlob, int64, string, string, error)
+}
+
+func (i fakeSchemaIntrospector) IntrospectSchema(
+	ctx context.Context,
+) (introspect.SchemaBlob, int64, string, string, error) {
+	return i.introspectFn(ctx)
 }
 
 func discardLogger() *slog.Logger {
@@ -447,5 +482,63 @@ func TestAgentServiceHandleExecuteQueryError(t *testing.T) {
 	}
 	if submitted.Error != "syntax error" {
 		t.Fatalf("submitted error = %q, want syntax error", submitted.Error)
+	}
+}
+
+func TestAgentServiceHandleIntrospectSchema(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	var submitted SubmitIntrospectSchemaResultRequest
+	service, err := NewAgentService(
+		fakeControlPlaneClient{
+			submitSchemaFn: func(
+				_ context.Context,
+				req SubmitIntrospectSchemaResultRequest,
+			) error {
+				submitted = req
+				return nil
+			},
+		},
+		AgentServiceConfig{
+			Hostname: "host-a",
+			Now: func() time.Time {
+				return now
+			},
+			Logger: discardLogger(),
+			SchemaIntrospector: fakeSchemaIntrospector{
+				introspectFn: func(context.Context) (introspect.SchemaBlob, int64, string, string, error) {
+					return introspect.SchemaBlob{
+						DatabaseName: "mission_app",
+						Tables: []introspect.SchemaTable{{
+							TableSchema: "mission_app",
+							TableName:   "customers",
+							TableType:   "BASE TABLE",
+						}},
+					}, 21, "mission_ro@%", "mission_app", nil
+				},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewAgentService returned error: %v", err)
+	}
+
+	err = service.handleCommand(context.Background(), ControlMessage{
+		SessionID: "session-1",
+		CommandID: "command-1",
+		Kind:      CommandKindIntrospectSchema,
+	})
+	if err != nil {
+		t.Fatalf("handleCommand returned error: %v", err)
+	}
+	if submitted.DatabaseName != "mission_app" {
+		t.Fatalf("DatabaseName = %q, want mission_app", submitted.DatabaseName)
+	}
+	if submitted.ElapsedMS != 21 {
+		t.Fatalf("ElapsedMS = %d, want 21", submitted.ElapsedMS)
+	}
+	if len(submitted.Schema.Tables) != 1 {
+		t.Fatalf("table count = %d, want 1", len(submitted.Schema.Tables))
 	}
 }

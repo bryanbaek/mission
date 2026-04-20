@@ -65,6 +65,7 @@ func run() error {
 	// Repositories
 	tenantRepo := repository.NewTenantRepository(pool)
 	tokenRepo := repository.NewTenantTokenRepository(pool)
+	schemaRepo := repository.NewTenantSchemaRepository(pool)
 
 	// Controllers
 	tenantCtrl := controller.NewTenantController(tenantRepo, tokenRepo)
@@ -73,6 +74,11 @@ func run() error {
 			StaleAfter:  25 * time.Second,
 			PingTimeout: 5 * time.Second,
 		},
+	)
+	schemaCtrl := controller.NewSchemaController(
+		schemaRepo,
+		agentSessions,
+		controller.SchemaControllerConfig{},
 	)
 
 	// Auth
@@ -94,6 +100,7 @@ func run() error {
 	agentHandler := handler.NewAgentHandler(agentSessions)
 	debugAgentHandler := handler.NewAgentDebugHandler(agentSessions)
 	queryDebugHandler := handler.NewQueryDebugHandler(tenantCtrl, agentSessions)
+	schemaDebugHandler := handler.NewSchemaDebugHandler(tenantCtrl, schemaCtrl)
 	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
 
@@ -114,10 +121,14 @@ func run() error {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.Timeout(45 * time.Second))
+		r.Use(middleware.Timeout(70 * time.Second))
 		r.Use(auth.RequireAuth(verifier))
 		r.Get("/api/debug/tenants/{tenantID}/query", queryDebugHandler.GetStatus)
 		r.Post("/api/debug/tenants/{tenantID}/query", queryDebugHandler.ExecuteQuery)
+		r.Post(
+			"/api/debug/tenants/{tenantID}/schema/introspect",
+			schemaDebugHandler.Introspect,
+		)
 	})
 
 	r.Group(func(r chi.Router) {

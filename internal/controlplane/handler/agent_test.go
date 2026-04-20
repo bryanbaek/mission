@@ -297,6 +297,92 @@ func TestAgentHandlerExecuteQueryResult(t *testing.T) {
 	}
 }
 
+func TestAgentHandlerIntrospectSchemaResult(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	manager := controller.NewAgentSessionManager(controller.AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	handler := NewAgentHandler(manager)
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+	stream, err := manager.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	agentCtx := auth.WithAgent(context.Background(), auth.Agent{
+		TokenID:  token.ID,
+		TenantID: token.TenantID,
+		Label:    token.Label,
+	})
+
+	resultCh := make(chan controller.AgentIntrospectSchemaResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		result, captureErr := manager.IntrospectSchema(
+			context.Background(),
+			tenantID,
+		)
+		if captureErr != nil {
+			errCh <- captureErr
+			return
+		}
+		resultCh <- result
+	}()
+
+	command := <-stream.Commands
+	if command.Kind != controller.AgentCommandKindIntrospectSchema {
+		t.Fatalf("Kind = %q, want introspect_schema", command.Kind)
+	}
+
+	_, err = handler.SubmitCommandResult(
+		agentCtx,
+		connect.NewRequest(&agentv1.SubmitCommandResultRequest{
+			SessionId:   "session-1",
+			CommandId:   command.CommandID,
+			CompletedAt: timestamppb.New(now.Add(time.Second)),
+			Result: &agentv1.SubmitCommandResultRequest_IntrospectSchema{
+				IntrospectSchema: &agentv1.IntrospectSchemaResult{
+					Schema: &agentv1.SchemaBlob{
+						DatabaseName: "mission_app",
+						Tables: []*agentv1.SchemaTable{{
+							TableSchema: "mission_app",
+							TableName:   "customers",
+							TableType:   "BASE TABLE",
+						}},
+					},
+					ElapsedMs:    19,
+					DatabaseUser: "mission_ro@%",
+					DatabaseName: "mission_app",
+				},
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatalf("SubmitCommandResult returned error: %v", err)
+	}
+
+	select {
+	case captureErr := <-errCh:
+		t.Fatalf("IntrospectSchema returned error: %v", captureErr)
+	case result := <-resultCh:
+		if result.ElapsedMS != 19 {
+			t.Fatalf("ElapsedMS = %d, want 19", result.ElapsedMS)
+		}
+		if got := result.Schema.Tables[0].TableName; got != "customers" {
+			t.Fatalf("table name = %q, want customers", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for schema result")
+	}
+}
+
 func TestAgentHandlerHelpersAndDebugEndpoints(t *testing.T) {
 	t.Parallel()
 
@@ -333,6 +419,16 @@ func TestAgentHandlerHelpersAndDebugEndpoints(t *testing.T) {
 	})
 	if queryMessage.GetExecuteQuery().GetSql() != "SELECT 1" {
 		t.Fatalf("query sql = %q, want SELECT 1", queryMessage.GetExecuteQuery().GetSql())
+	}
+
+	schemaMessage := commandToProto(controller.AgentCommand{
+		SessionID: "session-1",
+		CommandID: "command-3",
+		IssuedAt:  now,
+		Kind:      controller.AgentCommandKindIntrospectSchema,
+	})
+	if schemaMessage.GetIntrospectSchema() == nil {
+		t.Fatal("expected introspect_schema payload")
 	}
 
 	var connectErr *connect.Error

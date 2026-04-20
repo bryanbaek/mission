@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 )
 
 type CommandKind string
@@ -17,6 +19,8 @@ type CommandKind string
 const CommandKindPing CommandKind = "ping"
 
 const CommandKindExecuteQuery CommandKind = "execute_query"
+
+const CommandKindIntrospectSchema CommandKind = "introspect_schema"
 
 type OpenCommandStreamRequest struct {
 	SessionID    string
@@ -49,6 +53,17 @@ type SubmitExecuteQueryResultRequest struct {
 	Error        string
 }
 
+type SubmitIntrospectSchemaResultRequest struct {
+	SessionID    string
+	CommandID    string
+	CompletedAt  time.Time
+	Schema       introspect.SchemaBlob
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
+}
+
 type ControlMessage struct {
 	SessionID string
 	CommandID string
@@ -74,6 +89,10 @@ type ControlPlaneClient interface {
 		ctx context.Context,
 		req SubmitExecuteQueryResultRequest,
 	) error
+	SubmitIntrospectSchemaResult(
+		ctx context.Context,
+		req SubmitIntrospectSchemaResultRequest,
+	) error
 }
 
 type QueryResult struct {
@@ -88,35 +107,43 @@ type QueryExecutor interface {
 	ExecuteQuery(ctx context.Context, sql string) (QueryResult, error)
 }
 
+type SchemaIntrospector interface {
+	IntrospectSchema(
+		ctx context.Context,
+	) (introspect.SchemaBlob, int64, string, string, error)
+}
+
 type AgentServiceConfig struct {
-	SessionID         string
-	Hostname          string
-	AgentVersion      string
-	StartedAt         time.Time
-	HeartbeatInterval time.Duration
-	ReconnectBase     time.Duration
-	ReconnectMax      time.Duration
-	Logger            *slog.Logger
-	Now               func() time.Time
-	Sleep             func(context.Context, time.Duration) error
-	Rand              *rand.Rand
-	QueryExecutor     QueryExecutor
+	SessionID          string
+	Hostname           string
+	AgentVersion       string
+	StartedAt          time.Time
+	HeartbeatInterval  time.Duration
+	ReconnectBase      time.Duration
+	ReconnectMax       time.Duration
+	Logger             *slog.Logger
+	Now                func() time.Time
+	Sleep              func(context.Context, time.Duration) error
+	Rand               *rand.Rand
+	QueryExecutor      QueryExecutor
+	SchemaIntrospector SchemaIntrospector
 }
 
 type AgentService struct {
-	client            ControlPlaneClient
-	sessionID         string
-	hostname          string
-	agentVersion      string
-	startedAt         time.Time
-	heartbeatInterval time.Duration
-	reconnectBase     time.Duration
-	reconnectMax      time.Duration
-	logger            *slog.Logger
-	now               func() time.Time
-	sleep             func(context.Context, time.Duration) error
-	rand              *rand.Rand
-	queryExecutor     QueryExecutor
+	client             ControlPlaneClient
+	sessionID          string
+	hostname           string
+	agentVersion       string
+	startedAt          time.Time
+	heartbeatInterval  time.Duration
+	reconnectBase      time.Duration
+	reconnectMax       time.Duration
+	logger             *slog.Logger
+	now                func() time.Time
+	sleep              func(context.Context, time.Duration) error
+	rand               *rand.Rand
+	queryExecutor      QueryExecutor
+	schemaIntrospector SchemaIntrospector
 }
 
 func NewAgentService(
@@ -175,19 +202,20 @@ func NewAgentService(
 	}
 
 	return &AgentService{
-		client:            client,
-		sessionID:         sessionID,
-		hostname:          hostname,
-		agentVersion:      cfg.AgentVersion,
-		startedAt:         startedAt.UTC(),
-		heartbeatInterval: heartbeatInterval,
-		reconnectBase:     reconnectBase,
-		reconnectMax:      reconnectMax,
-		logger:            logger,
-		now:               now,
-		sleep:             sleep,
-		rand:              random,
-		queryExecutor:     cfg.QueryExecutor,
+		client:             client,
+		sessionID:          sessionID,
+		hostname:           hostname,
+		agentVersion:       cfg.AgentVersion,
+		startedAt:          startedAt.UTC(),
+		heartbeatInterval:  heartbeatInterval,
+		reconnectBase:      reconnectBase,
+		reconnectMax:       reconnectMax,
+		logger:             logger,
+		now:                now,
+		sleep:              sleep,
+		rand:               random,
+		queryExecutor:      cfg.QueryExecutor,
+		schemaIntrospector: cfg.SchemaIntrospector,
 	}, nil
 }
 
@@ -334,6 +362,8 @@ func (s *AgentService) handleCommand(
 		)
 	case CommandKindExecuteQuery:
 		return s.handleExecuteQuery(ctx, command)
+	case CommandKindIntrospectSchema:
+		return s.handleIntrospectSchema(ctx, command)
 	default:
 		return fmt.Errorf("unsupported command kind %q", command.Kind)
 	}
@@ -381,6 +411,51 @@ func (s *AgentService) handleExecuteQuery(
 			ElapsedMS:    result.ElapsedMS,
 			DatabaseUser: result.DatabaseUser,
 			DatabaseName: result.DatabaseName,
+		},
+	)
+}
+
+func (s *AgentService) handleIntrospectSchema(
+	ctx context.Context,
+	command ControlMessage,
+) error {
+	if s.schemaIntrospector == nil {
+		return s.client.SubmitIntrospectSchemaResult(
+			ctx,
+			SubmitIntrospectSchemaResultRequest{
+				SessionID:   command.SessionID,
+				CommandID:   command.CommandID,
+				CompletedAt: s.now().UTC(),
+				Error:       "schema introspector is not configured",
+			},
+		)
+	}
+
+	startedAt := s.now().UTC()
+	schema, elapsedMS, databaseUser, databaseName, err := s.schemaIntrospector.IntrospectSchema(ctx)
+	if err != nil {
+		return s.client.SubmitIntrospectSchemaResult(
+			ctx,
+			SubmitIntrospectSchemaResultRequest{
+				SessionID:   command.SessionID,
+				CommandID:   command.CommandID,
+				CompletedAt: s.now().UTC(),
+				ElapsedMS:   s.now().UTC().Sub(startedAt).Milliseconds(),
+				Error:       err.Error(),
+			},
+		)
+	}
+
+	return s.client.SubmitIntrospectSchemaResult(
+		ctx,
+		SubmitIntrospectSchemaResultRequest{
+			SessionID:    command.SessionID,
+			CommandID:    command.CommandID,
+			CompletedAt:  s.now().UTC(),
+			Schema:       schema,
+			ElapsedMS:    elapsedMS,
+			DatabaseUser: databaseUser,
+			DatabaseName: databaseName,
 		},
 	)
 }
