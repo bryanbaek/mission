@@ -1,7 +1,6 @@
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
 } from "@testing-library/react";
@@ -10,12 +9,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import ChatPage from "./ChatPage";
 import { AskQuestionResponseSchema } from "../gen/query/v1/query_pb";
+import type { Locale } from "../lib/i18n";
 import { QueryClientContext, type QueryClient } from "../lib/queryClient";
 import { TenantClientContext, type TenantClient } from "../lib/tenantClient";
+import { renderWithI18n } from "../test/renderWithI18n";
 
 function renderWithClients(options?: {
   listTenants?: ReturnType<typeof vi.fn>;
   askQuestion?: ReturnType<typeof vi.fn>;
+  locale?: Locale;
 }) {
   const tenantClient = {
     listTenants:
@@ -54,12 +56,13 @@ function renderWithClients(options?: {
       }),
   } as unknown as QueryClient;
 
-  return render(
+  return renderWithI18n(
     <TenantClientContext.Provider value={tenantClient}>
       <QueryClientContext.Provider value={queryClient}>
         <ChatPage />
       </QueryClientContext.Provider>
     </TenantClientContext.Provider>,
+    { locale: options?.locale },
   );
 }
 
@@ -78,7 +81,7 @@ describe("ChatPage", () => {
 
     expect(await screen.findByText("에코텍")).toBeInTheDocument();
     expect(
-      screen.getByText(/첫 질문을 보내면 한국어 요약, 생성된 SQL/),
+      screen.getByText(/Send your first question to see the summary/),
     ).toBeInTheDocument();
   });
 
@@ -110,11 +113,11 @@ describe("ChatPage", () => {
 
     renderWithClients({ askQuestion });
 
-    const textarea = await screen.findByLabelText("질문");
+    const textarea = await screen.findByLabelText("Question");
     fireEvent.change(textarea, {
       target: { value: "지난 30일 동안 측정소별 평균 pH를 보여줘" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "질문 보내기" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ask question" }));
 
     await waitFor(() =>
       expect(askQuestion).toHaveBeenCalledWith({
@@ -132,9 +135,9 @@ describe("ChatPage", () => {
     expect(screen.getByText("A-01")).toBeInTheDocument();
     expect(screen.getByText("7.20")).toBeInTheDocument();
     expect(
-      screen.getByText("LIMIT 1000 자동 적용"),
+      screen.getByText("LIMIT 1000 applied automatically"),
     ).toBeInTheDocument();
-    expect(screen.getByText("실행 SQL")).toBeInTheDocument();
+    expect(screen.getByText("Executed SQL")).toBeInTheDocument();
   });
 
   it("surfaces backend attempt details on failed generation", async () => {
@@ -176,7 +179,7 @@ describe("ChatPage", () => {
 
     renderWithClients({ askQuestion });
 
-    fireEvent.click(await screen.findByRole("button", { name: "질문 보내기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Ask question" }));
 
     expect(
       await screen.findByText("all SQL generation attempts failed"),
@@ -184,11 +187,11 @@ describe("ChatPage", () => {
     expect(
       screen.getByText("시맨틱 레이어가 없어 원본 스키마만 사용했습니다."),
     ).toBeInTheDocument();
-    expect(screen.getByText("시도 1 · 검증")).toBeInTheDocument();
+    expect(screen.getByText("Attempt 1 · validation")).toBeInTheDocument();
     expect(
       screen.getByText("read-only SELECT만 허용됩니다."),
     ).toBeInTheDocument();
-    expect(screen.getByText("시도 2 · 실행")).toBeInTheDocument();
+    expect(screen.getByText("Attempt 2 · execution")).toBeInTheDocument();
     expect(screen.getByText("Unknown column 'bad_column'")).toBeInTheDocument();
   });
 
@@ -198,5 +201,12 @@ describe("ChatPage", () => {
     });
 
     expect(await screen.findByText("tenant load failed")).toBeInTheDocument();
+  });
+
+  it("renders Korean page-owned content when locale is ko", async () => {
+    renderWithClients({ locale: "ko" });
+
+    expect(await screen.findByText("질문 작성")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "질문 보내기" })).toBeInTheDocument();
   });
 });

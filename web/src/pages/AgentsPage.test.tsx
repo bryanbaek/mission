@@ -1,7 +1,8 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AgentsPage from "./AgentsPage";
+import { renderWithI18n } from "../test/renderWithI18n";
 
 describe("AgentsPage", () => {
   const fetchMock = vi.fn();
@@ -19,7 +20,7 @@ describe("AgentsPage", () => {
   it("shows loading health status while requests are in flight", () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     expect(
       screen.getByText("Week 2.1 agent tunnel debug surface"),
@@ -32,45 +33,46 @@ describe("AgentsPage", () => {
   it(
     "renders health and agent session details after successful requests",
     async () => {
-    fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ database: "ok", status: "ok" }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          agents: [
-            {
-              agent_version: "",
-              connected_at: "2026-04-19T12:00:00Z",
-              disconnected_at: "not-a-date",
-              hostname: "edge-host",
-              last_heartbeat_at: "2026-04-19T12:00:05Z",
-              session_id: "session-1",
-              status: "online",
-              tenant_id: "tenant-1",
-              token_id: "token-1",
-              token_label: "edge-1",
-            },
-          ],
-        }),
-      });
+      fetchMock
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ database: "ok", status: "ok" }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            agents: [
+              {
+                agent_version: "",
+                connected_at: "2026-04-19T12:00:00Z",
+                disconnected_at: "not-a-date",
+                hostname: "edge-host",
+                last_heartbeat_at: "2026-04-19T12:00:05Z",
+                session_id: "session-1",
+                status: "online",
+                tenant_id: "tenant-1",
+                token_id: "token-1",
+                token_label: "edge-1",
+              },
+            ],
+          }),
+        });
 
-    render(<AgentsPage />);
+      renderWithI18n(<AgentsPage />);
 
-    expect(await screen.findByText("edge-host")).toBeInTheDocument();
-    expect(screen.getByText("edge-1")).toBeInTheDocument();
-    expect(screen.getAllByText("ok")).toHaveLength(2);
-    expect(screen.getByText("unknown")).toBeInTheDocument();
-    expect(screen.getByText("not-a-date")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ping agent" })).toBeEnabled();
-  });
+      expect(await screen.findByText("edge-host")).toBeInTheDocument();
+      expect(screen.getByText("edge-1")).toBeInTheDocument();
+      expect(screen.getAllByText("ok")).toHaveLength(2);
+      expect(screen.getByText("unknown")).toBeInTheDocument();
+      expect(screen.getByText("not-a-date")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ping agent" })).toBeEnabled();
+    },
+  );
 
   it("renders request errors", async () => {
     fetchMock.mockRejectedValue(new Error("boom"));
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     expect(await screen.findByText("boom")).toBeInTheDocument();
   });
@@ -87,7 +89,7 @@ describe("AgentsPage", () => {
         json: async () => ({ agents: [] }),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     expect(
       await screen.findByText("health check failed with 503"),
@@ -106,7 +108,7 @@ describe("AgentsPage", () => {
         json: async () => ({}),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     expect(
       await screen.findByText("agent debug API failed with 500"),
@@ -147,7 +149,7 @@ describe("AgentsPage", () => {
         }),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     const button = await screen.findByRole("button", { name: "Ping agent" });
     fireEvent.click(button);
@@ -190,7 +192,7 @@ describe("AgentsPage", () => {
         json: async () => ({ error: "session is not active" }),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Ping agent" }));
 
@@ -229,13 +231,11 @@ describe("AgentsPage", () => {
         json: async () => ({}),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Ping agent" }));
 
-    expect(
-      await screen.findByText("ping failed with 500"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("ping failed with 500")).toBeInTheDocument();
   });
 
   it("renders the empty state for zero agents", async () => {
@@ -249,7 +249,7 @@ describe("AgentsPage", () => {
         json: async () => ({ agents: [] }),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     expect(
       await screen.findByText("No edge agents connected yet."),
@@ -282,7 +282,7 @@ describe("AgentsPage", () => {
         }),
       });
 
-    render(<AgentsPage />);
+    renderWithI18n(<AgentsPage />);
 
     expect(await screen.findByText("edge-host-2")).toBeInTheDocument();
     expect(screen.getByText("n/a")).toBeInTheDocument();
@@ -290,5 +290,24 @@ describe("AgentsPage", () => {
     expect(
       screen.getByRole("button", { name: "Ping agent" }),
     ).toBeDisabled();
+  });
+
+  it("renders Korean page-owned content when locale is ko", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ database: "ok", status: "ok" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ agents: [] }),
+      });
+
+    renderWithI18n(<AgentsPage />, { locale: "ko" });
+
+    expect(
+      await screen.findByText("2.1주차 에이전트 터널 디버그 화면"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("에이전트 세션")).toBeInTheDocument();
   });
 });

@@ -8,7 +8,7 @@ import type { Timestamp } from "@bufbuild/protobuf/wkt";
 
 import { SemanticLayerStatus, type GetSemanticLayerResponse, type SemanticLayer, type SemanticLayerContent } from "../gen/semantic/v1/semantic_pb";
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
-import { t } from "../lib/i18n";
+import { useI18n } from "../lib/i18n";
 import { useSemanticClient } from "../lib/semanticClient";
 import { useTenantClient } from "../lib/tenantClient";
 
@@ -90,11 +90,16 @@ const styles = {
     "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500",
 };
 
+type Translate = ReturnType<typeof useI18n>["t"];
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-function formatTimestamp(ts: Timestamp | undefined): string {
+function formatTimestamp(
+  ts: Timestamp | undefined,
+  formatDateTime: ReturnType<typeof useI18n>["formatDateTime"],
+): string {
   if (!ts) {
     return "";
   }
@@ -102,10 +107,7 @@ function formatTimestamp(ts: Timestamp | undefined): string {
   if (!Number.isFinite(ms) || ms <= 0) {
     return "";
   }
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(ms));
+  return formatDateTime(ms);
 }
 
 function deepCloneContent(content: SemanticLayerContent): SemanticLayerContent {
@@ -118,14 +120,17 @@ function serializeContent(
   return JSON.stringify(content ?? null);
 }
 
-function statusLabel(status: SemanticLayerStatus | undefined): string {
+function statusLabel(
+  status: SemanticLayerStatus | undefined,
+  t: Translate,
+): string {
   switch (status) {
     case SemanticLayerStatus.DRAFT:
-      return t("statusDraft");
+      return t("semantic.status.draft");
     case SemanticLayerStatus.APPROVED:
-      return t("statusApproved");
+      return t("semantic.status.approved");
     case SemanticLayerStatus.ARCHIVED:
-      return t("statusArchived");
+      return t("semantic.status.archived");
     default:
       return "";
   }
@@ -142,14 +147,14 @@ function statusClass(status: SemanticLayerStatus | undefined): string {
   }
 }
 
-function diffKindLabel(kind: DiffKind): string {
+function diffKindLabel(kind: DiffKind, t: Translate): string {
   switch (kind) {
     case "added":
-      return t("diffAdded");
+      return t("semantic.diff.added");
     case "changed":
-      return t("diffChanged");
+      return t("semantic.diff.changed");
     case "removed":
-      return t("diffRemoved");
+      return t("semantic.diff.removed");
   }
 }
 
@@ -181,6 +186,7 @@ function buildDescriptionMap(
 function buildDiff(
   current: SemanticLayerContent | null,
   baseline: SemanticLayer | undefined,
+  localeTag: string,
 ): DiffItem[] {
   const currentMap = buildDescriptionMap(current ?? undefined);
   const baselineMap = buildDescriptionMap(baseline?.content);
@@ -206,13 +212,13 @@ function buildDiff(
     }
     out.push({ kind: "changed", scope, name: key, before, after });
   }
-
-  return out.sort((left, right) => left.name.localeCompare(right.name, "ko"));
+  return out.sort((left, right) => left.name.localeCompare(right.name, localeTag));
 }
 
 export default function SemanticLayerPage() {
   const tenantClient = useTenantClient();
   const semanticClient = useSemanticClient();
+  const { formatDateTime, localeTag, t } = useI18n();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedID, setSelectedID] = useState<string | null>(null);
@@ -245,8 +251,8 @@ export default function SemanticLayerPage() {
   );
 
   const diffItems = useMemo(
-    () => buildDiff(formContent, response?.approvedBaseline),
-    [formContent, response?.approvedBaseline],
+    () => buildDiff(formContent, response?.approvedBaseline, localeTag),
+    [formContent, localeTag, response?.approvedBaseline],
   );
 
   const loadTenants = useCallback(async () => {
@@ -285,11 +291,11 @@ export default function SemanticLayerPage() {
       applyLoadedResponse(resp);
       setPageError(null);
     } catch (err) {
-      setPageError(errorMessage(err) || t("loadErrorFallback"));
+      setPageError(errorMessage(err) || t("semantic.loadErrorFallback"));
     } finally {
       setLoadingLayer(false);
     }
-  }, [applyLoadedResponse, semanticClient]);
+  }, [applyLoadedResponse, semanticClient, t]);
 
   useEffect(() => {
     if (!selectedID) {
@@ -344,10 +350,10 @@ export default function SemanticLayerPage() {
         schemaVersionId: response.latestSchema.id,
       });
       await loadSemanticLayer(selectedID);
-      setSuccess(t("draftCreated"));
+      setSuccess(t("semantic.success.draftCreated"));
       if (draftResp.usage) {
         setNotice(
-          `${t("cacheUsage")}: ${draftResp.usage.provider} / ${draftResp.usage.model} · cache_read_input_tokens=${draftResp.usage.cacheReadInputTokens}`,
+          `${t("semantic.notice.cacheUsage")}: ${draftResp.usage.provider} / ${draftResp.usage.model} · cache_read_input_tokens=${draftResp.usage.cacheReadInputTokens}`,
         );
       }
     } catch (err) {
@@ -374,7 +380,7 @@ export default function SemanticLayerPage() {
       });
       await loadSemanticLayer(selectedID);
       if (showSuccess) {
-        setSuccess(t("saved"));
+        setSuccess(t("semantic.success.saved"));
       }
       return saveResp.layer?.id ?? null;
     } catch (err) {
@@ -383,7 +389,14 @@ export default function SemanticLayerPage() {
     } finally {
       setSaving(false);
     }
-  }, [formContent, loadSemanticLayer, response?.currentLayer?.id, selectedID, semanticClient]);
+  }, [
+    formContent,
+    loadSemanticLayer,
+    response?.currentLayer?.id,
+    selectedID,
+    semanticClient,
+    t,
+  ]);
 
   const handleApprove = async () => {
     if (!selectedID || !response?.currentLayer?.id) {
@@ -406,7 +419,7 @@ export default function SemanticLayerPage() {
         id: layerID,
       });
       await loadSemanticLayer(selectedID);
-      setSuccess(t("approved"));
+      setSuccess(t("semantic.success.approved"));
     } catch (err) {
       setPageError(errorMessage(err));
     } finally {
@@ -417,12 +430,12 @@ export default function SemanticLayerPage() {
   return (
     <div className={styles.shell}>
       <section className={styles.heroCard}>
-        <p className={styles.introLabel}>{t("pageIntroLabel")}</p>
+        <p className={styles.introLabel}>{t("common.appLabel")}</p>
         <h1 className="text-3xl font-semibold tracking-tight">
-          {t("semanticLayerTitle")}
+          {t("semantic.hero.title")}
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-slate-600">
-          {t("semanticLayerSubtitle")}
+          {t("semantic.hero.subtitle")}
         </p>
       </section>
 
@@ -434,8 +447,8 @@ export default function SemanticLayerPage() {
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className="text-lg font-semibold">{t("tenantsTitle")}</h2>
-              <p className={styles.muted}>{t("tenantsSubtitle")}</p>
+              <h2 className="text-lg font-semibold">{t("semantic.tenants.title")}</h2>
+              <p className={styles.muted}>{t("semantic.tenants.subtitle")}</p>
             </div>
           </div>
 
@@ -446,7 +459,7 @@ export default function SemanticLayerPage() {
           <ul className="mt-4 flex flex-col gap-1">
             {tenants.length === 0 ? (
               <li className="px-3 py-6 text-center text-sm text-slate-500">
-                {t("noTenants")}
+                {t("semantic.tenants.empty")}
               </li>
             ) : (
               tenants.map((tenant) => {
@@ -483,43 +496,55 @@ export default function SemanticLayerPage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 className="text-lg font-semibold">
-                {selectedTenant?.name ?? t("semanticLayerTitle")}
+                {selectedTenant?.name ?? t("semantic.hero.title")}
               </h2>
               <p className={styles.muted}>
-                {dirty ? t("dirtyHint") : t("pendingDraft")}
+                {dirty
+                  ? t("semantic.state.dirty")
+                  : t("semantic.state.pendingDraft")}
               </p>
             </div>
             {response?.currentLayer ? (
               <span className={statusClass(response.currentLayer.status)}>
-                {statusLabel(response.currentLayer.status)}
+                {statusLabel(response.currentLayer.status, t)}
               </span>
             ) : null}
           </div>
 
           {loadingLayer ? (
-            <div className="py-10 text-sm text-slate-500">{t("loading")}</div>
+            <div className="py-10 text-sm text-slate-500">
+              {t("semantic.loading")}
+            </div>
           ) : null}
 
           {!loadingLayer && response && response.hasSchema && response.latestSchema ? (
             <div className={`${styles.metaGrid} mt-6`}>
               <div>
-                <div className={styles.metaLabel}>{t("schemaVersion")}</div>
+                <div className={styles.metaLabel}>
+                  {t("semantic.meta.schemaVersion")}
+                </div>
                 <div className={styles.metaValue}>{response.latestSchema.id}</div>
               </div>
               <div>
-                <div className={styles.metaLabel}>{t("schemaCapturedAt")}</div>
+                <div className={styles.metaLabel}>
+                  {t("semantic.meta.schemaCapturedAt")}
+                </div>
                 <div className={styles.metaValue}>
-                  {formatTimestamp(response.latestSchema.capturedAt)}
+                  {formatTimestamp(response.latestSchema.capturedAt, formatDateTime)}
                 </div>
               </div>
               <div>
-                <div className={styles.metaLabel}>{t("databaseName")}</div>
+                <div className={styles.metaLabel}>
+                  {t("semantic.meta.databaseName")}
+                </div>
                 <div className={styles.metaValue}>
                   {response.latestSchema.databaseName}
                 </div>
               </div>
               <div>
-                <div className={styles.metaLabel}>{t("schemaHash")}</div>
+                <div className={styles.metaLabel}>
+                  {t("semantic.meta.schemaHash")}
+                </div>
                 <div className={styles.metaValue}>
                   {response.latestSchema.schemaHash}
                 </div>
@@ -530,10 +555,10 @@ export default function SemanticLayerPage() {
           {!loadingLayer && response && !response.hasSchema ? (
             <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6">
               <h3 className="text-lg font-semibold text-slate-900">
-                {t("schemaNotCapturedTitle")}
+                {t("semantic.schemaNotCaptured.title")}
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {t("schemaNotCapturedBody")}
+                {t("semantic.schemaNotCaptured.body")}
               </p>
             </div>
           ) : null}
@@ -544,10 +569,10 @@ export default function SemanticLayerPage() {
           response.needsDraft ? (
             <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-6">
               <h3 className="text-lg font-semibold text-slate-900">
-                {t("draftNeededTitle")}
+                {t("semantic.draftNeeded.title")}
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {t("draftNeededBody")}
+                {t("semantic.draftNeeded.body")}
               </p>
               <button
                 type="button"
@@ -555,7 +580,9 @@ export default function SemanticLayerPage() {
                 className={`${styles.primaryButton} mt-4`}
                 disabled={drafting}
               >
-                {drafting ? t("generating") : t("generateDraft")}
+                {drafting
+                  ? t("semantic.actions.generating")
+                  : t("semantic.actions.generateDraft")}
               </button>
             </div>
           ) : null}
@@ -572,7 +599,9 @@ export default function SemanticLayerPage() {
                     className={styles.secondaryButton}
                     disabled={!dirty || saving || approving}
                   >
-                    {saving ? t("saving") : t("save")}
+                    {saving
+                      ? t("semantic.actions.saving")
+                      : t("semantic.actions.save")}
                   </button>
                   <button
                     type="button"
@@ -580,13 +609,17 @@ export default function SemanticLayerPage() {
                     className={styles.primaryButton}
                     disabled={approving || saving}
                   >
-                    {approving ? t("approving") : t("approve")}
+                    {approving
+                      ? t("semantic.actions.approving")
+                      : t("semantic.actions.approve")}
                   </button>
                 </div>
 
                 <div className={styles.cardSection}>
                   <div>
-                    <h3 className={styles.cardTitle}>{t("currentLayerTitle")}</h3>
+                    <h3 className={styles.cardTitle}>
+                      {t("semantic.currentLayer.title")}
+                    </h3>
                   </div>
                   {formContent.tables.map((table, tableIndex) => (
                     <details
@@ -605,14 +638,14 @@ export default function SemanticLayerPage() {
                             </div>
                           </div>
                           <div className="text-xs text-slate-500">
-                            {t("columnCount")}: {table.columns.length}
+                            {t("semantic.meta.columnCount")}: {table.columns.length}
                           </div>
                         </div>
                       </summary>
                       <div className={styles.detailsBody}>
                         <div className="grid gap-3">
                           <label className="grid gap-2 text-sm font-medium text-slate-800">
-                            <span>{t("tableDescription")}</span>
+                            <span>{t("semantic.meta.tableDescription")}</span>
                             <textarea
                               className={styles.textarea}
                               value={table.description}
@@ -625,7 +658,7 @@ export default function SemanticLayerPage() {
                             />
                           </label>
                           <div className="text-xs text-slate-500">
-                            {t("originalComment")}: {table.tableComment || "-"}
+                            {t("semantic.meta.originalComment")}: {table.tableComment || "-"}
                           </div>
                         </div>
 
@@ -640,17 +673,17 @@ export default function SemanticLayerPage() {
                                   {column.columnName}
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  {t("dataType")}: {column.columnType}
+                                  {t("semantic.meta.dataType")}: {column.columnType}
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  {t("nullable")}: {column.isNullable ? t("yes") : t("no")}
+                                  {t("semantic.meta.nullable")}: {column.isNullable ? t("common.yes") : t("common.no")}
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  {t("originalComment")}: {column.columnComment || "-"}
+                                  {t("semantic.meta.originalComment")}: {column.columnComment || "-"}
                                 </div>
                               </div>
                               <label className="grid gap-2 text-sm font-medium text-slate-800">
-                                <span>{t("columnDescription")}</span>
+                                <span>{t("semantic.meta.columnDescription")}</span>
                                 <textarea
                                   className={styles.textarea}
                                   value={column.description}
@@ -675,13 +708,19 @@ export default function SemanticLayerPage() {
                   <section className={styles.sectionCard}>
                     <div className={styles.sectionHeader}>
                       <div>
-                        <h3 className="text-lg font-semibold">{t("entitiesTitle")}</h3>
+                        <h3 className="text-lg font-semibold">
+                          {t("semantic.entities.title")}
+                        </h3>
                       </div>
-                      <span className={styles.readOnlyPill}>{t("readOnlyHint")}</span>
+                      <span className={styles.readOnlyPill}>
+                        {t("semantic.readOnly")}
+                      </span>
                     </div>
                     <div className="mt-4 flex flex-col gap-3">
                       {formContent.entities.length === 0 ? (
-                        <p className={styles.muted}>{t("emptyEntities")}</p>
+                        <p className={styles.muted}>
+                          {t("semantic.entities.empty")}
+                        </p>
                       ) : (
                         formContent.entities.map((entity) => (
                           <div
@@ -704,13 +743,19 @@ export default function SemanticLayerPage() {
                   <section className={styles.sectionCard}>
                     <div className={styles.sectionHeader}>
                       <div>
-                        <h3 className="text-lg font-semibold">{t("metricsTitle")}</h3>
+                        <h3 className="text-lg font-semibold">
+                          {t("semantic.metrics.title")}
+                        </h3>
                       </div>
-                      <span className={styles.readOnlyPill}>{t("readOnlyHint")}</span>
+                      <span className={styles.readOnlyPill}>
+                        {t("semantic.readOnly")}
+                      </span>
                     </div>
                     <div className="mt-4 flex flex-col gap-3">
                       {formContent.candidateMetrics.length === 0 ? (
-                        <p className={styles.muted}>{t("emptyMetrics")}</p>
+                        <p className={styles.muted}>
+                          {t("semantic.metrics.empty")}
+                        </p>
                       ) : (
                         formContent.candidateMetrics.map((metric) => (
                           <div
@@ -737,13 +782,13 @@ export default function SemanticLayerPage() {
                   <div className={styles.sectionHeader}>
                     <div>
                       <h3 className="text-lg font-semibold">
-                        {t("approvedBaselineTitle")}
+                        {t("semantic.approvedBaseline.title")}
                       </h3>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-col gap-3">
                     {diffItems.length === 0 ? (
-                      <p className={styles.muted}>{t("noDiff")}</p>
+                      <p className={styles.muted}>{t("semantic.diff.none")}</p>
                     ) : (
                       diffItems.map((item) => (
                         <div key={`${item.kind}:${item.name}`} className={styles.diffItem}>
@@ -755,10 +800,12 @@ export default function SemanticLayerPage() {
                                   ? SemanticLayerStatus.ARCHIVED
                                   : SemanticLayerStatus.DRAFT,
                             )}>
-                              {diffKindLabel(item.kind)}
+                              {diffKindLabel(item.kind, t)}
                             </span>
                             <span className="text-sm font-medium text-slate-900">
-                              {item.scope === "table" ? t("diffTable") : t("diffColumn")}
+                              {item.scope === "table"
+                                ? t("semantic.diff.table")
+                                : t("semantic.diff.column")}
                             </span>
                           </div>
                           <div className="mt-3 font-mono text-xs text-slate-700">
@@ -766,13 +813,17 @@ export default function SemanticLayerPage() {
                           </div>
                           <div className="mt-3 grid gap-3">
                             <div>
-                              <div className={styles.metaLabel}>{t("diffBefore")}</div>
+                              <div className={styles.metaLabel}>
+                                {t("semantic.diff.before")}
+                              </div>
                               <div className="mt-1 text-sm text-slate-600">
                                 {item.before || "-"}
                               </div>
                             </div>
                             <div>
-                              <div className={styles.metaLabel}>{t("diffAfter")}</div>
+                              <div className={styles.metaLabel}>
+                                {t("semantic.diff.after")}
+                              </div>
                               <div className="mt-1 text-sm text-slate-900">
                                 {item.after || "-"}
                               </div>
@@ -787,7 +838,7 @@ export default function SemanticLayerPage() {
                 {response.currentLayer?.approvedByUserId ? (
                   <section className={styles.sectionCard}>
                     <div className="text-sm text-slate-600">
-                      {t("approvedBy")}: {response.currentLayer.approvedByUserId}
+                      {t("semantic.meta.approvedBy")}: {response.currentLayer.approvedByUserId}
                     </div>
                   </section>
                 ) : null}

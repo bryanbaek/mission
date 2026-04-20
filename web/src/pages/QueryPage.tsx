@@ -8,6 +8,7 @@ import {
 import { useAuth } from "@clerk/clerk-react";
 
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
+import { useI18n } from "../lib/i18n";
 import { useTenantClient } from "../lib/tenantClient";
 
 type QueryStatus = {
@@ -48,10 +49,6 @@ const styles = {
   row: "flex items-center justify-between gap-3 px-3 py-2",
   rowActive: "rounded-lg bg-slate-950 text-white",
   rowIdle: "rounded-lg hover:bg-slate-100",
-  input: [
-    "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm",
-    "focus:border-slate-950 focus:outline-none",
-  ].join(" "),
   textarea: [
     "min-h-[180px] w-full rounded-2xl border border-slate-300 px-4 py-3",
     "font-mono text-sm leading-6 text-slate-900",
@@ -94,6 +91,7 @@ function statusClass(status: QueryStatus["status"] | undefined) {
 export default function QueryPage() {
   const client = useTenantClient();
   const { getToken } = useAuth();
+  const { t } = useI18n();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedID, setSelectedID] = useState<string | null>(null);
@@ -146,7 +144,9 @@ export default function QueryPage() {
     async (tenantID: string) => {
       setLoadingStatus(true);
       try {
-        const response = await authedFetch(`/api/debug/tenants/${tenantID}/query`);
+        const response = await authedFetch(
+          `/api/debug/tenants/${tenantID}/query`,
+        );
         const body = (await response.json()) as QueryStatus | { error?: string };
         if (!response.ok) {
           throw new Error(
@@ -183,13 +183,16 @@ export default function QueryPage() {
     setRunning(true);
     setQueryError(null);
     try {
-      const response = await authedFetch(`/api/debug/tenants/${selectedID}/query`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await authedFetch(
+        `/api/debug/tenants/${selectedID}/query`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sql }),
         },
-        body: JSON.stringify({ sql }),
-      });
+      );
       const body = (await response.json()) as QueryResponse | { error?: string };
       if (!response.ok) {
         throw new Error(
@@ -210,17 +213,21 @@ export default function QueryPage() {
     }
   };
 
+  const statusLabel = loadingStatus
+    ? t("common.loading")
+    : status?.status === "online"
+      ? t("common.online")
+      : t("common.offline");
+
   return (
     <div className={styles.shell}>
       <section className={styles.heroCard}>
-        <p className={styles.introLabel}>Mission</p>
+        <p className={styles.introLabel}>{t("common.appLabel")}</p>
         <h1 className="text-3xl font-semibold tracking-tight">
-          Read-only MySQL debug runner
+          {t("queryDebug.hero.title")}
         </h1>
         <p className="max-w-3xl text-sm leading-6 text-slate-600">
-          Owner-only tooling for validating the edge-agent query path end to
-          end. SQL is sent to a live tenant agent, executed on the local MySQL
-          connection, and rendered back here as JSON.
+          {t("queryDebug.hero.subtitle")}
         </p>
       </section>
 
@@ -228,8 +235,12 @@ export default function QueryPage() {
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className="text-lg font-semibold">Tenants</h2>
-              <p className={styles.muted}>Pick an owner-scoped workspace.</p>
+              <h2 className="text-lg font-semibold">
+                {t("queryDebug.tenants.title")}
+              </h2>
+              <p className={styles.muted}>
+                {t("queryDebug.tenants.subtitle")}
+              </p>
             </div>
           </div>
 
@@ -240,7 +251,7 @@ export default function QueryPage() {
           <ul className="mt-4 flex flex-col gap-1">
             {tenants.length === 0 ? (
               <li className="px-3 py-6 text-center text-sm text-slate-500">
-                No tenants available yet.
+                {t("queryDebug.tenants.empty")}
               </li>
             ) : (
               tenants.map((tenant) => {
@@ -279,15 +290,13 @@ export default function QueryPage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 className="text-lg font-semibold">
-                {selectedTenant ? selectedTenant.name : "Select a tenant"}
+                {selectedTenant?.name ?? t("queryDebug.detail.selectPrompt")}
               </h2>
               <p className={styles.muted}>
-                Status reflects the most recent agent session for this tenant.
+                {t("queryDebug.detail.subtitle")}
               </p>
             </div>
-            <span className={statusClass(status?.status)}>
-              {loadingStatus ? "loading" : status?.status ?? "offline"}
-            </span>
+            <span className={statusClass(status?.status)}>{statusLabel}</span>
           </div>
 
           {statusError ? (
@@ -296,35 +305,49 @@ export default function QueryPage() {
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div>
-              <div className={styles.metaLabel}>Host</div>
-              <div className={styles.metaValue}>{status?.hostname ?? "n/a"}</div>
-            </div>
-            <div>
-              <div className={styles.metaLabel}>Session</div>
-              <div className={styles.metaValue}>{status?.session_id ?? "n/a"}</div>
-            </div>
-            <div>
-              <div className={styles.metaLabel}>Version</div>
+              <div className={styles.metaLabel}>
+                {t("queryDebug.meta.host")}
+              </div>
               <div className={styles.metaValue}>
-                {status?.agent_version ?? "n/a"}
+                {status?.hostname ?? t("common.na")}
               </div>
             </div>
             <div>
-              <div className={styles.metaLabel}>Token label</div>
+              <div className={styles.metaLabel}>
+                {t("queryDebug.meta.session")}
+              </div>
               <div className={styles.metaValue}>
-                {status?.token_label ?? "n/a"}
+                {status?.session_id ?? t("common.na")}
+              </div>
+            </div>
+            <div>
+              <div className={styles.metaLabel}>
+                {t("queryDebug.meta.version")}
+              </div>
+              <div className={styles.metaValue}>
+                {status?.agent_version ?? t("common.na")}
+              </div>
+            </div>
+            <div>
+              <div className={styles.metaLabel}>
+                {t("queryDebug.meta.tokenLabel")}
+              </div>
+              <div className={styles.metaValue}>
+                {status?.token_label ?? t("common.na")}
               </div>
             </div>
           </div>
 
           <form onSubmit={runQuery} className={styles.resultShell}>
             <label className="flex flex-col gap-2">
-              <span className={styles.metaLabel}>SQL</span>
+              <span className={styles.metaLabel}>
+                {t("queryDebug.form.sql")}
+              </span>
               <textarea
                 value={sql}
                 onChange={(event) => setSQL(event.target.value)}
                 className={styles.textarea}
-                placeholder="SELECT 1"
+                placeholder={t("queryDebug.form.sqlPlaceholder")}
               />
             </label>
 
@@ -334,12 +357,14 @@ export default function QueryPage() {
                 disabled={!selectedID || status?.status !== "online" || running}
                 className={styles.primaryButton}
               >
-                {running ? "Running..." : "Run query"}
+                {running
+                  ? t("queryDebug.form.running")
+                  : t("queryDebug.form.run")}
               </button>
               <span className={styles.muted}>
                 {status?.status === "online"
-                  ? "Query execution is available."
-                  : "Bring an edge agent online to run SQL."}
+                  ? t("queryDebug.form.available")
+                  : t("queryDebug.form.unavailable")}
               </span>
             </div>
           </form>
@@ -354,27 +379,35 @@ export default function QueryPage() {
             <div className={styles.resultShell}>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div>
-                  <div className={styles.metaLabel}>Database</div>
+                  <div className={styles.metaLabel}>
+                    {t("queryDebug.result.database")}
+                  </div>
                   <div className={styles.metaValue}>
                     {queryResult.database_name}
                   </div>
                 </div>
                 <div>
-                  <div className={styles.metaLabel}>User</div>
+                  <div className={styles.metaLabel}>
+                    {t("queryDebug.result.user")}
+                  </div>
                   <div className={styles.metaValue}>
                     {queryResult.database_user}
                   </div>
                 </div>
                 <div>
-                  <div className={styles.metaLabel}>Elapsed</div>
+                  <div className={styles.metaLabel}>
+                    {t("queryDebug.result.elapsed")}
+                  </div>
                   <div className={styles.metaValue}>
                     {queryResult.elapsed_ms} ms
                   </div>
                 </div>
                 <div>
-                  <div className={styles.metaLabel}>Columns</div>
+                  <div className={styles.metaLabel}>
+                    {t("queryDebug.result.columns")}
+                  </div>
                   <div className={styles.metaValue}>
-                    {queryResult.columns.join(", ") || "n/a"}
+                    {queryResult.columns.join(", ") || t("common.na")}
                   </div>
                 </div>
               </div>

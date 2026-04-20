@@ -13,6 +13,8 @@ import {
   TenantClientContext,
   type TenantClient,
 } from "../lib/tenantClient";
+import { renderWithI18n } from "../test/renderWithI18n";
+import type { Locale } from "../lib/i18n";
 
 function makeTimestamp(iso: string): Timestamp {
   const ms = Date.parse(iso);
@@ -31,7 +33,10 @@ type ClientMocks = {
   revokeAgentToken: ReturnType<typeof vi.fn>;
 };
 
-function renderWithClient(mocks: Partial<ClientMocks> = {}) {
+function renderWithClient(
+  mocks: Partial<ClientMocks> = {},
+  locale?: Locale,
+) {
   const fake: ClientMocks = {
     listTenants:
       mocks.listTenants ?? vi.fn().mockResolvedValue({ tenants: [] }),
@@ -62,10 +67,11 @@ function renderWithClient(mocks: Partial<ClientMocks> = {}) {
   };
 
   const client = fake as unknown as TenantClient;
-  const utils = render(
+  const utils = renderWithI18n(
     <TenantClientContext.Provider value={client}>
       <TenantsPage />
     </TenantClientContext.Provider>,
+    { locale },
   );
   return { ...utils, mocks: fake };
 }
@@ -161,6 +167,20 @@ describe("TenantsPage", () => {
     });
 
     expect(await screen.findByText("tokens boom")).toBeInTheDocument();
+  });
+
+  it("renders Korean page-owned content when locale is ko", async () => {
+    const { mocks } = renderWithClient(
+      {
+        listTenants: vi.fn().mockResolvedValue({ tenants: [] }),
+      },
+      "ko",
+    );
+
+    await waitFor(() => expect(mocks.listTenants).toHaveBeenCalled());
+    expect(
+      await screen.findByText("테넌트 및 에이전트 토큰"),
+    ).toBeInTheDocument();
   });
 
   it("creates a tenant and reloads the list", async () => {
@@ -271,7 +291,7 @@ describe("TenantsPage", () => {
       issueAgentToken: issue,
     });
 
-    (await screen.findAllByText("Tenant One"))[0];
+    await screen.findAllByText("Tenant One");
     await waitFor(() => expect(listTokens).toHaveBeenCalledTimes(1));
 
     fireEvent.change(screen.getByPlaceholderText("edge-01"), {
@@ -326,7 +346,7 @@ describe("TenantsPage", () => {
       }),
     });
 
-    (await screen.findAllByText("Tenant One"))[0];
+    await screen.findAllByText("Tenant One");
     fireEvent.change(screen.getByPlaceholderText("edge-01"), {
       target: { value: "edge-1" },
     });
@@ -364,7 +384,7 @@ describe("TenantsPage", () => {
       }),
     });
 
-    (await screen.findAllByText("Tenant One"))[0];
+    await screen.findAllByText("Tenant One");
     fireEvent.change(screen.getByPlaceholderText("edge-01"), {
       target: { value: "edge-1" },
     });
@@ -390,7 +410,7 @@ describe("TenantsPage", () => {
       issueAgentToken: vi.fn().mockRejectedValue("string error"),
     });
 
-    (await screen.findAllByText("Tenant One"))[0];
+    await screen.findAllByText("Tenant One");
     fireEvent.change(screen.getByPlaceholderText("edge-01"), {
       target: { value: "edge-1" },
     });

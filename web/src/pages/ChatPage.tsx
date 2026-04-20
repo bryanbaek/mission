@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
@@ -13,6 +14,7 @@ import {
   type AttemptDebug,
 } from "../gen/query/v1/query_pb";
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
+import { type Locale, useI18n } from "../lib/i18n";
 import { useQueryClient } from "../lib/queryClient";
 import { useTenantClient } from "../lib/tenantClient";
 
@@ -80,11 +82,10 @@ const styles = {
     "rounded-2xl border border-slate-200 bg-white px-4 py-3",
     "text-sm text-slate-900",
   ].join(" "),
-  summaryCard:
-    [
-      "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4",
-      "text-sm leading-6 text-emerald-950",
-    ].join(" "),
+  summaryCard: [
+    "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4",
+    "text-sm leading-6 text-emerald-950",
+  ].join(" "),
   metaGrid: "grid gap-3 md:grid-cols-3",
   metaTile: "rounded-2xl border border-slate-200 bg-white px-4 py-3",
   metaLabel: "text-xs uppercase tracking-[0.14em] text-slate-400",
@@ -94,8 +95,7 @@ const styles = {
     "font-mono text-xs leading-6 text-emerald-200",
   ].join(" "),
   tableShell: "overflow-x-auto rounded-2xl border border-slate-200 bg-white",
-  table:
-    "min-w-full border-collapse text-left text-sm text-slate-700",
+  table: "min-w-full border-collapse text-left text-sm text-slate-700",
   th: [
     "border-b border-slate-200 bg-slate-50 px-4 py-3",
     "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500",
@@ -111,17 +111,6 @@ const styles = {
   detailsBody: "border-t border-slate-200 px-4 py-4",
 };
 
-function formatDateTime(value: number): string {
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
-function formatInteger(value: bigint): string {
-  return new Intl.NumberFormat("ko-KR").format(Number(value));
-}
-
 function normalizeError(err: unknown): string {
   return ConnectError.from(err).rawMessage;
 }
@@ -132,16 +121,33 @@ function extractErrorResult(err: unknown): AskQuestionResponse | null {
   return detail ?? null;
 }
 
-function stageLabel(stage: string): string {
+function historyCountLabel(
+  count: number,
+  locale: Locale,
+  formattedCount: string,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  if (locale === "ko") {
+    return t("chat.history.count.other", { count: formattedCount });
+  }
+  return count === 1
+    ? t("chat.history.count.one", { count: formattedCount })
+    : t("chat.history.count.other", { count: formattedCount });
+}
+
+function stageLabel(
+  stage: string,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
   switch (stage) {
     case "generation":
-      return "생성";
+      return t("chat.stage.generation");
     case "validation":
-      return "검증";
+      return t("chat.stage.validation");
     case "execution":
-      return "실행";
+      return t("chat.stage.execution");
     default:
-      return stage || "알 수 없음";
+      return stage;
   }
 }
 
@@ -158,6 +164,8 @@ function renderCell(
 }
 
 function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
+  const { t } = useI18n();
+
   if (attempts.length === 0) {
     return null;
   }
@@ -171,12 +179,19 @@ function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
         >
           <div className="flex items-center justify-between gap-3">
             <p className="font-semibold text-slate-900">
-              시도 {index + 1} · {stageLabel(attempt.stage)}
+              {t("chat.attempt.title", {
+                index: index + 1,
+                stage: stageLabel(attempt.stage, t),
+              })}
             </p>
             {attempt.error ? (
-              <span className={styles.warningChip}>실패</span>
+              <span className={styles.warningChip}>
+                {t("chat.attempt.failure")}
+              </span>
             ) : (
-              <span className={styles.successChip}>성공</span>
+              <span className={styles.successChip}>
+                {t("chat.attempt.success")}
+              </span>
             )}
           </div>
           {attempt.error ? (
@@ -185,7 +200,7 @@ function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
             </p>
           ) : (
             <p className="mt-3 text-slate-500">
-              검증과 실행을 통과한 SQL입니다.
+              {t("chat.attempt.successHelp")}
             </p>
           )}
           {attempt.sql ? (
@@ -205,6 +220,7 @@ function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
 }
 
 function QueryResultCard({ item }: { item: QueryHistoryItem }) {
+  const { formatDateTime, formatNumber, t } = useI18n();
   const response = item.response;
 
   return (
@@ -225,7 +241,9 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
             {item.tenantName} · {formatDateTime(item.createdAt)}
           </p>
           <div className="mt-2">
-            <p className="text-sm font-medium text-slate-500">질문</p>
+            <p className="text-sm font-medium text-slate-500">
+              {t("chat.card.question")}
+            </p>
             <div className={`${styles.promptCard} mt-2`}>{item.question}</div>
           </div>
         </div>
@@ -234,7 +252,9 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
             item.status === "success" ? styles.successChip : styles.warningChip
           }
         >
-          {item.status === "success" ? "완료" : "실패"}
+          {item.status === "success"
+            ? t("chat.card.success")
+            : t("chat.card.error")}
         </span>
       </div>
 
@@ -250,7 +270,7 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
               "text-emerald-700",
             ].join(" ")}
           >
-            한국어 요약
+            {t("chat.result.summaryTitle")}
           </p>
           <p className="mt-2">{response.summaryKo}</p>
         </div>
@@ -270,32 +290,36 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
         <>
           <div className={`${styles.metaGrid} mt-4`}>
             <div className={styles.metaTile}>
-              <p className={styles.metaLabel}>행 수</p>
+              <p className={styles.metaLabel}>{t("chat.result.rowCount")}</p>
               <p className={styles.metaValue}>
-                {formatInteger(response.rowCount)}
+                {formatNumber(response.rowCount)}
               </p>
             </div>
             <div className={styles.metaTile}>
-              <p className={styles.metaLabel}>실행 시간</p>
+              <p className={styles.metaLabel}>{t("chat.result.elapsed")}</p>
               <p className={styles.metaValue}>
-                {formatInteger(response.elapsedMs)} ms
+                {formatNumber(response.elapsedMs)} ms
               </p>
             </div>
             <div className={styles.metaTile}>
-              <p className={styles.metaLabel}>안전 제한</p>
+              <p className={styles.metaLabel}>
+                {t("chat.result.safetyLimit")}
+              </p>
               <p className={styles.metaValue}>
                 {response.limitInjected
-                  ? "LIMIT 1000 자동 적용"
-                  : "추가 제한 없음"}
+                  ? t("chat.result.limitInjected")
+                  : t("chat.result.noLimit")}
               </p>
             </div>
           </div>
 
           <details className={`${styles.details} mt-4`} open>
-            <summary className={styles.detailsHeader}>결과 데이터</summary>
+            <summary className={styles.detailsHeader}>
+              {t("chat.result.dataTitle")}
+            </summary>
             <div className={styles.detailsBody}>
               {response.rows.length === 0 ? (
-                <p className={styles.muted}>조건에 맞는 결과가 없습니다.</p>
+                <p className={styles.muted}>{t("chat.result.noRows")}</p>
               ) : (
                 <div className={styles.tableShell}>
                   <table className={styles.table}>
@@ -330,11 +354,15 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
           </details>
 
           <details className={`${styles.details} mt-4`}>
-            <summary className={styles.detailsHeader}>생성된 SQL과 시도 기록</summary>
+            <summary className={styles.detailsHeader}>
+              {t("chat.result.sqlAttemptsTitle")}
+            </summary>
             <div className={`${styles.detailsBody} flex flex-col gap-4`}>
               {response.sqlOriginal ? (
                 <div>
-                  <p className="text-sm font-medium text-slate-900">원본 SQL</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {t("chat.result.originalSql")}
+                  </p>
                   <pre className={`${styles.sqlBox} mt-2`}>
                     <code>{response.sqlOriginal}</code>
                   </pre>
@@ -342,14 +370,18 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
               ) : null}
               {response.sqlExecuted ? (
                 <div>
-                  <p className="text-sm font-medium text-slate-900">실행 SQL</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {t("chat.result.executedSql")}
+                  </p>
                   <pre className={`${styles.sqlBox} mt-2`}>
                     <code>{response.sqlExecuted}</code>
                   </pre>
                 </div>
               ) : null}
               <div>
-                <p className="text-sm font-medium text-slate-900">시도 기록</p>
+                <p className="text-sm font-medium text-slate-900">
+                  {t("chat.result.attempts")}
+                </p>
                 <div className="mt-2">
                   <AttemptList attempts={response.attempts} />
                 </div>
@@ -365,15 +397,23 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
 export default function ChatPage() {
   const tenantClient = useTenantClient();
   const queryClient = useQueryClient();
+  const { formatNumber, locale, t } = useI18n();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedID, setSelectedID] = useState<string | null>(null);
   const [tenantsError, setTenantsError] = useState<string | null>(null);
-  const [question, setQuestion] = useState(
-    "지난 30일 동안 측정소별 평균 pH를 보여줘",
-  );
+  const defaultQuestion = t("chat.form.defaultQuestion");
+  const previousDefaultQuestion = useRef(defaultQuestion);
+  const [question, setQuestion] = useState(defaultQuestion);
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
+
+  useEffect(() => {
+    setQuestion((current) =>
+      current === previousDefaultQuestion.current ? defaultQuestion : current,
+    );
+    previousDefaultQuestion.current = defaultQuestion;
+  }, [defaultQuestion]);
 
   const selectedTenant = useMemo(
     () => tenants.find((tenant) => tenant.id === selectedID) ?? null,
@@ -449,12 +489,12 @@ export default function ChatPage() {
   return (
     <div className={styles.shell}>
       <section className={styles.heroCard}>
-        <p className={styles.introLabel}>Mission</p>
-        <h1 className="text-3xl font-semibold tracking-tight">질문하기</h1>
+        <p className={styles.introLabel}>{t("common.appLabel")}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {t("chat.hero.title")}
+        </h1>
         <p className="max-w-3xl text-sm leading-6 text-slate-600">
-          한국어 질문을 읽기 전용 SQL로 변환하고, 실행 결과를 다시 한국어로
-          요약합니다. 승인된 시맨틱 레이어가 있으면 우선 사용하고, 없으면
-          초안이나 원본 스키마로 안전하게 폴백합니다.
+          {t("chat.hero.subtitle")}
         </p>
       </section>
 
@@ -462,8 +502,10 @@ export default function ChatPage() {
         <aside className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className="text-lg font-semibold">테넌트 선택</h2>
-              <p className={styles.muted}>질문을 보낼 작업 공간을 고르세요.</p>
+              <h2 className="text-lg font-semibold">
+                {t("chat.tenants.title")}
+              </h2>
+              <p className={styles.muted}>{t("chat.tenants.subtitle")}</p>
             </div>
           </div>
 
@@ -474,7 +516,7 @@ export default function ChatPage() {
           <ul className="mt-4 flex flex-col gap-1">
             {tenants.length === 0 ? (
               <li className="px-3 py-6 text-center text-sm text-slate-500">
-                사용 가능한 테넌트가 없습니다.
+                {t("chat.tenants.empty")}
               </li>
             ) : (
               tenants.map((tenant) => {
@@ -509,8 +551,7 @@ export default function ChatPage() {
           </ul>
 
           <div className={`${styles.bannerInfo} mt-4`}>
-            SELECT, WITH, SHOW만 허용됩니다. 위험한 구문은 차단되고, 필요하면
-            LIMIT 1000이 자동 적용됩니다.
+            {t("chat.tenants.guardrail")}
           </div>
         </aside>
 
@@ -518,11 +559,15 @@ export default function ChatPage() {
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
-                <h2 className="text-lg font-semibold">질문 작성</h2>
+                <h2 className="text-lg font-semibold">
+                  {t("chat.form.title")}
+                </h2>
                 <p className={styles.muted}>
                   {selectedTenant
-                    ? `${selectedTenant.name}에 대해 자연어로 물어보세요.`
-                    : "먼저 테넌트를 선택하세요."}
+                    ? t("chat.form.subtitle.selected", {
+                        tenant: selectedTenant.name,
+                      })
+                    : t("chat.form.subtitle.unselected")}
                 </p>
               </div>
               {selectedTenant ? (
@@ -535,17 +580,14 @@ export default function ChatPage() {
                 className="text-sm font-medium text-slate-900"
                 htmlFor="chat-question"
               >
-                질문
+                {t("chat.form.label")}
               </label>
               <textarea
                 id="chat-question"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
                 className={styles.textarea}
-                placeholder={
-                  "예: 지난 분기 공정별 평균 수질 점수와 " +
-                  "가장 문제가 많은 측정소를 보여줘"
-                }
+                placeholder={t("chat.form.placeholder")}
               />
               <div
                 className={[
@@ -553,15 +595,15 @@ export default function ChatPage() {
                   "md:flex-row md:items-center md:justify-between",
                 ].join(" ")}
               >
-                <p className={styles.muted}>
-                  결과에는 SQL 원문, 실제 실행 SQL, 시도 기록이 함께 표시됩니다.
-                </p>
+                <p className={styles.muted}>{t("chat.form.help")}</p>
                 <button
                   type="submit"
                   className={styles.primaryButton}
                   disabled={!canSubmit}
                 >
-                  {submitting ? "질문 처리 중..." : "질문 보내기"}
+                  {submitting
+                    ? t("chat.form.submitting")
+                    : t("chat.form.submit")}
                 </button>
               </div>
             </form>
@@ -570,20 +612,26 @@ export default function ChatPage() {
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
               <div>
-                <h2 className="text-lg font-semibold">최근 질문</h2>
-                <p className={styles.muted}>
-                  같은 브라우저 세션 안에서 보낸 질문과 응답을 임시로 보여줍니다.
-                </p>
+                <h2 className="text-lg font-semibold">
+                  {t("chat.history.title")}
+                </h2>
+                <p className={styles.muted}>{t("chat.history.subtitle")}</p>
               </div>
               {history.length > 0 ? (
-                <span className={styles.chip}>{history.length}개</span>
+                <span className={styles.chip}>
+                  {historyCountLabel(
+                    history.length,
+                    locale,
+                    formatNumber(history.length),
+                    t,
+                  )}
+                </span>
               ) : null}
             </div>
 
             {history.length === 0 ? (
               <div className={`${styles.bannerInfo} mt-4`}>
-                첫 질문을 보내면 한국어 요약, 생성된 SQL, 결과 테이블이 여기에
-                나타납니다.
+                {t("chat.history.empty")}
               </div>
             ) : (
               <div className="mt-4 flex flex-col gap-4">

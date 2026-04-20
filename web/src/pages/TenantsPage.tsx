@@ -12,6 +12,7 @@ import {
   type Tenant,
   type TenantTokenSummary,
 } from "../gen/tenant/v1/tenant_pb";
+import { useI18n } from "../lib/i18n";
 import { useTenantClient } from "../lib/tenantClient";
 
 const styles = {
@@ -66,26 +67,13 @@ const styles = {
   mono: "font-mono text-xs text-slate-700",
 };
 
-function formatTimestamp(ts: Timestamp | undefined): string {
-  if (!ts) {
-    return "";
-  }
-  const ms = Number(ts.seconds) * 1000 + Math.floor(ts.nanos / 1_000_000);
-  if (!Number.isFinite(ms) || ms <= 0) {
-    return "";
-  }
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(ms));
-}
-
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
 export default function TenantsPage() {
   const client = useTenantClient();
+  const { formatDateTime, t } = useI18n();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedID, setSelectedID] = useState<string | null>(null);
@@ -102,6 +90,21 @@ export default function TenantsPage() {
   const [issuing, setIssuing] = useState(false);
   const [revokingID, setRevokingID] = useState<string | null>(null);
   const [plaintext, setPlaintext] = useState<string | null>(null);
+
+  const formatTimestamp = useCallback(
+    (ts: Timestamp | undefined): string => {
+      if (!ts) {
+        return "";
+      }
+      const ms =
+        Number(ts.seconds) * 1000 + Math.floor(ts.nanos / 1_000_000);
+      if (!Number.isFinite(ms) || ms <= 0) {
+        return "";
+      }
+      return formatDateTime(ms);
+    },
+    [formatDateTime],
+  );
 
   const loadTenants = useCallback(async () => {
     try {
@@ -142,7 +145,7 @@ export default function TenantsPage() {
   }, [loadTokens, selectedID]);
 
   const selectedTenant = useMemo(
-    () => tenants.find((t) => t.id === selectedID) ?? null,
+    () => tenants.find((tenant) => tenant.id === selectedID) ?? null,
     [tenants, selectedID],
   );
 
@@ -221,14 +224,12 @@ export default function TenantsPage() {
   return (
     <div className={styles.shell}>
       <section className={styles.heroCard}>
-        <p className={styles.introLabel}>Mission</p>
+        <p className={styles.introLabel}>{t("common.appLabel")}</p>
         <h1 className="text-3xl font-semibold tracking-tight">
-          Tenants &amp; agent tokens
+          {t("tenants.hero.title")}
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-slate-600">
-          Create a tenant, issue a scoped token, and use it to boot an edge
-          agent. Plaintext tokens appear exactly once — copy immediately or
-          revoke and re-issue.
+          {t("tenants.hero.subtitle")}
         </p>
       </section>
 
@@ -240,9 +241,11 @@ export default function TenantsPage() {
         <section className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2 className="text-lg font-semibold">Tenants</h2>
+              <h2 className="text-lg font-semibold">
+                {t("tenants.list.title")}
+              </h2>
               <p className="text-sm text-slate-500">
-                Workspaces you belong to.
+                {t("tenants.list.subtitle")}
               </p>
             </div>
           </div>
@@ -254,7 +257,7 @@ export default function TenantsPage() {
           <ul className="mt-3 flex flex-col gap-1">
             {tenants.length === 0 ? (
               <li className="px-3 py-6 text-center text-sm text-slate-500">
-                No tenants yet. Create one below.
+                {t("tenants.list.empty")}
               </li>
             ) : (
               tenants.map((tenant) => {
@@ -298,22 +301,22 @@ export default function TenantsPage() {
 
           <form onSubmit={handleCreate} className="mt-5 flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-sm">
-              <span className={styles.metaLabel}>Slug</span>
+              <span className={styles.metaLabel}>{t("tenants.form.slug")}</span>
               <input
                 required
                 value={newSlug}
-                onChange={(e) => setNewSlug(e.target.value)}
-                placeholder="ecotech-demo"
+                onChange={(event) => setNewSlug(event.target.value)}
+                placeholder={t("tenants.form.slugPlaceholder")}
                 className={styles.input}
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className={styles.metaLabel}>Name</span>
+              <span className={styles.metaLabel}>{t("tenants.form.name")}</span>
               <input
                 required
                 value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Ecotech demo tenant"
+                onChange={(event) => setNewName(event.target.value)}
+                placeholder={t("tenants.form.namePlaceholder")}
                 className={styles.input}
               />
             </label>
@@ -322,7 +325,9 @@ export default function TenantsPage() {
               disabled={creating}
               className={styles.primaryButton}
             >
-              {creating ? "Creating..." : "Create tenant"}
+              {creating
+                ? t("tenants.form.creating")
+                : t("tenants.form.create")}
             </button>
           </form>
         </section>
@@ -331,10 +336,10 @@ export default function TenantsPage() {
           <div className={styles.sectionHeader}>
             <div>
               <h2 className="text-lg font-semibold">
-                {selectedTenant ? selectedTenant.name : "Select a tenant"}
+                {selectedTenant?.name ?? t("tenants.detail.selectPrompt")}
               </h2>
               <p className="text-sm text-slate-500">
-                Agent tokens scoped to this tenant.
+                {t("tenants.detail.subtitle")}
               </p>
             </div>
           </div>
@@ -346,7 +351,7 @@ export default function TenantsPage() {
           {plaintext ? (
             <div className="mt-4 flex flex-col gap-2">
               <div className={styles.successBanner}>
-                Copy this token now — it will not be shown again.
+                {t("tenants.tokens.copyNow")}
               </div>
               <code className={styles.tokenCode}>{plaintext}</code>
               <div className="flex gap-2">
@@ -355,14 +360,14 @@ export default function TenantsPage() {
                   onClick={() => void copyPlaintext()}
                   className={styles.ghostButton}
                 >
-                  Copy
+                  {t("tenants.tokens.copy")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setPlaintext(null)}
                   className={styles.ghostButton}
                 >
-                  Dismiss
+                  {t("tenants.tokens.dismiss")}
                 </button>
               </div>
             </div>
@@ -373,11 +378,16 @@ export default function TenantsPage() {
               <ul className="mt-4 divide-y divide-slate-200">
                 {tokens.length === 0 ? (
                   <li className="px-3 py-6 text-center text-sm text-slate-500">
-                    No tokens issued for this tenant yet.
+                    {t("tenants.tokens.empty")}
                   </li>
                 ) : (
                   tokens.map((token) => {
                     const revoked = Boolean(token.revokedAt);
+                    const createdAt =
+                      formatTimestamp(token.createdAt) || "-";
+                    const lastUsedAt = formatTimestamp(token.lastUsedAt);
+                    const revokedAt = formatTimestamp(token.revokedAt);
+
                     return (
                       <li
                         key={token.id}
@@ -388,17 +398,13 @@ export default function TenantsPage() {
                             {token.label}
                           </div>
                           <div className={styles.mono}>
-                            id {token.id} · issued{" "}
-                            {formatTimestamp(token.createdAt) || "—"}
-                            {token.lastUsedAt
-                              ? ` · last used ${formatTimestamp(
-                                  token.lastUsedAt,
-                                )}`
+                            {t("tenants.tokens.id")} {token.id} ·{" "}
+                            {t("tenants.tokens.issued")} {createdAt}
+                            {lastUsedAt
+                              ? ` · ${t("tenants.tokens.lastUsed")} ${lastUsedAt}`
                               : ""}
-                            {revoked
-                              ? ` · revoked ${formatTimestamp(
-                                  token.revokedAt,
-                                )}`
+                            {revokedAt
+                              ? ` · ${t("tenants.tokens.revokedAt")} ${revokedAt}`
                               : ""}
                           </div>
                         </div>
@@ -409,10 +415,10 @@ export default function TenantsPage() {
                           className={styles.dangerButton}
                         >
                           {revoked
-                            ? "Revoked"
+                            ? t("tenants.tokens.revoked")
                             : revokingID === token.id
-                              ? "Revoking..."
-                              : "Revoke"}
+                              ? t("tenants.tokens.revoking")
+                              : t("tenants.tokens.revoke")}
                         </button>
                       </li>
                     );
@@ -425,12 +431,14 @@ export default function TenantsPage() {
                 className="mt-5 flex items-end gap-3"
               >
                 <label className="flex flex-1 flex-col gap-1 text-sm">
-                  <span className={styles.metaLabel}>Label</span>
+                  <span className={styles.metaLabel}>
+                    {t("tenants.tokens.label")}
+                  </span>
                   <input
                     required
                     value={newLabel}
-                    onChange={(e) => setNewLabel(e.target.value)}
-                    placeholder="edge-01"
+                    onChange={(event) => setNewLabel(event.target.value)}
+                    placeholder={t("tenants.tokens.labelPlaceholder")}
                     className={styles.input}
                   />
                 </label>
@@ -439,13 +447,15 @@ export default function TenantsPage() {
                   disabled={issuing}
                   className={styles.primaryButton}
                 >
-                  {issuing ? "Issuing..." : "Issue token"}
+                  {issuing
+                    ? t("tenants.tokens.issuing")
+                    : t("tenants.tokens.issue")}
                 </button>
               </form>
             </>
           ) : (
             <div className="px-3 py-10 text-center text-sm text-slate-500">
-              Pick a tenant to manage its tokens.
+              {t("tenants.tokens.pickTenant")}
             </div>
           )}
         </section>

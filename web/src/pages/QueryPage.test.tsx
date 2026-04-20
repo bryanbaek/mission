@@ -1,17 +1,18 @@
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import QueryPage from "./QueryPage";
+import type { Locale } from "../lib/i18n";
 import {
   TenantClientContext,
   type TenantClient,
 } from "../lib/tenantClient";
+import { renderWithI18n } from "../test/renderWithI18n";
 
 const getToken = vi.fn().mockResolvedValue("clerk-token");
 
@@ -25,15 +26,17 @@ function renderWithClient(
   listTenants = vi.fn().mockResolvedValue({
     tenants: [{ id: "tenant-1", slug: "one", name: "Tenant One" }],
   }),
+  locale?: Locale,
 ) {
   const client = {
     listTenants,
   } as unknown as TenantClient;
 
-  return render(
+  return renderWithI18n(
     <TenantClientContext.Provider value={client}>
       <QueryPage />
     </TenantClientContext.Provider>,
+    { locale },
   );
 }
 
@@ -280,5 +283,24 @@ describe("QueryPage", () => {
 
     const firstHeaders = fetchMock.mock.calls[0][1]?.headers as Headers;
     expect(firstHeaders.get("Authorization")).toBeNull();
+  });
+
+  it("renders Korean page-owned content when locale is ko", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: "offline" }),
+    });
+
+    renderWithClient(
+      vi.fn().mockResolvedValue({
+        tenants: [{ id: "tenant-1", slug: "one", name: "Tenant One" }],
+      }),
+      "ko",
+    );
+
+    expect(
+      await screen.findByText("읽기 전용 MySQL 디버그 실행기"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "쿼리 실행" })).toBeInTheDocument();
   });
 });

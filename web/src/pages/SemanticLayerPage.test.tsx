@@ -1,15 +1,18 @@
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 
-import { SemanticLayerStatus } from "../gen/semantic/v1/semantic_pb";
+import {
+  SemanticLayerStatus,
+  type SemanticLayerContent,
+} from "../gen/semantic/v1/semantic_pb";
 import SemanticLayerPage from "./SemanticLayerPage";
+import type { Locale } from "../lib/i18n";
 import {
   SemanticClientContext,
   type SemanticClient,
@@ -18,6 +21,7 @@ import {
   TenantClientContext,
   type TenantClient,
 } from "../lib/tenantClient";
+import { renderWithI18n } from "../test/renderWithI18n";
 
 function makeTimestamp(iso: string): Timestamp {
   const ms = Date.parse(iso);
@@ -28,7 +32,9 @@ function makeTimestamp(iso: string): Timestamp {
   } as unknown as Timestamp;
 }
 
-function makeContent(tableDescription = "고객 마스터 데이터"): any {
+function makeContent(
+  tableDescription = "고객 마스터 데이터",
+): SemanticLayerContent {
   return {
     tables: [
       {
@@ -77,10 +83,10 @@ function makeContent(tableDescription = "고객 마스터 데이터"): any {
         sourceTables: ["mission_app.customers"],
       },
     ],
-  };
+  } as unknown as SemanticLayerContent;
 }
 
-function makeEmptyContent(tableDescription = ""): any {
+function makeEmptyContent(tableDescription = ""): SemanticLayerContent {
   return {
     tables: [
       {
@@ -106,7 +112,7 @@ function makeEmptyContent(tableDescription = ""): any {
     ],
     entities: [],
     candidateMetrics: [],
-  };
+  } as unknown as SemanticLayerContent;
 }
 
 function makeLayer(id: string, status: SemanticLayerStatus, content = makeContent()) {
@@ -134,7 +140,7 @@ function renderPage(options?: {
   updateSemanticLayer?: ReturnType<typeof vi.fn>;
   approveSemanticLayer?: ReturnType<typeof vi.fn>;
   listTenants?: ReturnType<typeof vi.fn>;
-}) {
+}, locale?: Locale) {
   const tenantClient = {
     listTenants:
       options?.listTenants ??
@@ -191,12 +197,13 @@ function renderPage(options?: {
   return {
     tenantClient,
     semanticClient,
-    ...render(
+    ...renderWithI18n(
       <TenantClientContext.Provider value={tenantClient}>
         <SemanticClientContext.Provider value={semanticClient}>
           <SemanticLayerPage />
         </SemanticClientContext.Provider>
       </TenantClientContext.Provider>,
+      { locale },
     ),
   };
 }
@@ -216,7 +223,7 @@ describe("SemanticLayerPage", () => {
     });
 
     expect(
-      await screen.findByText("스키마가 아직 없습니다"),
+      await screen.findByText("Schema not captured yet"),
     ).toBeInTheDocument();
   });
 
@@ -261,7 +268,9 @@ describe("SemanticLayerPage", () => {
 
     renderPage({ getSemanticLayer, draftSemanticLayer });
 
-    const button = await screen.findByRole("button", { name: "초안 생성" });
+    const button = await screen.findByRole("button", {
+      name: "Generate draft",
+    });
     fireEvent.click(button);
 
     await waitFor(() =>
@@ -270,7 +279,7 @@ describe("SemanticLayerPage", () => {
         schemaVersionId: "schema-1",
       }),
     );
-    expect(await screen.findByText("시맨틱 레이어")).toBeInTheDocument();
+    expect(await screen.findByText("Semantic Layer")).toBeInTheDocument();
     expect(await screen.findByDisplayValue("고객 마스터 데이터")).toBeInTheDocument();
   });
 
@@ -320,7 +329,7 @@ describe("SemanticLayerPage", () => {
     fireEvent.change(tableTextarea, {
       target: { value: "수정된 고객 설명" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() =>
       expect(updateSemanticLayer).toHaveBeenCalledWith({
@@ -336,7 +345,7 @@ describe("SemanticLayerPage", () => {
       }),
     );
     expect(
-      await screen.findByText("수정 내용을 새 초안으로 저장했습니다."),
+      await screen.findByText("Saved your edits as a new draft."),
     ).toBeInTheDocument();
   });
 
@@ -409,7 +418,7 @@ describe("SemanticLayerPage", () => {
     fireEvent.change(tableTextarea, {
       target: { value: "승인 전 수정" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "승인" }));
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
 
     await waitFor(() => expect(updateSemanticLayer).toHaveBeenCalledTimes(1));
     await waitFor(() =>
@@ -419,7 +428,7 @@ describe("SemanticLayerPage", () => {
       }),
     );
     expect(
-      await screen.findByText("시맨틱 레이어를 승인했습니다."),
+      await screen.findByText("Semantic layer approved."),
     ).toBeInTheDocument();
   });
 
@@ -447,7 +456,7 @@ describe("SemanticLayerPage", () => {
       }),
     });
 
-    expect(await screen.findByText("변경")).toBeInTheDocument();
+    expect(await screen.findByText("Changed")).toBeInTheDocument();
     expect(screen.getAllByText("mission_app.customers").length).toBeGreaterThan(0);
     expect(screen.getByText("이전 고객 설명")).toBeInTheDocument();
     expect(screen.getAllByText("새 고객 설명").length).toBeGreaterThan(0);
@@ -478,9 +487,9 @@ describe("SemanticLayerPage", () => {
       }),
     });
 
-    expect(await screen.findByText("표시할 엔터티가 없습니다.")).toBeInTheDocument();
-    expect(screen.getByText("표시할 후보 지표가 없습니다.")).toBeInTheDocument();
-    expect(screen.getByText("비교할 변경 사항이 없습니다.")).toBeInTheDocument();
+    expect(await screen.findByText("No entities to display.")).toBeInTheDocument();
+    expect(screen.getByText("No candidate metrics to display.")).toBeInTheDocument();
+    expect(screen.getByText("No differences to compare.")).toBeInTheDocument();
   });
 
   it("renders removed diff entries when a current description is cleared", async () => {
@@ -508,8 +517,23 @@ describe("SemanticLayerPage", () => {
     });
 
     await waitFor(() =>
-      expect(screen.getAllByText("삭제").length).toBeGreaterThan(0),
+      expect(screen.getAllByText("Removed").length).toBeGreaterThan(0),
     );
     expect(screen.getByText("이전에 있던 설명")).toBeInTheDocument();
+  });
+
+  it("renders Korean page-owned content when locale is ko", async () => {
+    renderPage(
+      {
+        getSemanticLayer: vi.fn().mockResolvedValue({
+          hasSchema: false,
+          needsDraft: false,
+        }),
+      },
+      "ko",
+    );
+
+    expect(await screen.findByText("시맨틱 레이어")).toBeInTheDocument();
+    expect(screen.getByText("스키마가 아직 없습니다")).toBeInTheDocument();
   });
 });

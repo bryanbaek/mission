@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { type Locale, useI18n } from "../lib/i18n";
+
 type Health = { status: string; database: string };
 
 type AgentSession = {
@@ -44,9 +46,7 @@ const styles = {
     "grid gap-3 rounded-2xl bg-slate-950 px-5 py-4",
     "text-sm text-slate-50",
   ].join(" "),
-  heroCard: [
-    "rounded-3xl border border-slate-200 bg-white p-8 shadow-sm",
-  ].join(" "),
+  heroCard: "rounded-3xl border border-slate-200 bg-white p-8 shadow-sm",
   heroIntro: [
     "flex flex-col gap-4 md:flex-row",
     "md:items-end md:justify-between",
@@ -84,7 +84,25 @@ function statusClass(isOnline: boolean) {
   ].join(" ");
 }
 
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function sessionCountLabel(
+  count: number,
+  locale: Locale,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  if (locale === "ko") {
+    return t("agents.count.other", { count });
+  }
+  return count === 1
+    ? t("agents.count.one", { count })
+    : t("agents.count.other", { count });
+}
+
 export default function AgentsPage() {
+  const { formatDateTime, locale, t } = useI18n();
   const [health, setHealth] = useState<Health | null>(null);
   const [agents, setAgents] = useState<AgentSession[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +111,23 @@ export default function AgentsPage() {
   const [pingResults, setPingResults] = useState<
     Record<string, PingResponse>
   >({});
+
+  const formatDateTimeValue = (value: string | null | undefined) => {
+    if (!value) {
+      return t("common.na");
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return formatDateTime(date, {
+      dateStyle: "medium",
+      timeStyle: "medium",
+    });
+  };
+
+  const statusLabel = (status: AgentSession["status"]) =>
+    status === "online" ? t("common.online") : t("common.offline");
 
   useEffect(() => {
     let cancelled = false;
@@ -127,7 +162,7 @@ export default function AgentsPage() {
         setError(null);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : String(err));
+          setError(errorMessage(err));
         }
       }
     };
@@ -162,7 +197,7 @@ export default function AgentsPage() {
       }));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setPingingSessionID(null);
     }
@@ -173,57 +208,56 @@ export default function AgentsPage() {
       <section className={styles.heroCard}>
         <div className={styles.heroIntro}>
           <div className="space-y-2">
-            <p className={styles.introLabel}>Mission</p>
+            <p className={styles.introLabel}>{t("common.appLabel")}</p>
             <h1 className="text-3xl font-semibold tracking-tight">
-              Week 2.1 agent tunnel debug surface
+              {t("agents.hero.title")}
             </h1>
             <p className="max-w-2xl text-sm leading-6 text-slate-600">
-              Polling the control plane every 5 seconds for live agent
-              presence and exposing a manual ping to validate the outbound
-              tunnel end-to-end.
+              {t("agents.hero.subtitle")}
             </p>
           </div>
           <div className={styles.healthCard}>
             <div className="flex items-center gap-3">
-              <span className="text-slate-400">API</span>
+              <span className="text-slate-400">
+                {t("agents.health.api")}
+              </span>
               <span className="font-medium">
-                {health?.status ?? "loading"}
+                {health?.status ?? t("common.loading")}
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-slate-400">Postgres</span>
+              <span className="text-slate-400">
+                {t("agents.health.database")}
+              </span>
               <span className="font-medium">
-                {health?.database ?? "loading"}
+                {health?.database ?? t("common.loading")}
               </span>
             </div>
           </div>
         </div>
-        {error ? (
-          <div className={styles.errorBanner}>
-            {error}
-          </div>
-        ) : null}
+        {error ? <div className={styles.errorBanner}>{error}</div> : null}
       </section>
 
       <section className={styles.sectionCard}>
         <div className={styles.sectionHeader}>
           <div className={styles.sectionHeaderRow}>
             <div>
-              <h2 className="text-lg font-semibold">Agent sessions</h2>
+              <h2 className="text-lg font-semibold">
+                {t("agents.section.title")}
+              </h2>
               <p className="text-sm text-slate-500">
-                One runtime-scoped row per tenant token. Offline rows remain
-                until replaced.
+                {t("agents.section.subtitle")}
               </p>
             </div>
             <div className={styles.countPill}>
-              {agents.length} session{agents.length === 1 ? "" : "s"}
+              {sessionCountLabel(agents.length, locale, t)}
             </div>
           </div>
         </div>
 
         {agents.length === 0 ? (
           <div className={styles.emptyState}>
-            No edge agents connected yet.
+            {t("agents.section.empty")}
           </div>
         ) : (
           <div className="divide-y divide-slate-200">
@@ -239,7 +273,7 @@ export default function AgentsPage() {
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
                       <span className={statusClass(isOnline)}>
-                        {agent.status}
+                        {statusLabel(agent.status)}
                       </span>
                       <code className={styles.sessionCode}>
                         {agent.session_id}
@@ -248,25 +282,33 @@ export default function AgentsPage() {
 
                     <dl className={styles.metaGrid}>
                       <div>
-                        <dt className={styles.metaLabel}>Host</dt>
+                        <dt className={styles.metaLabel}>
+                          {t("agents.meta.host")}
+                        </dt>
                         <dd className={styles.metaValue}>
                           {agent.hostname}
                         </dd>
                       </div>
                       <div>
-                        <dt className={styles.metaLabel}>Version</dt>
+                        <dt className={styles.metaLabel}>
+                          {t("agents.meta.version")}
+                        </dt>
                         <dd className={styles.metaValue}>
-                          {agent.agent_version || "unknown"}
+                          {agent.agent_version || t("common.unknown")}
                         </dd>
                       </div>
                       <div>
-                        <dt className={styles.metaLabel}>Token label</dt>
+                        <dt className={styles.metaLabel}>
+                          {t("agents.meta.tokenLabel")}
+                        </dt>
                         <dd className={styles.metaValue}>
                           {agent.token_label}
                         </dd>
                       </div>
                       <div>
-                        <dt className={styles.metaLabel}>Tenant</dt>
+                        <dt className={styles.metaLabel}>
+                          {t("agents.meta.tenant")}
+                        </dt>
                         <dd className={styles.tenantValue}>
                           {agent.tenant_id}
                         </dd>
@@ -278,38 +320,40 @@ export default function AgentsPage() {
                     <div className={styles.sideDetails}>
                       <div>
                         <span className={`block ${styles.metaLabel}`}>
-                          Connected
+                          {t("agents.meta.connected")}
                         </span>
                         <span className={styles.metaValue}>
-                          {formatDateTime(agent.connected_at)}
+                          {formatDateTimeValue(agent.connected_at)}
                         </span>
                       </div>
                       <div>
                         <span className={`block ${styles.metaLabel}`}>
-                          Last heartbeat
+                          {t("agents.meta.lastHeartbeat")}
                         </span>
                         <span className={styles.metaValue}>
-                          {formatDateTime(agent.last_heartbeat_at)}
+                          {formatDateTimeValue(agent.last_heartbeat_at)}
                         </span>
                       </div>
                       {agent.disconnected_at ? (
                         <div>
                           <span className={`block ${styles.metaLabel}`}>
-                            Disconnected
+                            {t("agents.meta.disconnected")}
                           </span>
                           <span className={styles.metaValue}>
-                            {formatDateTime(agent.disconnected_at)}
+                            {formatDateTimeValue(agent.disconnected_at)}
                           </span>
                         </div>
                       ) : null}
                       {ping ? (
                         <div>
                           <span className={`block ${styles.metaLabel}`}>
-                            Last ping
+                            {t("agents.meta.lastPing")}
                           </span>
                           <span className={styles.metaValue}>
-                            {ping.round_trip_ms} ms at{" "}
-                            {formatDateTime(ping.completed_at)}
+                            {t("agents.meta.lastPingValue", {
+                              ms: ping.round_trip_ms,
+                              time: formatDateTimeValue(ping.completed_at),
+                            })}
                           </span>
                         </div>
                       ) : null}
@@ -324,8 +368,8 @@ export default function AgentsPage() {
                       className={styles.button}
                     >
                       {pingingSessionID === agent.session_id
-                        ? "Pinging..."
-                        : "Ping agent"}
+                        ? t("agents.button.pinging")
+                        : t("agents.button.ping")}
                     </button>
                   </div>
                 </article>
@@ -336,20 +380,4 @@ export default function AgentsPage() {
       </section>
     </div>
   );
-}
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) {
-    return "n/a";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "medium",
-  }).format(date);
 }
