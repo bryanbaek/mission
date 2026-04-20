@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -104,17 +105,34 @@ func (p *Provider) Complete(
 	if err != nil {
 		return llm.CompletionResponse{}, fmt.Errorf("send openai request: %w", err)
 	}
-	defer httpResp.Body.Close()
 
-	respBody, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("read openai response: %w", err)
+	respBody, readErr := io.ReadAll(httpResp.Body)
+	closeErr := httpResp.Body.Close()
+	if readErr != nil {
+		err = fmt.Errorf("read openai response: %w", readErr)
+		if closeErr != nil {
+			return llm.CompletionResponse{}, errors.Join(
+				err,
+				fmt.Errorf("close openai response body: %w", closeErr),
+			)
+		}
+		return llm.CompletionResponse{}, err
 	}
 	if httpResp.StatusCode >= http.StatusBadRequest {
-		return llm.CompletionResponse{}, decodeError(
+		err = decodeError(
 			httpResp.StatusCode,
 			respBody,
 		)
+		if closeErr != nil {
+			return llm.CompletionResponse{}, errors.Join(
+				err,
+				fmt.Errorf("close openai response body: %w", closeErr),
+			)
+		}
+		return llm.CompletionResponse{}, err
+	}
+	if closeErr != nil {
+		return llm.CompletionResponse{}, fmt.Errorf("close openai response body: %w", closeErr)
 	}
 
 	var parsed chatCompletionsResponse

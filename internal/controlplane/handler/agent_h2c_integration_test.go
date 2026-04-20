@@ -73,7 +73,11 @@ func TestAgentHandlerH2CStreamStaysOpenUntilSessionEnds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	defer listener.Close()
+	defer func() {
+		if err := listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			t.Errorf("listener.Close returned error: %v", err)
+		}
+	}()
 
 	serverErrCh := make(chan error, 1)
 	go func() {
