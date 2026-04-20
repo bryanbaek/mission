@@ -7,11 +7,15 @@ import (
 )
 
 type Config struct {
-	Env            string
-	HTTPPort       int
-	DatabaseURL    string
-	LogLevel       string
-	ClerkSecretKey string
+	Env                string
+	HTTPPort           int
+	DatabaseURL        string
+	LogLevel           string
+	ClerkSecretKey     string
+	AnthropicAPIKey    string
+	OpenAIAPIKey       string
+	DefaultLLMProvider string
+	SemanticLayerModel string
 }
 
 func Load() (Config, error) {
@@ -20,11 +24,15 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid HTTP_PORT: %w", err)
 	}
 	cfg := Config{
-		Env:            getenv("ENV", "development"),
-		HTTPPort:       port,
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		LogLevel:       getenv("LOG_LEVEL", "info"),
-		ClerkSecretKey: os.Getenv("CLERK_SECRET_KEY"),
+		Env:                getenv("ENV", "development"),
+		HTTPPort:           port,
+		DatabaseURL:        os.Getenv("DATABASE_URL"),
+		LogLevel:           getenv("LOG_LEVEL", "info"),
+		ClerkSecretKey:     os.Getenv("CLERK_SECRET_KEY"),
+		AnthropicAPIKey:    os.Getenv("ANTHROPIC_API_KEY"),
+		OpenAIAPIKey:       os.Getenv("OPENAI_API_KEY"),
+		DefaultLLMProvider: getenv("DEFAULT_LLM_PROVIDER", "anthropic"),
+		SemanticLayerModel: getenv("SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")

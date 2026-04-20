@@ -33,8 +33,13 @@ func TestProviderRoundTrip(t *testing.T) {
 		MaxTokens: 256,
 	}
 	want := CompletionResponse{
-		Content: "response",
-		Model:   "test-model",
+		Content:  "response",
+		Provider: "fake",
+		Model:    "test-model",
+		Usage: Usage{
+			InputTokens:  12,
+			OutputTokens: 4,
+		},
 	}
 
 	impl := &fakeProvider{response: want}

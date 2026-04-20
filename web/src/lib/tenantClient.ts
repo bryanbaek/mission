@@ -3,6 +3,7 @@ import {
   createClient,
   type Client,
   type Interceptor,
+  type Transport,
 } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 
@@ -13,7 +14,7 @@ export type TenantClient = Client<typeof TenantService>;
 // TokenGetter returns the current session JWT, or null when unauthenticated.
 export type TokenGetter = () => Promise<string | null>;
 
-export function createTenantClient(getToken: TokenGetter): TenantClient {
+export function createAuthedTransport(getToken: TokenGetter): Transport {
   const authInterceptor: Interceptor = (next) => async (req) => {
     const token = await getToken();
     if (token) {
@@ -22,12 +23,20 @@ export function createTenantClient(getToken: TokenGetter): TenantClient {
     return next(req);
   };
 
-  const transport = createConnectTransport({
+  return createConnectTransport({
     baseUrl: "/",
     interceptors: [authInterceptor],
   });
+}
 
+export function createTenantClientFromTransport(
+  transport: Transport,
+): TenantClient {
   return createClient(TenantService, transport);
+}
+
+export function createTenantClient(getToken: TokenGetter): TenantClient {
+  return createTenantClientFromTransport(createAuthedTransport(getToken));
 }
 
 // Context lets page components consume a client without pulling Clerk in

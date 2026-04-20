@@ -17,11 +17,15 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
+	"github.com/bryanbaek/mission/gen/go/semantic/v1/semanticv1connect"
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/config"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/db"
+	llmgateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
+	anthropicgateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm/anthropic"
+	openaigateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm/openai"
 	"github.com/bryanbaek/mission/internal/controlplane/handler"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
 )
@@ -68,6 +72,7 @@ func run() error {
 	tenantRepo := repository.NewTenantRepository(pool)
 	tokenRepo := repository.NewTenantTokenRepository(pool)
 	schemaRepo := repository.NewTenantSchemaRepository(pool)
+	semanticLayerRepo := repository.NewTenantSemanticLayerRepository(pool)
 
 	// Controllers
 	tenantCtrl := controller.NewTenantController(tenantRepo, tokenRepo)
@@ -81,6 +86,33 @@ func run() error {
 		schemaRepo,
 		agentSessions,
 		controller.SchemaControllerConfig{},
+	)
+	llmProviders := make([]llmgateway.Provider, 0, 2)
+	if cfg.AnthropicAPIKey != "" {
+		llmProviders = append(
+			llmProviders,
+			anthropicgateway.New(anthropicgateway.Config{
+				APIKey: cfg.AnthropicAPIKey,
+			}),
+		)
+	}
+	if cfg.OpenAIAPIKey != "" {
+		llmProviders = append(
+			llmProviders,
+			openaigateway.New(openaigateway.Config{
+				APIKey: cfg.OpenAIAPIKey,
+			}),
+		)
+	}
+	llmRouter := llmgateway.NewRouter(cfg.DefaultLLMProvider, llmProviders...)
+	semanticLayerCtrl := controller.NewSemanticLayerController(
+		tenantCtrl,
+		schemaRepo,
+		semanticLayerRepo,
+		llmRouter,
+		controller.SemanticLayerControllerConfig{
+			Model: cfg.SemanticLayerModel,
+		},
 	)
 
 	// Auth
@@ -103,7 +135,11 @@ func run() error {
 	debugAgentHandler := handler.NewAgentDebugHandler(agentSessions)
 	queryDebugHandler := handler.NewQueryDebugHandler(tenantCtrl, agentSessions)
 	schemaDebugHandler := handler.NewSchemaDebugHandler(tenantCtrl, schemaCtrl)
+	semanticLayerHandler := handler.NewSemanticLayerHandler(semanticLayerCtrl)
 	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
+	semanticPath, semanticSvc := semanticv1connect.NewSemanticLayerServiceHandler(
+		semanticLayerHandler,
+	)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
 
 	r := chi.NewRouter()
@@ -120,6 +156,7 @@ func run() error {
 		r.Use(middleware.Timeout(30 * time.Second))
 		r.Use(auth.RequireAuth(verifier))
 		r.Mount(tenantPath, tenantSvc)
+		r.Mount(semanticPath, semanticSvc)
 	})
 
 	r.Group(func(r chi.Router) {

@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package semantic.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bryanbaek/mission/gen/go/semantic/v1;semanticv1";
+
+enum SemanticLayerStatus {
+  SEMANTIC_LAYER_STATUS_UNSPECIFIED = 0;
+  SEMANTIC_LAYER_STATUS_DRAFT = 1;
+  SEMANTIC_LAYER_STATUS_APPROVED = 2;
+  SEMANTIC_LAYER_STATUS_ARCHIVED = 3;
+}
+
+message SchemaVersionSummary {
+  string id = 1;
+  google.protobuf.Timestamp captured_at = 2;
+  string schema_hash = 3;
+  string database_name = 4;
+}
+
+message SemanticColumn {
+  string table_schema = 1;
+  string table_name = 2;
+  string column_name = 3;
+  int32 ordinal_position = 4;
+  string data_type = 5;
+  string column_type = 6;
+  bool is_nullable = 7;
+  string column_comment = 8;
+  string description = 9;
+}
+
+message SemanticTable {
+  string table_schema = 1;
+  string table_name = 2;
+  string table_type = 3;
+  string table_comment = 4;
+  string description = 5;
+  repeated SemanticColumn columns = 6;
+}
+
+message SemanticEntity {
+  string name = 1;
+  string description = 2;
+  repeated string source_tables = 3;
+}
+
+message CandidateMetric {
+  string name = 1;
+  string description = 2;
+  repeated string source_tables = 3;
+}
+
+message SemanticLayerContent {
+  repeated SemanticTable tables = 1;
+  repeated SemanticEntity entities = 2;
+  repeated CandidateMetric candidate_metrics = 3;
+}
+
+message SemanticLayer {
+  string id = 1;
+  string tenant_id = 2;
+  string schema_version_id = 3;
+  SemanticLayerStatus status = 4;
+  SemanticLayerContent content = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp approved_at = 7;
+  string approved_by_user_id = 8;
+}
+
+message CompletionUsage {
+  string provider = 1;
+  string model = 2;
+  int32 input_tokens = 3;
+  int32 output_tokens = 4;
+  int32 cache_creation_input_tokens = 5;
+  int32 cache_read_input_tokens = 6;
+}
+
+message GetSemanticLayerRequest {
+  string tenant_id = 1;
+}
+
+message GetSemanticLayerResponse {
+  bool has_schema = 1;
+  bool needs_draft = 2;
+  SchemaVersionSummary latest_schema = 3;
+  SemanticLayer current_layer = 4;
+  SemanticLayer approved_baseline = 5;
+}
+
+message DraftSemanticLayerRequest {
+  string tenant_id = 1;
+  string schema_version_id = 2;
+}
+
+message DraftSemanticLayerResponse {
+  SemanticLayer layer = 1;
+  CompletionUsage usage = 2;
+}
+
+message UpdateSemanticLayerRequest {
+  string tenant_id = 1;
+  string id = 2;
+  SemanticLayerContent content = 3;
+}
+
+message UpdateSemanticLayerResponse {
+  SemanticLayer layer = 1;
+}
+
+message ApproveSemanticLayerRequest {
+  string tenant_id = 1;
+  string id = 2;
+}
+
+message ApproveSemanticLayerResponse {
+  SemanticLayer layer = 1;
+}
+
+service SemanticLayerService {
+  rpc GetSemanticLayer(GetSemanticLayerRequest)
+      returns (GetSemanticLayerResponse);
+  rpc DraftSemanticLayer(DraftSemanticLayerRequest)
+      returns (DraftSemanticLayerResponse);
+  rpc UpdateSemanticLayer(UpdateSemanticLayerRequest)
+      returns (UpdateSemanticLayerResponse);
+  rpc ApproveSemanticLayer(ApproveSemanticLayerRequest)
+      returns (ApproveSemanticLayerResponse);
+}

@@ -59,6 +59,39 @@ func (r *TenantSchemaRepository) LatestByTenant(
 	return rec, nil
 }
 
+func (r *TenantSchemaRepository) GetByTenantAndID(
+	ctx context.Context,
+	tenantID, schemaVersionID uuid.UUID,
+) (model.TenantSchemaVersion, error) {
+	var rec model.TenantSchemaVersion
+	err := r.db.QueryRow(ctx, `
+		SELECT
+			id,
+			tenant_id,
+			captured_at,
+			schema_hash,
+			blob,
+			created_at
+		FROM tenant_schemas
+		WHERE tenant_id = $1
+		  AND id = $2
+	`, tenantID, schemaVersionID).Scan(
+		&rec.ID,
+		&rec.TenantID,
+		&rec.CapturedAt,
+		&rec.SchemaHash,
+		&rec.Blob,
+		&rec.CreatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.TenantSchemaVersion{}, ErrNotFound
+	}
+	if err != nil {
+		return model.TenantSchemaVersion{}, fmt.Errorf("select tenant schema by id: %w", err)
+	}
+	return rec, nil
+}
+
 func (r *TenantSchemaRepository) Create(
 	ctx context.Context,
 	tenantID uuid.UUID,

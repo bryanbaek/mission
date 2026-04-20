@@ -8,10 +8,16 @@ import {
 } from "@clerk/clerk-react";
 
 import {
-  createTenantClient,
+  createAuthedTransport,
+  createTenantClientFromTransport,
   TenantClientContext,
   type TenantClient,
 } from "./tenantClient";
+import {
+  createSemanticClientFromTransport,
+  SemanticClientContext,
+  type SemanticClient,
+} from "./semanticClient";
 
 type Props = {
   children: React.ReactNode;
@@ -51,13 +57,23 @@ export function ClerkGate({ children }: Props) {
 
 function AuthedClientProvider({ children }: Props) {
   const { getToken } = useAuth();
-  const client: TenantClient = useMemo(
-    () => createTenantClient(() => getToken()),
+  const transport = useMemo(
+    () => createAuthedTransport(() => getToken()),
     [getToken],
+  );
+  const client: TenantClient = useMemo(
+    () => createTenantClientFromTransport(transport),
+    [transport],
+  );
+  const semanticClient: SemanticClient = useMemo(
+    () => createSemanticClientFromTransport(transport),
+    [transport],
   );
   return (
     <TenantClientContext.Provider value={client}>
-      {children}
+      <SemanticClientContext.Provider value={semanticClient}>
+        {children}
+      </SemanticClientContext.Provider>
     </TenantClientContext.Provider>
   );
 }

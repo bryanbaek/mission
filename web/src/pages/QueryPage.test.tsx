@@ -153,4 +153,132 @@ describe("QueryPage", () => {
       await screen.findByText("no active agent connected for tenant"),
     ).toBeInTheDocument();
   });
+
+  it("surfaces explicit status errors from the response body", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ error: "edge agent unavailable" }),
+    });
+
+    renderWithClient();
+
+    expect(
+      await screen.findByText("edge agent unavailable"),
+    ).toBeInTheDocument();
+  });
+
+  it("surfaces tenant-loading errors", async () => {
+    renderWithClient(
+      vi.fn().mockRejectedValue("tenant load failed"),
+    );
+
+    expect(await screen.findByText("tenant load failed")).toBeInTheDocument();
+  });
+
+  it("switches tenants and updates the SQL input", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: "online" }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: "offline" }),
+      });
+
+    renderWithClient(
+      vi.fn().mockResolvedValue({
+        tenants: [
+          { id: "tenant-1", slug: "one", name: "Tenant One" },
+          { id: "tenant-2", slug: "two", name: "Tenant Two" },
+        ],
+      }),
+    );
+
+    expect((await screen.findAllByText("Tenant One"))[0]).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Tenant Two/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        "/api/debug/tenants/tenant-2/query",
+        {
+          headers: expect.any(Headers),
+        },
+      ),
+    );
+
+    const textarea = screen.getByPlaceholderText("SELECT 1");
+    fireEvent.change(textarea, { target: { value: "SELECT * FROM orders" } });
+
+    expect(screen.getByDisplayValue("SELECT * FROM orders")).toBeInTheDocument();
+  });
+
+  it("does not issue a query when no tenant is selected", async () => {
+    renderWithClient(
+      vi.fn().mockResolvedValue({
+        tenants: [],
+      }),
+    );
+
+    expect(
+      await screen.findByText("No tenants available yet."),
+    ).toBeInTheDocument();
+
+    const textarea = screen.getByPlaceholderText("SELECT 1");
+    const form = textarea.closest("form");
+    if (!form) {
+      throw new Error("expected query form");
+    }
+
+    fireEvent.submit(form);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to status HTTP errors when the body has no message", async () => {
+    getToken.mockResolvedValue(null);
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      json: async () => ({}),
+    });
+
+    renderWithClient();
+
+    expect(
+      await screen.findByText("status request failed with 503"),
+    ).toBeInTheDocument();
+
+    const firstHeaders = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(firstHeaders.get("Authorization")).toBeNull();
+  });
+
+  it("falls back to query HTTP errors when the body has no message", async () => {
+    getToken.mockResolvedValue(null);
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: "online" }),
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      });
+
+    renderWithClient();
+
+    const button = await screen.findByRole("button", { name: "Run query" });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    expect(
+      await screen.findByText("query failed with 500"),
+    ).toBeInTheDocument();
+
+    const firstHeaders = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(firstHeaders.get("Authorization")).toBeNull();
+  });
 });

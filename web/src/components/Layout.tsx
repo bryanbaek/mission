@@ -5,6 +5,7 @@ const nav = [
   { to: "/", label: "Tenants" },
   { to: "/agents", label: "Agents" },
   { to: "/queries", label: "Queries" },
+  { to: "/semantic-layer", label: "시맨틱 레이어" },
 ];
 
 export default function Layout() {
