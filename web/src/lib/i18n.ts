@@ -173,6 +173,17 @@ const chatEn = {
   "chat.stage.execution": "execution",
 } as const;
 
+const starterQuestionsEn = {
+  "starterQuestions.title": "Suggested starter questions",
+  "starterQuestions.subtitle":
+    "These are tenant-specific questions built from the approved semantic layer. Click one to see the product answer a real question immediately.",
+  "starterQuestions.regenerate": "Regenerate",
+  "starterQuestions.loading":
+    "Generating starter questions for this workspace...",
+  "starterQuestions.empty": "No starter questions are available yet.",
+  "starterQuestions.error": "Failed to load starter questions.",
+} as const;
+
 const semanticEn = {
   "semantic.hero.title": "Semantic Layer",
   "semantic.hero.subtitle":
@@ -448,6 +459,7 @@ const en = {
   ...agentsEn,
   ...queryDebugEn,
   ...chatEn,
+  ...starterQuestionsEn,
   ...semanticEn,
   ...onboardingEn,
 } as const;
@@ -610,6 +622,17 @@ const chatKo: Record<keyof typeof chatEn, string> = {
   "chat.stage.generation": "생성",
   "chat.stage.validation": "검증",
   "chat.stage.execution": "실행",
+};
+
+const starterQuestionsKo: Record<keyof typeof starterQuestionsEn, string> = {
+  "starterQuestions.title": "바로 실행해 볼 질문",
+  "starterQuestions.subtitle":
+    "승인된 시맨틱 레이어를 바탕으로 실제 테이블을 쓰는 질문만 골랐습니다. 하나를 눌러 바로 결과를 확인하세요.",
+  "starterQuestions.regenerate": "다시 추천받기",
+  "starterQuestions.loading":
+    "이 작업 공간에 맞는 시작 질문을 만드는 중입니다...",
+  "starterQuestions.empty": "지금은 추천 질문이 없습니다.",
+  "starterQuestions.error": "추천 질문을 불러오지 못했습니다.",
 };
 
 const semanticKo: Record<keyof typeof semanticEn, string> = {
@@ -889,6 +912,7 @@ const ko: Record<TranslationKey, string> = {
   ...agentsKo,
   ...queryDebugKo,
   ...chatKo,
+  ...starterQuestionsKo,
   ...semanticKo,
   ...onboardingKo,
 };

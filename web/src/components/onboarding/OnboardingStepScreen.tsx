@@ -15,6 +15,7 @@ import type {
 } from "../../gen/semantic/v1/semantic_pb";
 import type { OnboardingState } from "../../gen/onboarding/v1/onboarding_pb";
 import SemanticLayerEditor from "../SemanticLayerEditor";
+import StarterQuestions from "../StarterQuestions";
 import { useI18n } from "../../lib/i18n";
 import { onboardingStepPath } from "../../lib/onboarding";
 import { useOnboardingClient } from "../../lib/onboardingClient";
@@ -1048,14 +1049,24 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-700">
                 {t("onboarding.step6.readyBody")}
               </p>
+              <div className="mt-6">
+                <StarterQuestions
+                  tenantId={tenantId}
+                  onPick={(text) =>
+                    navigate(
+                      `/chat?tenant=${encodeURIComponent(tenantId)}&q=${encodeURIComponent(text)}&auto=1`,
+                    )
+                  }
+                />
+              </div>
             </div>
             <div className="rounded-3xl bg-emerald-50 p-5">
-              <Link to="/chat" className={`${styles.buttonPrimary} w-full`}>
-                {t("onboarding.step6.chatCta")}
-              </Link>
+              <p className="text-sm leading-6 text-emerald-900">
+                {t("onboarding.step6.next")}
+              </p>
               <button
                 type="button"
-                className={`${styles.buttonSecondary} mt-3 w-full`}
+                className={`${styles.buttonPrimary} mt-4 w-full`}
                 onClick={() =>
                   void onboardingClient
                     .completeStarterStep({ tenantId })

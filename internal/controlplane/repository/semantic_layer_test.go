@@ -69,6 +69,54 @@ func TestTenantSemanticLayerRepositoryLatestApprovedBySchemaVersion(t *testing.T
 	}
 }
 
+func TestTenantSemanticLayerRepositoryLatestApprovedByTenant(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	schemaVersionID := uuid.New()
+	layerID := uuid.New()
+	createdAt := time.Unix(1_700_000_150, 0).UTC()
+	approvedAt := createdAt.Add(time.Minute)
+	approvedBy := "user_321"
+	content := json.RawMessage(`{"tables":[{"table_schema":"mission_app","table_name":"orders","table_type":"BASE TABLE","table_comment":"","description":"주문","columns":[{"table_schema":"mission_app","table_name":"orders","column_name":"order_id","ordinal_position":1,"data_type":"bigint","column_type":"bigint","is_nullable":false,"column_comment":"","description":"주문 ID"}]}],"entities":[],"candidate_metrics":[]}`)
+
+	repo := &TenantSemanticLayerRepository{
+		db: &fakeTenantDB{
+			queryRowFn: func(_ context.Context, sql string, args ...any) pgx.Row {
+				if !strings.Contains(sql, "status = 'approved'") ||
+					!strings.Contains(sql, "WHERE tenant_id = $1") {
+					t.Fatalf("unexpected SQL: %q", sql)
+				}
+				if len(args) != 1 || args[0] != tenantID {
+					t.Fatalf("unexpected args: %#v", args)
+				}
+				return fakeRow{scanFn: func(dest ...any) error {
+					*(dest[0].(*uuid.UUID)) = layerID
+					*(dest[1].(*uuid.UUID)) = tenantID
+					*(dest[2].(*uuid.UUID)) = schemaVersionID
+					*(dest[3].(*model.SemanticLayerStatus)) = model.SemanticLayerStatusApproved
+					*(dest[4].(*json.RawMessage)) = content
+					*(dest[5].(*time.Time)) = createdAt
+					*(dest[6].(**time.Time)) = &approvedAt
+					*(dest[7].(**string)) = &approvedBy
+					return nil
+				}}
+			},
+		},
+	}
+
+	got, err := repo.LatestApprovedByTenant(context.Background(), tenantID)
+	if err != nil {
+		t.Fatalf("LatestApprovedByTenant returned error: %v", err)
+	}
+	if got.ID != layerID || got.SchemaVersionID != schemaVersionID {
+		t.Fatalf("LatestApprovedByTenant returned %+v", got)
+	}
+	if got.ApprovedAt == nil || !got.ApprovedAt.Equal(approvedAt) {
+		t.Fatalf("ApprovedAt = %v, want %v", got.ApprovedAt, approvedAt)
+	}
+}
+
 func TestTenantSemanticLayerRepositoryCreateDraftVersionArchivesPriorDraft(t *testing.T) {
 	t.Parallel()
 

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package starter.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bryanbaek/mission/gen/go/starter/v1;starterv1";
+
+message StarterQuestion {
+  string id = 1;
+  string text = 2;
+  string category = 3;
+  string primary_table = 4;
+  int32 ordinal = 5;
+}
+
+message ListStarterQuestionsRequest {
+  string tenant_id = 1;
+}
+
+message ListStarterQuestionsResponse {
+  repeated StarterQuestion questions = 1;
+  google.protobuf.Timestamp generated_at = 2;
+  string set_id = 3;
+}
+
+message RegenerateStarterQuestionsRequest {
+  string tenant_id = 1;
+}
+
+message RegenerateStarterQuestionsResponse {
+  repeated StarterQuestion questions = 1;
+  google.protobuf.Timestamp generated_at = 2;
+  string set_id = 3;
+}
+
+service StarterQuestionsService {
+  rpc List(ListStarterQuestionsRequest) returns (ListStarterQuestionsResponse);
+  rpc Regenerate(RegenerateStarterQuestionsRequest)
+      returns (RegenerateStarterQuestionsResponse);
+}

@@ -18,17 +18,17 @@ import (
 )
 
 const (
-	OnboardingStepWelcome         int32 = 1
-	OnboardingStepAgentInstall    int32 = 2
-	OnboardingStepDatabase        int32 = 3
-	OnboardingStepSchema          int32 = 4
-	OnboardingStepSemantic        int32 = 5
-	OnboardingStepStarter         int32 = 6
-	OnboardingStepDone            int32 = 7
-	defaultDBPort                 int32 = 3306
-	defaultDatabaseUsername             = "okta_ai_ro"
-	defaultOnboardingTokenLabel         = "onboarding-agent"
-	defaultEdgeAgentImage               = "registry.digitalocean.com/mission/edge-agent:latest"
+	OnboardingStepWelcome       int32 = 1
+	OnboardingStepAgentInstall  int32 = 2
+	OnboardingStepDatabase      int32 = 3
+	OnboardingStepSchema        int32 = 4
+	OnboardingStepSemantic      int32 = 5
+	OnboardingStepStarter       int32 = 6
+	OnboardingStepDone          int32 = 7
+	defaultDBPort               int32 = 3306
+	defaultDatabaseUsername           = "okta_ai_ro"
+	defaultOnboardingTokenLabel       = "onboarding-agent"
+	defaultEdgeAgentImage             = "registry.digitalocean.com/mission/edge-agent:latest"
 )
 
 var (

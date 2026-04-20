@@ -6,17 +6,25 @@ import {
 } from "@testing-library/react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 
 import ChatPage from "./ChatPage";
 import { AskQuestionResponseSchema } from "../gen/query/v1/query_pb";
 import type { Locale } from "../lib/i18n";
 import { QueryClientContext, type QueryClient } from "../lib/queryClient";
+import {
+  StarterQuestionsClientContext,
+  type StarterQuestionsClient,
+} from "../lib/starterQuestionsClient";
 import { TenantClientContext, type TenantClient } from "../lib/tenantClient";
 import { renderWithI18n } from "../test/renderWithI18n";
 
 function renderWithClients(options?: {
   listTenants?: ReturnType<typeof vi.fn>;
   askQuestion?: ReturnType<typeof vi.fn>;
+  listStarterQuestions?: ReturnType<typeof vi.fn>;
+  regenerateStarterQuestions?: ReturnType<typeof vi.fn>;
+  initialEntry?: string;
   locale?: Locale;
 }) {
   const tenantClient = {
@@ -56,12 +64,47 @@ function renderWithClients(options?: {
       }),
   } as unknown as QueryClient;
 
+  const starterQuestionsClient = {
+    list:
+      options?.listStarterQuestions ??
+      vi.fn().mockResolvedValue({
+        questions: [
+          {
+            id: "starter-1",
+            text: "이번 달 신규 고객 수는 몇 명인가요?",
+            category: "count",
+            primaryTable: "customers",
+            ordinal: 1,
+          },
+        ],
+        setId: "set-1",
+      }),
+    regenerate:
+      options?.regenerateStarterQuestions ??
+      vi.fn().mockResolvedValue({
+        questions: [
+          {
+            id: "starter-2",
+            text: "최근 주문 10건을 보여주세요.",
+            category: "latest",
+            primaryTable: "orders",
+            ordinal: 1,
+          },
+        ],
+        setId: "set-2",
+      }),
+  } as unknown as StarterQuestionsClient;
+
   return renderWithI18n(
-    <TenantClientContext.Provider value={tenantClient}>
-      <QueryClientContext.Provider value={queryClient}>
-        <ChatPage />
-      </QueryClientContext.Provider>
-    </TenantClientContext.Provider>,
+    <MemoryRouter initialEntries={[options?.initialEntry ?? "/chat"]}>
+      <TenantClientContext.Provider value={tenantClient}>
+        <QueryClientContext.Provider value={queryClient}>
+          <StarterQuestionsClientContext.Provider value={starterQuestionsClient}>
+            <ChatPage />
+          </StarterQuestionsClientContext.Provider>
+        </QueryClientContext.Provider>
+      </TenantClientContext.Provider>
+    </MemoryRouter>,
     { locale: options?.locale },
   );
 }
@@ -208,5 +251,65 @@ describe("ChatPage", () => {
 
     expect(await screen.findByText("질문 작성")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "질문 보내기" })).toBeInTheDocument();
+  });
+
+  it("runs a starter question when a suggestion is clicked", async () => {
+    const askQuestion = vi.fn().mockResolvedValue({
+      sqlOriginal: "SELECT COUNT(*) AS customer_count FROM customers",
+      sqlExecuted: "SELECT COUNT(*) AS customer_count FROM customers",
+      limitInjected: false,
+      columns: ["customer_count"],
+      rows: [{ values: { customer_count: "42" } }],
+      rowCount: 1n,
+      elapsedMs: 18n,
+      summaryKo: "이번 달 신규 고객은 42명입니다.",
+      warnings: [],
+      attempts: [{ sql: "SELECT COUNT(*) AS customer_count FROM customers", error: "", stage: "execution" }],
+    });
+
+    renderWithClients({ askQuestion });
+
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "이번 달 신규 고객 수는 몇 명인가요?",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(askQuestion).toHaveBeenCalledWith({
+        tenantId: "tenant-1",
+        question: "이번 달 신규 고객 수는 몇 명인가요?",
+      }),
+    );
+  });
+
+  it("auto-submits a queued question from search params", async () => {
+    const askQuestion = vi.fn().mockResolvedValue({
+      sqlOriginal: "SELECT * FROM orders ORDER BY placed_at DESC LIMIT 10",
+      sqlExecuted: "SELECT * FROM orders ORDER BY placed_at DESC LIMIT 10",
+      limitInjected: false,
+      columns: ["id"],
+      rows: [{ values: { id: "1001" } }],
+      rowCount: 1n,
+      elapsedMs: 21n,
+      summaryKo: "최근 주문 10건을 조회했습니다.",
+      warnings: [],
+      attempts: [{ sql: "SELECT * FROM orders ORDER BY placed_at DESC LIMIT 10", error: "", stage: "execution" }],
+    });
+
+    renderWithClients({
+      askQuestion,
+      initialEntry:
+        "/chat?tenant=tenant-1&q=" +
+        encodeURIComponent("최근 주문 10건을 보여주세요.") +
+        "&auto=1",
+    });
+
+    await waitFor(() =>
+      expect(askQuestion).toHaveBeenCalledWith({
+        tenantId: "tenant-1",
+        question: "최근 주문 10건을 보여주세요.",
+      }),
+    );
   });
 });

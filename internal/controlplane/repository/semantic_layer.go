@@ -81,6 +81,28 @@ func (r *TenantSemanticLayerRepository) LatestApprovedBySchemaVersion(
 	`, tenantID, schemaVersionID)
 }
 
+func (r *TenantSemanticLayerRepository) LatestApprovedByTenant(
+	ctx context.Context,
+	tenantID uuid.UUID,
+) (model.TenantSemanticLayer, error) {
+	return r.selectOne(ctx, r.db, `
+		SELECT
+			id,
+			tenant_id,
+			schema_version_id,
+			status::text,
+			content,
+			created_at,
+			approved_at,
+			approved_by_user_id
+		FROM tenant_semantic_layers
+		WHERE tenant_id = $1
+		  AND status = 'approved'
+		ORDER BY approved_at DESC NULLS LAST, created_at DESC
+		LIMIT 1
+	`, tenantID)
+}
+
 func (r *TenantSemanticLayerRepository) ListApprovedHistoryByTenant(
 	ctx context.Context,
 	tenantID uuid.UUID,

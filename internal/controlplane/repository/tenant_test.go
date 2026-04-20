@@ -77,6 +77,7 @@ func (r *fakeRows) Conn() *pgx.Conn {
 
 type fakeTenantDB struct {
 	beginFn    func(ctx context.Context) (pgx.Tx, error)
+	execFn     func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 	queryFn    func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	queryRowFn func(ctx context.Context, sql string, args ...any) pgx.Row
 }
@@ -93,6 +94,13 @@ func (f *fakeTenantDB) Query(ctx context.Context, sql string, args ...any) (pgx.
 		return f.queryFn(ctx, sql, args...)
 	}
 	return nil, errors.New("unexpected Query call")
+}
+
+func (f *fakeTenantDB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	if f.execFn != nil {
+		return f.execFn(ctx, sql, args...)
+	}
+	return pgconn.CommandTag{}, errors.New("unexpected Exec call")
 }
 
 func (f *fakeTenantDB) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {

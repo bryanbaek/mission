@@ -50,6 +50,7 @@ type fakeSemanticLayerStore struct {
 	latestDraftFn    func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error)
 	latestApprovedFn func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error)
 	getByIDFn        func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error)
+	listApprovedFn   func(context.Context, uuid.UUID) ([]model.TenantSemanticLayer, error)
 	createDraftFn    func(context.Context, uuid.UUID, uuid.UUID, []byte) (model.TenantSemanticLayer, error)
 	approveFn        func(context.Context, uuid.UUID, uuid.UUID, time.Time, string) (model.TenantSemanticLayer, error)
 }
@@ -73,6 +74,16 @@ func (f fakeSemanticLayerStore) GetByID(
 	tenantID, id uuid.UUID,
 ) (model.TenantSemanticLayer, error) {
 	return f.getByIDFn(ctx, tenantID, id)
+}
+
+func (f fakeSemanticLayerStore) ListApprovedHistoryByTenant(
+	ctx context.Context,
+	tenantID uuid.UUID,
+) ([]model.TenantSemanticLayer, error) {
+	if f.listApprovedFn != nil {
+		return f.listApprovedFn(ctx, tenantID)
+	}
+	return nil, errors.New("unexpected ListApprovedHistoryByTenant call")
 }
 
 func (f fakeSemanticLayerStore) CreateDraftVersion(

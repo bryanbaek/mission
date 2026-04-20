@@ -20,6 +20,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/onboarding/v1/onboardingv1connect"
 	"github.com/bryanbaek/mission/gen/go/query/v1/queryv1connect"
 	"github.com/bryanbaek/mission/gen/go/semantic/v1/semanticv1connect"
+	"github.com/bryanbaek/mission/gen/go/starter/v1/starterv1connect"
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/config"
@@ -75,6 +76,7 @@ func run() error {
 	tokenRepo := repository.NewTenantTokenRepository(pool)
 	schemaRepo := repository.NewTenantSchemaRepository(pool)
 	semanticLayerRepo := repository.NewTenantSemanticLayerRepository(pool)
+	starterQuestionsRepo := repository.NewStarterQuestionsRepository(pool)
 	onboardingRepo := repository.NewOnboardingRepository(pool)
 	inviteRepo := repository.NewInviteRepository(pool)
 
@@ -128,6 +130,15 @@ func run() error {
 			Model: cfg.QueryModel,
 		},
 	)
+	starterQuestionsCtrl := controller.NewStarterQuestionsController(
+		tenantCtrl,
+		semanticLayerRepo,
+		starterQuestionsRepo,
+		llmRouter,
+		controller.StarterQuestionsControllerConfig{
+			Model: cfg.QueryModel,
+		},
+	)
 	onboardingCtrl := controller.NewOnboardingController(
 		onboardingRepo,
 		inviteRepo,
@@ -162,12 +173,16 @@ func run() error {
 	schemaDebugHandler := handler.NewSchemaDebugHandler(tenantCtrl, schemaCtrl)
 	semanticLayerHandler := handler.NewSemanticLayerHandler(semanticLayerCtrl)
 	queryHandler := handler.NewQueryHandler(queryCtrl)
+	starterQuestionsHandler := handler.NewStarterQuestionsHandler(starterQuestionsCtrl)
 	onboardingHandler := handler.NewOnboardingHandler(onboardingCtrl)
 	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
 	semanticPath, semanticSvc := semanticv1connect.NewSemanticLayerServiceHandler(
 		semanticLayerHandler,
 	)
 	queryPath, querySvc := queryv1connect.NewQueryServiceHandler(queryHandler)
+	starterQuestionsPath, starterQuestionsSvc := starterv1connect.NewStarterQuestionsServiceHandler(
+		starterQuestionsHandler,
+	)
 	onboardingPath, onboardingSvc := onboardingv1connect.NewOnboardingServiceHandler(
 		onboardingHandler,
 	)
@@ -196,6 +211,7 @@ func run() error {
 		r.Use(middleware.Timeout(90 * time.Second))
 		r.Use(auth.RequireAuth(verifier))
 		r.Mount(queryPath, querySvc)
+		r.Mount(starterQuestionsPath, starterQuestionsSvc)
 	})
 
 	// Onboarding can block on edge-agent connectivity and schema capture.

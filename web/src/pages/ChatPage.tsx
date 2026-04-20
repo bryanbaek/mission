@@ -7,12 +7,14 @@ import {
   type FormEvent,
 } from "react";
 import { ConnectError } from "@connectrpc/connect";
+import { useSearchParams } from "react-router-dom";
 
 import {
   AskQuestionResponseSchema,
   type AskQuestionResponse,
   type AttemptDebug,
 } from "../gen/query/v1/query_pb";
+import StarterQuestions from "../components/StarterQuestions";
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
 import { type Locale, useI18n } from "../lib/i18n";
 import { useQueryClient } from "../lib/queryClient";
@@ -398,6 +400,7 @@ export default function ChatPage() {
   const tenantClient = useTenantClient();
   const queryClient = useQueryClient();
   const { formatNumber, locale, t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedID, setSelectedID] = useState<string | null>(null);
@@ -407,6 +410,8 @@ export default function ChatPage() {
   const [question, setQuestion] = useState(defaultQuestion);
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
+  const autoSubmittedRef = useRef(false);
+  const requestedTenantID = searchParams.get("tenant");
 
   useEffect(() => {
     setQuestion((current) =>
@@ -414,6 +419,12 @@ export default function ChatPage() {
     );
     previousDefaultQuestion.current = defaultQuestion;
   }, [defaultQuestion]);
+
+  useEffect(() => {
+    if (searchParams.get("auto") !== "1") {
+      autoSubmittedRef.current = false;
+    }
+  }, [searchParams]);
 
   const selectedTenant = useMemo(
     () => tenants.find((tenant) => tenant.id === selectedID) ?? null,
@@ -426,60 +437,102 @@ export default function ChatPage() {
       setTenants(resp.tenants);
       setTenantsError(null);
       if (!selectedID && resp.tenants.length > 0) {
-        setSelectedID(resp.tenants[0].id);
+        const requestedTenant =
+          requestedTenantID != null
+            ? resp.tenants.find((tenant) => tenant.id === requestedTenantID)
+            : undefined;
+        setSelectedID(requestedTenant?.id ?? resp.tenants[0].id);
       }
     } catch (err) {
       setTenantsError(normalizeError(err));
     }
-  }, [selectedID, tenantClient]);
+  }, [requestedTenantID, selectedID, tenantClient]);
 
   useEffect(() => {
     void loadTenants();
   }, [loadTenants]);
 
+  const submitQuestion = useCallback(
+    async (rawQuestion?: string) => {
+      const trimmedQuestion = (rawQuestion ?? question).trim();
+      if (!selectedTenant || trimmedQuestion === "" || submitting) {
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const response = await queryClient.askQuestion({
+          tenantId: selectedTenant.id,
+          question: trimmedQuestion,
+        });
+        setHistory((current) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tenantName: selectedTenant.name,
+            question: trimmedQuestion,
+            createdAt: Date.now(),
+            status: "success",
+            response,
+            error: null,
+          },
+          ...current,
+        ]);
+        setQuestion("");
+      } catch (err) {
+        setHistory((current) => [
+          {
+            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tenantName: selectedTenant.name,
+            question: trimmedQuestion,
+            createdAt: Date.now(),
+            status: "error",
+            response: extractErrorResult(err),
+            error: normalizeError(err),
+          },
+          ...current,
+        ]);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [queryClient, question, selectedTenant, submitting],
+  );
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedQuestion = question.trim();
-    if (!selectedTenant || trimmedQuestion === "") {
+    await submitQuestion();
+  };
+
+  const runQuestion = useCallback(
+    (text: string) => {
+      setQuestion(text);
+      void submitQuestion(text);
+    },
+    [submitQuestion],
+  );
+
+  useEffect(() => {
+    const auto = searchParams.get("auto");
+    const queuedQuestion = searchParams.get("q")?.trim() ?? "";
+    if (
+      auto !== "1" ||
+      queuedQuestion === "" ||
+      selectedTenant == null ||
+      autoSubmittedRef.current
+    ) {
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const response = await queryClient.askQuestion({
-        tenantId: selectedTenant.id,
-        question: trimmedQuestion,
-      });
-      setHistory((current) => [
-        {
-          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          tenantName: selectedTenant.name,
-          question: trimmedQuestion,
-          createdAt: Date.now(),
-          status: "success",
-          response,
-          error: null,
-        },
-        ...current,
-      ]);
-      setQuestion("");
-    } catch (err) {
-      setHistory((current) => [
-        {
-          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          tenantName: selectedTenant.name,
-          question: trimmedQuestion,
-          createdAt: Date.now(),
-          status: "error",
-          response: extractErrorResult(err),
-          error: normalizeError(err),
-        },
-        ...current,
-      ]);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    autoSubmittedRef.current = true;
+    setQuestion(queuedQuestion);
+    void submitQuestion(queuedQuestion).finally(() => {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("auto");
+      nextParams.delete("q");
+      nextParams.delete("tenant");
+      setSearchParams(nextParams, { replace: true });
+    });
+  }, [searchParams, selectedTenant, setSearchParams, submitQuestion]);
 
   const canSubmit =
     selectedTenant !== null &&
@@ -576,6 +629,12 @@ export default function ChatPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
+              {history.length === 0 && selectedTenant ? (
+                <StarterQuestions
+                  tenantId={selectedTenant.id}
+                  onPick={runQuestion}
+                />
+              ) : null}
               <label
                 className="text-sm font-medium text-slate-900"
                 htmlFor="chat-question"
