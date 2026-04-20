@@ -20,6 +20,7 @@ type unitTenantStore struct {
 	createFn     func(context.Context, string, string, string) (model.Tenant, error)
 	listFn       func(context.Context, string) ([]model.Tenant, error)
 	membershipFn func(context.Context, uuid.UUID, string) (model.TenantUser, error)
+	updateFn     func(context.Context, uuid.UUID, string) (model.Tenant, error)
 }
 
 func (s unitTenantStore) CreateWithOwner(
@@ -42,6 +43,20 @@ func (s unitTenantStore) GetMembership(
 	clerkUserID string,
 ) (model.TenantUser, error) {
 	return s.membershipFn(ctx, tenantID, clerkUserID)
+}
+
+func (s unitTenantStore) UpdateName(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	name string,
+) (model.Tenant, error) {
+	if s.updateFn != nil {
+		return s.updateFn(ctx, tenantID, name)
+	}
+	return model.Tenant{
+		ID:   tenantID,
+		Name: name,
+	}, nil
 }
 
 type unitTokenStore struct {

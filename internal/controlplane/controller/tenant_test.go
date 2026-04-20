@@ -18,6 +18,7 @@ type fakeTenantStore struct {
 	createFn     func(ctx context.Context, slug, name, ownerClerkID string) (model.Tenant, error)
 	listCalled   int
 	listFn       func(ctx context.Context, clerkUserID string) ([]model.Tenant, error)
+	updateFn     func(ctx context.Context, tenantID uuid.UUID, name string) (model.Tenant, error)
 }
 
 func (f *fakeTenantStore) CreateWithOwner(ctx context.Context, slug, name, ownerClerkID string) (model.Tenant, error) {
@@ -38,6 +39,17 @@ func (f *fakeTenantStore) ListForUser(ctx context.Context, clerkUserID string) (
 
 func (f *fakeTenantStore) GetMembership(_ context.Context, _ uuid.UUID, _ string) (model.TenantUser, error) {
 	return model.TenantUser{}, nil
+}
+
+func (f *fakeTenantStore) UpdateName(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	name string,
+) (model.Tenant, error) {
+	if f.updateFn != nil {
+		return f.updateFn(ctx, tenantID, name)
+	}
+	return model.Tenant{}, nil
 }
 
 type fakeTenantTokenStore struct {

@@ -1,8 +1,10 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -20,18 +22,20 @@ type Config struct {
 }
 
 func Load() (Config, error) {
-	// MYSQL_DSN can be supplied inline (dev/testing). If absent, the DSN is
-	// read from MYSQL_DSN_FILE (production mounts a secret file there).
-	var mysqlDSN, mysqlDSNFile string
+	mysqlDSNFile := os.Getenv("MYSQL_DSN_FILE")
+	if mysqlDSNFile == "" && os.Getenv("MYSQL_DSN") == "" {
+		mysqlDSNFile = "/etc/agent/mysql.dsn"
+	}
+
+	var mysqlDSN string
 	if direct := os.Getenv("MYSQL_DSN"); direct != "" {
 		mysqlDSN = direct
 	} else {
-		mysqlDSNFile = getenv("MYSQL_DSN_FILE", "/etc/mission/mysql.dsn")
-		var err error
-		mysqlDSN, err = loadDSNFile(mysqlDSNFile)
+		loaded, err := loadOptionalDSNFile(mysqlDSNFile)
 		if err != nil {
 			return Config{}, err
 		}
+		mysqlDSN = loaded
 	}
 
 	cfg := Config{
@@ -74,6 +78,28 @@ func loadDSNFile(path string) (string, error) {
 		return "", fmt.Errorf("MYSQL_DSN_FILE %q is empty", path)
 	}
 	return dsn, nil
+}
+
+func loadOptionalDSNFile(path string) (string, error) {
+	body, err := os.ReadFile(path)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return "", nil
+	case err != nil:
+		return "", fmt.Errorf("read MYSQL_DSN_FILE %q: %w", path, err)
+	}
+	dsn := strings.TrimSpace(string(body))
+	if dsn == "" {
+		return "", nil
+	}
+	return dsn, nil
+}
+
+func DSNDirectory(path string) string {
+	if path == "" {
+		return ""
+	}
+	return filepath.Dir(path)
 }
 
 func getenv(key, fallback string) string {

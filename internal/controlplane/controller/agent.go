@@ -47,6 +47,7 @@ type AgentCommand struct {
 	IssuedAt  time.Time
 	Kind      AgentCommandKind
 	SQL       string
+	DSN       string
 }
 
 type AgentCommandKind string
@@ -56,6 +57,8 @@ const AgentCommandKindPing AgentCommandKind = "ping"
 const AgentCommandKindExecuteQuery AgentCommandKind = "execute_query"
 
 const AgentCommandKindIntrospectSchema AgentCommandKind = "introspect_schema"
+
+const AgentCommandKindConfigureDatabase AgentCommandKind = "configure_database"
 
 type AgentPingResult struct {
 	SessionID   string
@@ -90,6 +93,29 @@ type AgentIntrospectSchemaResult struct {
 	Error        string
 }
 
+type AgentConfigureDatabaseErrorCode string
+
+const (
+	AgentConfigureDatabaseErrorCodeUnspecified    AgentConfigureDatabaseErrorCode = ""
+	AgentConfigureDatabaseErrorCodeInvalidDSN     AgentConfigureDatabaseErrorCode = "INVALID_DSN"
+	AgentConfigureDatabaseErrorCodeConnectFailed  AgentConfigureDatabaseErrorCode = "CONNECT_FAILED"
+	AgentConfigureDatabaseErrorCodeAuthFailed     AgentConfigureDatabaseErrorCode = "AUTH_FAILED"
+	AgentConfigureDatabaseErrorCodePrivilegeError AgentConfigureDatabaseErrorCode = "PRIVILEGE_INVALID"
+	AgentConfigureDatabaseErrorCodeWriteConfig    AgentConfigureDatabaseErrorCode = "WRITE_CONFIG_FAILED"
+	AgentConfigureDatabaseErrorCodeTimeout        AgentConfigureDatabaseErrorCode = "TIMEOUT"
+)
+
+type AgentConfigureDatabaseResult struct {
+	SessionID    string
+	CommandID    string
+	CompletedAt  time.Time
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
+	ErrorCode    AgentConfigureDatabaseErrorCode
+}
+
 type AgentSessionSnapshot struct {
 	SessionID       string
 	TenantID        uuid.UUID
@@ -120,6 +146,7 @@ type agentSession struct {
 	pendingPings   map[string]chan AgentPingResult
 	pendingQueries map[string]chan AgentExecuteQueryResult
 	pendingSchemas map[string]chan AgentIntrospectSchemaResult
+	pendingConfigs map[string]chan AgentConfigureDatabaseResult
 }
 
 func NewAgentSessionManager(
@@ -187,6 +214,7 @@ func (m *AgentSessionManager) RegisterSession(
 		pendingPings:   make(map[string]chan AgentPingResult),
 		pendingQueries: make(map[string]chan AgentExecuteQueryResult),
 		pendingSchemas: make(map[string]chan AgentIntrospectSchemaResult),
+		pendingConfigs: make(map[string]chan AgentConfigureDatabaseResult),
 	}
 
 	m.byToken[token.ID] = session
@@ -393,6 +421,45 @@ func (m *AgentSessionManager) SubmitIntrospectSchemaResult(
 	return nil
 }
 
+func (m *AgentSessionManager) SubmitConfigureDatabaseResult(
+	tokenID uuid.UUID,
+	sessionID, commandID string,
+	completedAt time.Time,
+	elapsedMS int64,
+	databaseUser, databaseName, commandError string,
+	errorCode AgentConfigureDatabaseErrorCode,
+) error {
+	var waiter chan AgentConfigureDatabaseResult
+
+	m.mu.Lock()
+	session, err := m.sessionLocked(tokenID, sessionID)
+	if err != nil {
+		m.mu.Unlock()
+		return err
+	}
+
+	waiter, ok := session.pendingConfigs[commandID]
+	if !ok {
+		m.mu.Unlock()
+		return ErrCommandNotFound
+	}
+	delete(session.pendingConfigs, commandID)
+	m.mu.Unlock()
+
+	waiter <- AgentConfigureDatabaseResult{
+		SessionID:    sessionID,
+		CommandID:    commandID,
+		CompletedAt:  completedAt.UTC(),
+		ElapsedMS:    elapsedMS,
+		DatabaseUser: databaseUser,
+		DatabaseName: databaseName,
+		Error:        commandError,
+		ErrorCode:    errorCode,
+	}
+	close(waiter)
+	return nil
+}
+
 func (m *AgentSessionManager) ExecuteQuery(
 	ctx context.Context,
 	tenantID uuid.UUID,
@@ -487,6 +554,54 @@ func (m *AgentSessionManager) IntrospectSchema(
 	}
 }
 
+func (m *AgentSessionManager) ConfigureDatabase(
+	ctx context.Context,
+	tokenID uuid.UUID,
+	dsn string,
+) (AgentConfigureDatabaseResult, error) {
+	command := AgentCommand{
+		CommandID: uuid.NewString(),
+		IssuedAt:  m.now().UTC(),
+		Kind:      AgentCommandKindConfigureDatabase,
+		DSN:       dsn,
+	}
+	waiter := make(chan AgentConfigureDatabaseResult, 1)
+
+	m.mu.Lock()
+	session, ok := m.activeTokenSessionLocked(tokenID)
+	switch {
+	case !ok:
+		m.mu.Unlock()
+		return AgentConfigureDatabaseResult{}, ErrTenantNotConnected
+	}
+
+	command.SessionID = session.snapshot.SessionID
+	session.pendingConfigs[command.CommandID] = waiter
+	select {
+	case session.commands <- command:
+	default:
+		delete(session.pendingConfigs, command.CommandID)
+		m.mu.Unlock()
+		return AgentConfigureDatabaseResult{}, ErrCommandRejected
+	}
+	m.mu.Unlock()
+
+	select {
+	case result, ok := <-waiter:
+		if !ok {
+			return AgentConfigureDatabaseResult{}, ErrSessionNotActive
+		}
+		return result, nil
+	case <-ctx.Done():
+		m.mu.Lock()
+		if current, ok := m.byID[command.SessionID]; ok && current == session {
+			delete(current.pendingConfigs, command.CommandID)
+		}
+		m.mu.Unlock()
+		return AgentConfigureDatabaseResult{}, ctx.Err()
+	}
+}
+
 func (m *AgentSessionManager) DisconnectSession(sessionID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -562,6 +677,25 @@ func (m *AgentSessionManager) LatestSessionForTenant(
 	return selected, found
 }
 
+func (m *AgentSessionManager) LatestSessionForToken(
+	tokenID uuid.UUID,
+) (AgentSessionSnapshot, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	session, ok := m.byToken[tokenID]
+	if !ok {
+		return AgentSessionSnapshot{}, false
+	}
+	snapshot := session.snapshot
+	if session.active && m.now().UTC().Sub(snapshot.LastHeartbeatAt) <= m.staleAfter {
+		snapshot.Status = "online"
+	} else {
+		snapshot.Status = "offline"
+	}
+	return snapshot, true
+}
+
 func (m *AgentSessionManager) sessionLocked(
 	tokenID uuid.UUID,
 	sessionID string,
@@ -611,6 +745,10 @@ func (m *AgentSessionManager) closeSessionLocked(
 		delete(session.pendingSchemas, commandID)
 		close(waiter)
 	}
+	for commandID, waiter := range session.pendingConfigs {
+		delete(session.pendingConfigs, commandID)
+		close(waiter)
+	}
 }
 
 func (m *AgentSessionManager) activeTenantSessionLocked(
@@ -630,6 +768,16 @@ func (m *AgentSessionManager) activeTenantSessionLocked(
 		}
 	}
 	return current, found
+}
+
+func (m *AgentSessionManager) activeTokenSessionLocked(
+	tokenID uuid.UUID,
+) (*agentSession, bool) {
+	session, ok := m.byToken[tokenID]
+	if !ok || !m.isActiveLocked(session) {
+		return nil, false
+	}
+	return session, true
 }
 
 func cloneRows(rows []map[string]any) []map[string]any {

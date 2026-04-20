@@ -18,8 +18,7 @@ import (
 	edgeconfig "github.com/bryanbaek/mission/internal/edgeagent/config"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
 	controlplane "github.com/bryanbaek/mission/internal/edgeagent/gateway/controlplane"
-	mysqlgateway "github.com/bryanbaek/mission/internal/edgeagent/gateway/mysql"
-	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	edgeruntime "github.com/bryanbaek/mission/internal/edgeagent/runtime"
 )
 
 func main() {
@@ -50,13 +49,17 @@ func run() (err error) {
 	)
 	defer cancel()
 
-	mysqlGateway, err := mysqlgateway.Open(ctx, cfg.MySQLDSN)
+	mysqlRuntime, err := edgeruntime.NewMySQLRuntime(
+		ctx,
+		cfg.MySQLDSNFile,
+		cfg.MySQLDSN,
+	)
 	if err != nil {
-		return fmt.Errorf("open mysql gateway: %w", err)
+		return fmt.Errorf("open mysql runtime: %w", err)
 	}
 	defer func() {
-		if closeErr := mysqlGateway.Close(); closeErr != nil {
-			err = errors.Join(err, fmt.Errorf("close mysql gateway: %w", closeErr))
+		if closeErr := mysqlRuntime.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("close mysql runtime: %w", closeErr))
 		}
 	}()
 
@@ -65,7 +68,6 @@ func run() (err error) {
 		cfg.TenantToken,
 		httpClientForURL(cfg.ControlPlaneURL),
 	)
-	mysqlRuntime := mysqlRuntime{gateway: mysqlGateway}
 	service, err := edgecontroller.NewAgentService(
 		client,
 		edgecontroller.AgentServiceConfig{
@@ -76,6 +78,7 @@ func run() (err error) {
 			Logger:             logger,
 			QueryExecutor:      mysqlRuntime,
 			SchemaIntrospector: mysqlRuntime,
+			DatabaseConfigurer: mysqlRuntime,
 		},
 	)
 	if err != nil {
@@ -90,39 +93,6 @@ func run() (err error) {
 		cfg.AgentVersion,
 	)
 	return service.Run(ctx)
-}
-
-type mysqlRuntime struct {
-	gateway *mysqlgateway.Gateway
-}
-
-func (e mysqlRuntime) ExecuteQuery(
-	ctx context.Context,
-	sql string,
-) (edgecontroller.QueryResult, error) {
-	result, err := e.gateway.ExecuteQuery(ctx, sql)
-	if err != nil {
-		return edgecontroller.QueryResult{}, err
-	}
-	return edgecontroller.QueryResult{
-		Columns:      result.Columns,
-		Rows:         result.Rows,
-		ElapsedMS:    result.ElapsedMS,
-		DatabaseUser: result.DatabaseUser,
-		DatabaseName: result.DatabaseName,
-	}, nil
-}
-
-func (e mysqlRuntime) IntrospectSchema(
-	ctx context.Context,
-) (
-	introspect.SchemaBlob,
-	int64,
-	string,
-	string,
-	error,
-) {
-	return e.gateway.IntrospectSchema(ctx)
 }
 
 // httpClientForURL returns an HTTP client appropriate for the given URL scheme.

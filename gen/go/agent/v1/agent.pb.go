@@ -72,6 +72,67 @@ func (ExecuteQueryErrorCode) EnumDescriptor() ([]byte, []int) {
 	return file_agent_v1_agent_proto_rawDescGZIP(), []int{0}
 }
 
+type ConfigureDatabaseErrorCode int32
+
+const (
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED         ConfigureDatabaseErrorCode = 0
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN         ConfigureDatabaseErrorCode = 1
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED      ConfigureDatabaseErrorCode = 2
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED         ConfigureDatabaseErrorCode = 3
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID   ConfigureDatabaseErrorCode = 4
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED ConfigureDatabaseErrorCode = 5
+	ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT             ConfigureDatabaseErrorCode = 6
+)
+
+// Enum value maps for ConfigureDatabaseErrorCode.
+var (
+	ConfigureDatabaseErrorCode_name = map[int32]string{
+		0: "CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED",
+		1: "CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN",
+		2: "CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED",
+		3: "CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED",
+		4: "CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID",
+		5: "CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED",
+		6: "CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT",
+	}
+	ConfigureDatabaseErrorCode_value = map[string]int32{
+		"CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED":         0,
+		"CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN":         1,
+		"CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED":      2,
+		"CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED":         3,
+		"CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID":   4,
+		"CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED": 5,
+		"CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT":             6,
+	}
+)
+
+func (x ConfigureDatabaseErrorCode) Enum() *ConfigureDatabaseErrorCode {
+	p := new(ConfigureDatabaseErrorCode)
+	*p = x
+	return p
+}
+
+func (x ConfigureDatabaseErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConfigureDatabaseErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_v1_agent_proto_enumTypes[1].Descriptor()
+}
+
+func (ConfigureDatabaseErrorCode) Type() protoreflect.EnumType {
+	return &file_agent_v1_agent_proto_enumTypes[1]
+}
+
+func (x ConfigureDatabaseErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConfigureDatabaseErrorCode.Descriptor instead.
+func (ConfigureDatabaseErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{1}
+}
+
 type OpenCommandStreamRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -344,6 +405,50 @@ func (*IntrospectSchemaCommand) Descriptor() ([]byte, []int) {
 	return file_agent_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
+type ConfigureDatabaseCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Dsn           string                 `protobuf:"bytes,1,opt,name=dsn,proto3" json:"dsn,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigureDatabaseCommand) Reset() {
+	*x = ConfigureDatabaseCommand{}
+	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigureDatabaseCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigureDatabaseCommand) ProtoMessage() {}
+
+func (x *ConfigureDatabaseCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigureDatabaseCommand.ProtoReflect.Descriptor instead.
+func (*ConfigureDatabaseCommand) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ConfigureDatabaseCommand) GetDsn() string {
+	if x != nil {
+		return x.Dsn
+	}
+	return ""
+}
+
 type SchemaTable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TableSchema   string                 `protobuf:"bytes,1,opt,name=table_schema,json=tableSchema,proto3" json:"table_schema,omitempty"`
@@ -356,7 +461,7 @@ type SchemaTable struct {
 
 func (x *SchemaTable) Reset() {
 	*x = SchemaTable{}
-	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	mi := &file_agent_v1_agent_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -368,7 +473,7 @@ func (x *SchemaTable) String() string {
 func (*SchemaTable) ProtoMessage() {}
 
 func (x *SchemaTable) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	mi := &file_agent_v1_agent_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -381,7 +486,7 @@ func (x *SchemaTable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaTable.ProtoReflect.Descriptor instead.
 func (*SchemaTable) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SchemaTable) GetTableSchema() string {
@@ -430,7 +535,7 @@ type SchemaColumn struct {
 
 func (x *SchemaColumn) Reset() {
 	*x = SchemaColumn{}
-	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	mi := &file_agent_v1_agent_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -442,7 +547,7 @@ func (x *SchemaColumn) String() string {
 func (*SchemaColumn) ProtoMessage() {}
 
 func (x *SchemaColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	mi := &file_agent_v1_agent_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -455,7 +560,7 @@ func (x *SchemaColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaColumn.ProtoReflect.Descriptor instead.
 func (*SchemaColumn) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SchemaColumn) GetTableSchema() string {
@@ -541,7 +646,7 @@ type SchemaPrimaryKey struct {
 
 func (x *SchemaPrimaryKey) Reset() {
 	*x = SchemaPrimaryKey{}
-	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	mi := &file_agent_v1_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -553,7 +658,7 @@ func (x *SchemaPrimaryKey) String() string {
 func (*SchemaPrimaryKey) ProtoMessage() {}
 
 func (x *SchemaPrimaryKey) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	mi := &file_agent_v1_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -566,7 +671,7 @@ func (x *SchemaPrimaryKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaPrimaryKey.ProtoReflect.Descriptor instead.
 func (*SchemaPrimaryKey) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{8}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SchemaPrimaryKey) GetTableSchema() string {
@@ -620,7 +725,7 @@ type SchemaForeignKey struct {
 
 func (x *SchemaForeignKey) Reset() {
 	*x = SchemaForeignKey{}
-	mi := &file_agent_v1_agent_proto_msgTypes[9]
+	mi := &file_agent_v1_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -632,7 +737,7 @@ func (x *SchemaForeignKey) String() string {
 func (*SchemaForeignKey) ProtoMessage() {}
 
 func (x *SchemaForeignKey) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[9]
+	mi := &file_agent_v1_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -645,7 +750,7 @@ func (x *SchemaForeignKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaForeignKey.ProtoReflect.Descriptor instead.
 func (*SchemaForeignKey) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{9}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SchemaForeignKey) GetTableSchema() string {
@@ -717,7 +822,7 @@ type SchemaBlob struct {
 
 func (x *SchemaBlob) Reset() {
 	*x = SchemaBlob{}
-	mi := &file_agent_v1_agent_proto_msgTypes[10]
+	mi := &file_agent_v1_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -729,7 +834,7 @@ func (x *SchemaBlob) String() string {
 func (*SchemaBlob) ProtoMessage() {}
 
 func (x *SchemaBlob) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[10]
+	mi := &file_agent_v1_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -742,7 +847,7 @@ func (x *SchemaBlob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaBlob.ProtoReflect.Descriptor instead.
 func (*SchemaBlob) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{10}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SchemaBlob) GetDatabaseName() string {
@@ -790,6 +895,7 @@ type ControlMessage struct {
 	//	*ControlMessage_Ping
 	//	*ControlMessage_ExecuteQuery
 	//	*ControlMessage_IntrospectSchema
+	//	*ControlMessage_ConfigureDatabase
 	Payload       isControlMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -797,7 +903,7 @@ type ControlMessage struct {
 
 func (x *ControlMessage) Reset() {
 	*x = ControlMessage{}
-	mi := &file_agent_v1_agent_proto_msgTypes[11]
+	mi := &file_agent_v1_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -809,7 +915,7 @@ func (x *ControlMessage) String() string {
 func (*ControlMessage) ProtoMessage() {}
 
 func (x *ControlMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[11]
+	mi := &file_agent_v1_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -822,7 +928,7 @@ func (x *ControlMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ControlMessage.ProtoReflect.Descriptor instead.
 func (*ControlMessage) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{11}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ControlMessage) GetSessionId() string {
@@ -880,6 +986,15 @@ func (x *ControlMessage) GetIntrospectSchema() *IntrospectSchemaCommand {
 	return nil
 }
 
+func (x *ControlMessage) GetConfigureDatabase() *ConfigureDatabaseCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ConfigureDatabase); ok {
+			return x.ConfigureDatabase
+		}
+	}
+	return nil
+}
+
 type isControlMessage_Payload interface {
 	isControlMessage_Payload()
 }
@@ -896,11 +1011,17 @@ type ControlMessage_IntrospectSchema struct {
 	IntrospectSchema *IntrospectSchemaCommand `protobuf:"bytes,12,opt,name=introspect_schema,json=introspectSchema,proto3,oneof"`
 }
 
+type ControlMessage_ConfigureDatabase struct {
+	ConfigureDatabase *ConfigureDatabaseCommand `protobuf:"bytes,13,opt,name=configure_database,json=configureDatabase,proto3,oneof"`
+}
+
 func (*ControlMessage_Ping) isControlMessage_Payload() {}
 
 func (*ControlMessage_ExecuteQuery) isControlMessage_Payload() {}
 
 func (*ControlMessage_IntrospectSchema) isControlMessage_Payload() {}
+
+func (*ControlMessage_ConfigureDatabase) isControlMessage_Payload() {}
 
 type PingResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -911,7 +1032,7 @@ type PingResult struct {
 
 func (x *PingResult) Reset() {
 	*x = PingResult{}
-	mi := &file_agent_v1_agent_proto_msgTypes[12]
+	mi := &file_agent_v1_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -923,7 +1044,7 @@ func (x *PingResult) String() string {
 func (*PingResult) ProtoMessage() {}
 
 func (x *PingResult) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[12]
+	mi := &file_agent_v1_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -936,7 +1057,7 @@ func (x *PingResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingResult.ProtoReflect.Descriptor instead.
 func (*PingResult) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{12}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PingResult) GetRoundTripMs() int64 {
@@ -955,7 +1076,7 @@ type ExecuteQueryRow struct {
 
 func (x *ExecuteQueryRow) Reset() {
 	*x = ExecuteQueryRow{}
-	mi := &file_agent_v1_agent_proto_msgTypes[13]
+	mi := &file_agent_v1_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -967,7 +1088,7 @@ func (x *ExecuteQueryRow) String() string {
 func (*ExecuteQueryRow) ProtoMessage() {}
 
 func (x *ExecuteQueryRow) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[13]
+	mi := &file_agent_v1_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -980,7 +1101,7 @@ func (x *ExecuteQueryRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteQueryRow.ProtoReflect.Descriptor instead.
 func (*ExecuteQueryRow) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{13}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ExecuteQueryRow) GetValues() map[string]*structpb.Value {
@@ -1007,7 +1128,7 @@ type ExecuteQueryResult struct {
 
 func (x *ExecuteQueryResult) Reset() {
 	*x = ExecuteQueryResult{}
-	mi := &file_agent_v1_agent_proto_msgTypes[14]
+	mi := &file_agent_v1_agent_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1019,7 +1140,7 @@ func (x *ExecuteQueryResult) String() string {
 func (*ExecuteQueryResult) ProtoMessage() {}
 
 func (x *ExecuteQueryResult) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[14]
+	mi := &file_agent_v1_agent_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1032,7 +1153,7 @@ func (x *ExecuteQueryResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecuteQueryResult.ProtoReflect.Descriptor instead.
 func (*ExecuteQueryResult) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{14}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ExecuteQueryResult) GetColumns() []string {
@@ -1111,7 +1232,7 @@ type IntrospectSchemaResult struct {
 
 func (x *IntrospectSchemaResult) Reset() {
 	*x = IntrospectSchemaResult{}
-	mi := &file_agent_v1_agent_proto_msgTypes[15]
+	mi := &file_agent_v1_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1123,7 +1244,7 @@ func (x *IntrospectSchemaResult) String() string {
 func (*IntrospectSchemaResult) ProtoMessage() {}
 
 func (x *IntrospectSchemaResult) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[15]
+	mi := &file_agent_v1_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1136,7 +1257,7 @@ func (x *IntrospectSchemaResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IntrospectSchemaResult.ProtoReflect.Descriptor instead.
 func (*IntrospectSchemaResult) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{15}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *IntrospectSchemaResult) GetSchema() *SchemaBlob {
@@ -1174,6 +1295,82 @@ func (x *IntrospectSchemaResult) GetError() string {
 	return ""
 }
 
+type ConfigureDatabaseResult struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	ElapsedMs     int64                      `protobuf:"varint,1,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
+	DatabaseUser  string                     `protobuf:"bytes,2,opt,name=database_user,json=databaseUser,proto3" json:"database_user,omitempty"`
+	DatabaseName  string                     `protobuf:"bytes,3,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Error         string                     `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	ErrorCode     ConfigureDatabaseErrorCode `protobuf:"varint,5,opt,name=error_code,json=errorCode,proto3,enum=agent.v1.ConfigureDatabaseErrorCode" json:"error_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigureDatabaseResult) Reset() {
+	*x = ConfigureDatabaseResult{}
+	mi := &file_agent_v1_agent_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigureDatabaseResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigureDatabaseResult) ProtoMessage() {}
+
+func (x *ConfigureDatabaseResult) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigureDatabaseResult.ProtoReflect.Descriptor instead.
+func (*ConfigureDatabaseResult) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ConfigureDatabaseResult) GetElapsedMs() int64 {
+	if x != nil {
+		return x.ElapsedMs
+	}
+	return 0
+}
+
+func (x *ConfigureDatabaseResult) GetDatabaseUser() string {
+	if x != nil {
+		return x.DatabaseUser
+	}
+	return ""
+}
+
+func (x *ConfigureDatabaseResult) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *ConfigureDatabaseResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ConfigureDatabaseResult) GetErrorCode() ConfigureDatabaseErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED
+}
+
 type SubmitCommandResultRequest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	SessionId   string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -1184,6 +1381,7 @@ type SubmitCommandResultRequest struct {
 	//	*SubmitCommandResultRequest_Ping
 	//	*SubmitCommandResultRequest_ExecuteQuery
 	//	*SubmitCommandResultRequest_IntrospectSchema
+	//	*SubmitCommandResultRequest_ConfigureDatabase
 	Result        isSubmitCommandResultRequest_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1191,7 +1389,7 @@ type SubmitCommandResultRequest struct {
 
 func (x *SubmitCommandResultRequest) Reset() {
 	*x = SubmitCommandResultRequest{}
-	mi := &file_agent_v1_agent_proto_msgTypes[16]
+	mi := &file_agent_v1_agent_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1203,7 +1401,7 @@ func (x *SubmitCommandResultRequest) String() string {
 func (*SubmitCommandResultRequest) ProtoMessage() {}
 
 func (x *SubmitCommandResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[16]
+	mi := &file_agent_v1_agent_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1216,7 +1414,7 @@ func (x *SubmitCommandResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitCommandResultRequest.ProtoReflect.Descriptor instead.
 func (*SubmitCommandResultRequest) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{16}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SubmitCommandResultRequest) GetSessionId() string {
@@ -1274,6 +1472,15 @@ func (x *SubmitCommandResultRequest) GetIntrospectSchema() *IntrospectSchemaResu
 	return nil
 }
 
+func (x *SubmitCommandResultRequest) GetConfigureDatabase() *ConfigureDatabaseResult {
+	if x != nil {
+		if x, ok := x.Result.(*SubmitCommandResultRequest_ConfigureDatabase); ok {
+			return x.ConfigureDatabase
+		}
+	}
+	return nil
+}
+
 type isSubmitCommandResultRequest_Result interface {
 	isSubmitCommandResultRequest_Result()
 }
@@ -1290,11 +1497,17 @@ type SubmitCommandResultRequest_IntrospectSchema struct {
 	IntrospectSchema *IntrospectSchemaResult `protobuf:"bytes,12,opt,name=introspect_schema,json=introspectSchema,proto3,oneof"`
 }
 
+type SubmitCommandResultRequest_ConfigureDatabase struct {
+	ConfigureDatabase *ConfigureDatabaseResult `protobuf:"bytes,13,opt,name=configure_database,json=configureDatabase,proto3,oneof"`
+}
+
 func (*SubmitCommandResultRequest_Ping) isSubmitCommandResultRequest_Result() {}
 
 func (*SubmitCommandResultRequest_ExecuteQuery) isSubmitCommandResultRequest_Result() {}
 
 func (*SubmitCommandResultRequest_IntrospectSchema) isSubmitCommandResultRequest_Result() {}
+
+func (*SubmitCommandResultRequest_ConfigureDatabase) isSubmitCommandResultRequest_Result() {}
 
 type SubmitCommandResultResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1304,7 +1517,7 @@ type SubmitCommandResultResponse struct {
 
 func (x *SubmitCommandResultResponse) Reset() {
 	*x = SubmitCommandResultResponse{}
-	mi := &file_agent_v1_agent_proto_msgTypes[17]
+	mi := &file_agent_v1_agent_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1316,7 +1529,7 @@ func (x *SubmitCommandResultResponse) String() string {
 func (*SubmitCommandResultResponse) ProtoMessage() {}
 
 func (x *SubmitCommandResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[17]
+	mi := &file_agent_v1_agent_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1329,7 +1542,7 @@ func (x *SubmitCommandResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitCommandResultResponse.ProtoReflect.Descriptor instead.
 func (*SubmitCommandResultResponse) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{17}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{19}
 }
 
 var File_agent_v1_agent_proto protoreflect.FileDescriptor
@@ -1352,7 +1565,9 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\vPingCommand\"'\n" +
 	"\x13ExecuteQueryCommand\x12\x10\n" +
 	"\x03sql\x18\x01 \x01(\tR\x03sql\"\x19\n" +
-	"\x17IntrospectSchemaCommand\"\x93\x01\n" +
+	"\x17IntrospectSchemaCommand\",\n" +
+	"\x18ConfigureDatabaseCommand\x12\x10\n" +
+	"\x03dsn\x18\x01 \x01(\tR\x03dsn\"\x93\x01\n" +
 	"\vSchemaTable\x12!\n" +
 	"\ftable_schema\x18\x01 \x01(\tR\vtableSchema\x12\x1d\n" +
 	"\n" +
@@ -1402,7 +1617,7 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x06tables\x18\x02 \x03(\v2\x15.agent.v1.SchemaTableR\x06tables\x120\n" +
 	"\acolumns\x18\x03 \x03(\v2\x16.agent.v1.SchemaColumnR\acolumns\x12=\n" +
 	"\fprimary_keys\x18\x04 \x03(\v2\x1a.agent.v1.SchemaPrimaryKeyR\vprimaryKeys\x12=\n" +
-	"\fforeign_keys\x18\x05 \x03(\v2\x1a.agent.v1.SchemaForeignKeyR\vforeignKeys\"\xd7\x02\n" +
+	"\fforeign_keys\x18\x05 \x03(\v2\x1a.agent.v1.SchemaForeignKeyR\vforeignKeys\"\xac\x03\n" +
 	"\x0eControlMessage\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
@@ -1412,7 +1627,8 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x04ping\x18\n" +
 	" \x01(\v2\x15.agent.v1.PingCommandH\x00R\x04ping\x12D\n" +
 	"\rexecute_query\x18\v \x01(\v2\x1d.agent.v1.ExecuteQueryCommandH\x00R\fexecuteQuery\x12P\n" +
-	"\x11introspect_schema\x18\f \x01(\v2!.agent.v1.IntrospectSchemaCommandH\x00R\x10introspectSchemaB\t\n" +
+	"\x11introspect_schema\x18\f \x01(\v2!.agent.v1.IntrospectSchemaCommandH\x00R\x10introspectSchema\x12S\n" +
+	"\x12configure_database\x18\r \x01(\v2\".agent.v1.ConfigureDatabaseCommandH\x00R\x11configureDatabaseB\t\n" +
 	"\apayload\"0\n" +
 	"\n" +
 	"PingResult\x12\"\n" +
@@ -1440,7 +1656,15 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"elapsed_ms\x18\x02 \x01(\x03R\telapsedMs\x12#\n" +
 	"\rdatabase_user\x18\x03 \x01(\tR\fdatabaseUser\x12#\n" +
 	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\"\xe5\x02\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\"\xdd\x01\n" +
+	"\x17ConfigureDatabaseResult\x12\x1d\n" +
+	"\n" +
+	"elapsed_ms\x18\x01 \x01(\x03R\telapsedMs\x12#\n" +
+	"\rdatabase_user\x18\x02 \x01(\tR\fdatabaseUser\x12#\n" +
+	"\rdatabase_name\x18\x03 \x01(\tR\fdatabaseName\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12C\n" +
+	"\n" +
+	"error_code\x18\x05 \x01(\x0e2$.agent.v1.ConfigureDatabaseErrorCodeR\terrorCode\"\xb9\x03\n" +
 	"\x1aSubmitCommandResultRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
@@ -1450,13 +1674,22 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x04ping\x18\n" +
 	" \x01(\v2\x14.agent.v1.PingResultH\x00R\x04ping\x12C\n" +
 	"\rexecute_query\x18\v \x01(\v2\x1c.agent.v1.ExecuteQueryResultH\x00R\fexecuteQuery\x12O\n" +
-	"\x11introspect_schema\x18\f \x01(\v2 .agent.v1.IntrospectSchemaResultH\x00R\x10introspectSchemaB\b\n" +
+	"\x11introspect_schema\x18\f \x01(\v2 .agent.v1.IntrospectSchemaResultH\x00R\x10introspectSchema\x12R\n" +
+	"\x12configure_database\x18\r \x01(\v2!.agent.v1.ConfigureDatabaseResultH\x00R\x11configureDatabaseB\b\n" +
 	"\x06result\"\x1d\n" +
 	"\x1bSubmitCommandResultResponse*\x98\x01\n" +
 	"\x15ExecuteQueryErrorCode\x12(\n" +
 	"$EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED\x10\x00\x12.\n" +
 	"*EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED\x10\x01\x12%\n" +
-	"!EXECUTE_QUERY_ERROR_CODE_INTERNAL\x10\x022\x8d\x02\n" +
+	"!EXECUTE_QUERY_ERROR_CODE_INTERNAL\x10\x02*\xf2\x02\n" +
+	"\x1aConfigureDatabaseErrorCode\x12-\n" +
+	")CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED\x10\x00\x12-\n" +
+	")CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN\x10\x01\x120\n" +
+	",CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED\x10\x02\x12-\n" +
+	")CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED\x10\x03\x123\n" +
+	"/CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID\x10\x04\x125\n" +
+	"1CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED\x10\x05\x12)\n" +
+	"%CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT\x10\x062\x8d\x02\n" +
 	"\fAgentService\x12S\n" +
 	"\x11OpenCommandStream\x12\".agent.v1.OpenCommandStreamRequest\x1a\x18.agent.v1.ControlMessage0\x01\x12D\n" +
 	"\tHeartbeat\x12\x1a.agent.v1.HeartbeatRequest\x1a\x1b.agent.v1.HeartbeatResponse\x12b\n" +
@@ -1476,63 +1709,69 @@ func file_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_agent_v1_agent_proto_rawDescData
 }
 
-var file_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_agent_v1_agent_proto_goTypes = []any{
 	(ExecuteQueryErrorCode)(0),          // 0: agent.v1.ExecuteQueryErrorCode
-	(*OpenCommandStreamRequest)(nil),    // 1: agent.v1.OpenCommandStreamRequest
-	(*HeartbeatRequest)(nil),            // 2: agent.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),           // 3: agent.v1.HeartbeatResponse
-	(*PingCommand)(nil),                 // 4: agent.v1.PingCommand
-	(*ExecuteQueryCommand)(nil),         // 5: agent.v1.ExecuteQueryCommand
-	(*IntrospectSchemaCommand)(nil),     // 6: agent.v1.IntrospectSchemaCommand
-	(*SchemaTable)(nil),                 // 7: agent.v1.SchemaTable
-	(*SchemaColumn)(nil),                // 8: agent.v1.SchemaColumn
-	(*SchemaPrimaryKey)(nil),            // 9: agent.v1.SchemaPrimaryKey
-	(*SchemaForeignKey)(nil),            // 10: agent.v1.SchemaForeignKey
-	(*SchemaBlob)(nil),                  // 11: agent.v1.SchemaBlob
-	(*ControlMessage)(nil),              // 12: agent.v1.ControlMessage
-	(*PingResult)(nil),                  // 13: agent.v1.PingResult
-	(*ExecuteQueryRow)(nil),             // 14: agent.v1.ExecuteQueryRow
-	(*ExecuteQueryResult)(nil),          // 15: agent.v1.ExecuteQueryResult
-	(*IntrospectSchemaResult)(nil),      // 16: agent.v1.IntrospectSchemaResult
-	(*SubmitCommandResultRequest)(nil),  // 17: agent.v1.SubmitCommandResultRequest
-	(*SubmitCommandResultResponse)(nil), // 18: agent.v1.SubmitCommandResultResponse
-	nil,                                 // 19: agent.v1.ExecuteQueryRow.ValuesEntry
-	(*timestamppb.Timestamp)(nil),       // 20: google.protobuf.Timestamp
-	(*structpb.Value)(nil),              // 21: google.protobuf.Value
+	(ConfigureDatabaseErrorCode)(0),     // 1: agent.v1.ConfigureDatabaseErrorCode
+	(*OpenCommandStreamRequest)(nil),    // 2: agent.v1.OpenCommandStreamRequest
+	(*HeartbeatRequest)(nil),            // 3: agent.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),           // 4: agent.v1.HeartbeatResponse
+	(*PingCommand)(nil),                 // 5: agent.v1.PingCommand
+	(*ExecuteQueryCommand)(nil),         // 6: agent.v1.ExecuteQueryCommand
+	(*IntrospectSchemaCommand)(nil),     // 7: agent.v1.IntrospectSchemaCommand
+	(*ConfigureDatabaseCommand)(nil),    // 8: agent.v1.ConfigureDatabaseCommand
+	(*SchemaTable)(nil),                 // 9: agent.v1.SchemaTable
+	(*SchemaColumn)(nil),                // 10: agent.v1.SchemaColumn
+	(*SchemaPrimaryKey)(nil),            // 11: agent.v1.SchemaPrimaryKey
+	(*SchemaForeignKey)(nil),            // 12: agent.v1.SchemaForeignKey
+	(*SchemaBlob)(nil),                  // 13: agent.v1.SchemaBlob
+	(*ControlMessage)(nil),              // 14: agent.v1.ControlMessage
+	(*PingResult)(nil),                  // 15: agent.v1.PingResult
+	(*ExecuteQueryRow)(nil),             // 16: agent.v1.ExecuteQueryRow
+	(*ExecuteQueryResult)(nil),          // 17: agent.v1.ExecuteQueryResult
+	(*IntrospectSchemaResult)(nil),      // 18: agent.v1.IntrospectSchemaResult
+	(*ConfigureDatabaseResult)(nil),     // 19: agent.v1.ConfigureDatabaseResult
+	(*SubmitCommandResultRequest)(nil),  // 20: agent.v1.SubmitCommandResultRequest
+	(*SubmitCommandResultResponse)(nil), // 21: agent.v1.SubmitCommandResultResponse
+	nil,                                 // 22: agent.v1.ExecuteQueryRow.ValuesEntry
+	(*timestamppb.Timestamp)(nil),       // 23: google.protobuf.Timestamp
+	(*structpb.Value)(nil),              // 24: google.protobuf.Value
 }
 var file_agent_v1_agent_proto_depIdxs = []int32{
-	20, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
-	20, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
-	7,  // 2: agent.v1.SchemaBlob.tables:type_name -> agent.v1.SchemaTable
-	8,  // 3: agent.v1.SchemaBlob.columns:type_name -> agent.v1.SchemaColumn
-	9,  // 4: agent.v1.SchemaBlob.primary_keys:type_name -> agent.v1.SchemaPrimaryKey
-	10, // 5: agent.v1.SchemaBlob.foreign_keys:type_name -> agent.v1.SchemaForeignKey
-	20, // 6: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
-	4,  // 7: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
-	5,  // 8: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
-	6,  // 9: agent.v1.ControlMessage.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
-	19, // 10: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
-	14, // 11: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
-	0,  // 12: agent.v1.ExecuteQueryResult.error_code:type_name -> agent.v1.ExecuteQueryErrorCode
-	11, // 13: agent.v1.IntrospectSchemaResult.schema:type_name -> agent.v1.SchemaBlob
-	20, // 14: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
-	13, // 15: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
-	15, // 16: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
-	16, // 17: agent.v1.SubmitCommandResultRequest.introspect_schema:type_name -> agent.v1.IntrospectSchemaResult
-	21, // 18: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
-	1,  // 19: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
-	2,  // 20: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
-	17, // 21: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
-	12, // 22: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
-	3,  // 23: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
-	18, // 24: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
-	22, // [22:25] is the sub-list for method output_type
-	19, // [19:22] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	23, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
+	23, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
+	9,  // 2: agent.v1.SchemaBlob.tables:type_name -> agent.v1.SchemaTable
+	10, // 3: agent.v1.SchemaBlob.columns:type_name -> agent.v1.SchemaColumn
+	11, // 4: agent.v1.SchemaBlob.primary_keys:type_name -> agent.v1.SchemaPrimaryKey
+	12, // 5: agent.v1.SchemaBlob.foreign_keys:type_name -> agent.v1.SchemaForeignKey
+	23, // 6: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
+	5,  // 7: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
+	6,  // 8: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
+	7,  // 9: agent.v1.ControlMessage.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
+	8,  // 10: agent.v1.ControlMessage.configure_database:type_name -> agent.v1.ConfigureDatabaseCommand
+	22, // 11: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
+	16, // 12: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
+	0,  // 13: agent.v1.ExecuteQueryResult.error_code:type_name -> agent.v1.ExecuteQueryErrorCode
+	13, // 14: agent.v1.IntrospectSchemaResult.schema:type_name -> agent.v1.SchemaBlob
+	1,  // 15: agent.v1.ConfigureDatabaseResult.error_code:type_name -> agent.v1.ConfigureDatabaseErrorCode
+	23, // 16: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
+	15, // 17: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
+	17, // 18: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
+	18, // 19: agent.v1.SubmitCommandResultRequest.introspect_schema:type_name -> agent.v1.IntrospectSchemaResult
+	19, // 20: agent.v1.SubmitCommandResultRequest.configure_database:type_name -> agent.v1.ConfigureDatabaseResult
+	24, // 21: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
+	2,  // 22: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
+	3,  // 23: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
+	20, // 24: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
+	14, // 25: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
+	4,  // 26: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
+	21, // 27: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
+	25, // [25:28] is the sub-list for method output_type
+	22, // [22:25] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_agent_v1_agent_proto_init() }
@@ -1540,23 +1779,25 @@ func file_agent_v1_agent_proto_init() {
 	if File_agent_v1_agent_proto != nil {
 		return
 	}
-	file_agent_v1_agent_proto_msgTypes[11].OneofWrappers = []any{
+	file_agent_v1_agent_proto_msgTypes[12].OneofWrappers = []any{
 		(*ControlMessage_Ping)(nil),
 		(*ControlMessage_ExecuteQuery)(nil),
 		(*ControlMessage_IntrospectSchema)(nil),
+		(*ControlMessage_ConfigureDatabase)(nil),
 	}
-	file_agent_v1_agent_proto_msgTypes[16].OneofWrappers = []any{
+	file_agent_v1_agent_proto_msgTypes[18].OneofWrappers = []any{
 		(*SubmitCommandResultRequest_Ping)(nil),
 		(*SubmitCommandResultRequest_ExecuteQuery)(nil),
 		(*SubmitCommandResultRequest_IntrospectSchema)(nil),
+		(*SubmitCommandResultRequest_ConfigureDatabase)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_v1_agent_proto_rawDesc), len(file_agent_v1_agent_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   19,
+			NumEnums:      2,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

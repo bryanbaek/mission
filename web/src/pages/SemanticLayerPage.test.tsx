@@ -533,7 +533,12 @@ describe("SemanticLayerPage", () => {
       "ko",
     );
 
-    expect(await screen.findByText("시맨틱 레이어")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "시맨틱 레이어",
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByText("스키마가 아직 없습니다")).toBeInTheDocument();
   });
 });

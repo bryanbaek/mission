@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
+	"github.com/bryanbaek/mission/gen/go/onboarding/v1/onboardingv1connect"
 	"github.com/bryanbaek/mission/gen/go/query/v1/queryv1connect"
 	"github.com/bryanbaek/mission/gen/go/semantic/v1/semanticv1connect"
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
@@ -74,6 +75,8 @@ func run() error {
 	tokenRepo := repository.NewTenantTokenRepository(pool)
 	schemaRepo := repository.NewTenantSchemaRepository(pool)
 	semanticLayerRepo := repository.NewTenantSemanticLayerRepository(pool)
+	onboardingRepo := repository.NewOnboardingRepository(pool)
+	inviteRepo := repository.NewInviteRepository(pool)
 
 	// Controllers
 	tenantCtrl := controller.NewTenantController(tenantRepo, tokenRepo)
@@ -125,6 +128,17 @@ func run() error {
 			Model: cfg.QueryModel,
 		},
 	)
+	onboardingCtrl := controller.NewOnboardingController(
+		onboardingRepo,
+		inviteRepo,
+		tenantCtrl,
+		agentSessions,
+		schemaCtrl,
+		semanticLayerRepo,
+		controller.OnboardingControllerConfig{
+			EdgeAgentImage: cfg.EdgeAgentImage,
+		},
+	)
 
 	// Auth
 	var verifier auth.Verifier
@@ -148,11 +162,15 @@ func run() error {
 	schemaDebugHandler := handler.NewSchemaDebugHandler(tenantCtrl, schemaCtrl)
 	semanticLayerHandler := handler.NewSemanticLayerHandler(semanticLayerCtrl)
 	queryHandler := handler.NewQueryHandler(queryCtrl)
+	onboardingHandler := handler.NewOnboardingHandler(onboardingCtrl)
 	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
 	semanticPath, semanticSvc := semanticv1connect.NewSemanticLayerServiceHandler(
 		semanticLayerHandler,
 	)
 	queryPath, querySvc := queryv1connect.NewQueryServiceHandler(queryHandler)
+	onboardingPath, onboardingSvc := onboardingv1connect.NewOnboardingServiceHandler(
+		onboardingHandler,
+	)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
 
 	r := chi.NewRouter()
@@ -178,6 +196,13 @@ func run() error {
 		r.Use(middleware.Timeout(90 * time.Second))
 		r.Use(auth.RequireAuth(verifier))
 		r.Mount(queryPath, querySvc)
+	})
+
+	// Onboarding can block on edge-agent connectivity and schema capture.
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Timeout(90 * time.Second))
+		r.Use(auth.RequireAuth(verifier))
+		r.Mount(onboardingPath, onboardingSvc)
 	})
 
 	r.Group(func(r chi.Router) {

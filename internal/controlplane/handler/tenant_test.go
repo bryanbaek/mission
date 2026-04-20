@@ -53,6 +53,24 @@ func (f *fakeTenantStore) GetMembership(_ context.Context, tenantID uuid.UUID, c
 	return model.TenantUser{}, repository.ErrNotFound
 }
 
+func (f *fakeTenantStore) UpdateName(
+	_ context.Context,
+	tenantID uuid.UUID,
+	name string,
+) (model.Tenant, error) {
+	for clerkUserID, tenants := range f.tenants {
+		for index, tenant := range tenants {
+			if tenant.ID != tenantID {
+				continue
+			}
+			tenant.Name = name
+			f.tenants[clerkUserID][index] = tenant
+			return tenant, nil
+		}
+	}
+	return model.Tenant{}, repository.ErrNotFound
+}
+
 type fakeTenantTokenStore struct {
 	tokens map[uuid.UUID][]model.TenantToken
 }

@@ -163,6 +163,20 @@ func (h *AgentHandler) SubmitCommandResult(
 			result.IntrospectSchema.GetDatabaseName(),
 			result.IntrospectSchema.GetError(),
 		)
+	case *agentv1.SubmitCommandResultRequest_ConfigureDatabase:
+		err = h.sessions.SubmitConfigureDatabaseResult(
+			agent.TokenID,
+			req.Msg.GetSessionId(),
+			req.Msg.GetCommandId(),
+			completedAt,
+			result.ConfigureDatabase.GetElapsedMs(),
+			result.ConfigureDatabase.GetDatabaseUser(),
+			result.ConfigureDatabase.GetDatabaseName(),
+			result.ConfigureDatabase.GetError(),
+			configureDatabaseErrorCodeFromProto(
+				result.ConfigureDatabase.GetErrorCode(),
+			),
+		)
 	default:
 		return nil, connect.NewError(
 			connect.CodeInvalidArgument,
@@ -203,8 +217,35 @@ func commandToProto(command controller.AgentCommand) *agentv1.ControlMessage {
 		out.Payload = &agentv1.ControlMessage_IntrospectSchema{
 			IntrospectSchema: &agentv1.IntrospectSchemaCommand{},
 		}
+	case controller.AgentCommandKindConfigureDatabase:
+		out.Payload = &agentv1.ControlMessage_ConfigureDatabase{
+			ConfigureDatabase: &agentv1.ConfigureDatabaseCommand{
+				Dsn: command.DSN,
+			},
+		}
 	}
 	return out
+}
+
+func configureDatabaseErrorCodeFromProto(
+	code agentv1.ConfigureDatabaseErrorCode,
+) controller.AgentConfigureDatabaseErrorCode {
+	switch code {
+	case agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN:
+		return controller.AgentConfigureDatabaseErrorCodeInvalidDSN
+	case agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED:
+		return controller.AgentConfigureDatabaseErrorCodeConnectFailed
+	case agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED:
+		return controller.AgentConfigureDatabaseErrorCodeAuthFailed
+	case agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID:
+		return controller.AgentConfigureDatabaseErrorCodePrivilegeError
+	case agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED:
+		return controller.AgentConfigureDatabaseErrorCodeWriteConfig
+	case agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT:
+		return controller.AgentConfigureDatabaseErrorCodeTimeout
+	default:
+		return controller.AgentConfigureDatabaseErrorCodeUnspecified
+	}
 }
 
 func connectErrorForSession(err error) error {

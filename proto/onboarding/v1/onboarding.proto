@@ -1,0 +1,186 @@
+syntax = "proto3";
+
+package onboarding.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/bryanbaek/mission/gen/go/onboarding/v1;onboardingv1";
+
+enum WorkspaceRole {
+  WORKSPACE_ROLE_UNSPECIFIED = 0;
+  WORKSPACE_ROLE_OWNER = 1;
+  WORKSPACE_ROLE_MEMBER = 2;
+}
+
+message WorkspaceSummary {
+  string tenant_id = 1;
+  string slug = 2;
+  string name = 3;
+  WorkspaceRole role = 4;
+  bool onboarding_complete = 5;
+  int32 current_step = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message InviteSummary {
+  string id = 1;
+  string email = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message OnboardingState {
+  string tenant_id = 1;
+  string slug = 2;
+  string name = 3;
+  WorkspaceRole role = 4;
+  bool onboarding_complete = 5;
+  int32 current_step = 6;
+  google.protobuf.Timestamp completed_at = 7;
+  string primary_language = 8;
+  string install_slug = 9;
+  string docker_run_command = 10;
+  string agent_token_id = 11;
+  string agent_token_plaintext = 12;
+  string agent_session_id = 13;
+  bool agent_connected = 14;
+  google.protobuf.Timestamp agent_wait_started_at = 15;
+  google.protobuf.Timestamp agent_connected_at = 16;
+  bool agent_connection_timed_out = 17;
+  string db_host = 18;
+  int32 db_port = 19;
+  string db_name = 20;
+  string db_username = 21;
+  string generated_password = 22;
+  string db_setup_sql = 23;
+  google.protobuf.Timestamp db_verified_at = 24;
+  string db_error_code = 25;
+  string db_error_message_ko = 26;
+  string schema_version_id = 27;
+  int32 schema_table_count = 28;
+  int32 schema_column_count = 29;
+  int32 schema_foreign_key_count = 30;
+  string semantic_layer_id = 31;
+  google.protobuf.Timestamp semantic_approved_at = 32;
+  google.protobuf.Timestamp updated_at = 33;
+  bool can_edit = 34;
+  bool waiting_for_owner = 35;
+  repeated InviteSummary invites = 36;
+}
+
+message ListWorkspacesRequest {}
+
+message ListWorkspacesResponse {
+  repeated WorkspaceSummary workspaces = 1;
+}
+
+message GetStateRequest {
+  string tenant_id = 1;
+}
+
+message GetStateResponse {
+  OnboardingState state = 1;
+}
+
+message SaveWelcomeRequest {
+  string tenant_id = 1;
+  string workspace_name = 2;
+  string primary_language = 3;
+  bool confirm_primary_language = 4;
+  bool auto_save = 5;
+}
+
+message SaveWelcomeResponse {
+  OnboardingState state = 1;
+}
+
+message EnsureInstallBundleRequest {
+  string tenant_id = 1;
+}
+
+message EnsureInstallBundleResponse {
+  OnboardingState state = 1;
+}
+
+message GetAgentConnectionStatusRequest {
+  string tenant_id = 1;
+}
+
+message GetAgentConnectionStatusResponse {
+  OnboardingState state = 1;
+}
+
+message ConfigureDatabaseRequest {
+  string tenant_id = 1;
+  string host = 2;
+  int32 port = 3;
+  string database_name = 4;
+  string connection_string = 5;
+}
+
+message ConfigureDatabaseResponse {
+  OnboardingState state = 1;
+}
+
+message RunSchemaIntrospectionRequest {
+  string tenant_id = 1;
+}
+
+message RunSchemaIntrospectionResponse {
+  OnboardingState state = 1;
+}
+
+message MarkSemanticApprovedRequest {
+  string tenant_id = 1;
+  string semantic_layer_id = 2;
+}
+
+message MarkSemanticApprovedResponse {
+  OnboardingState state = 1;
+}
+
+message CompleteStarterStepRequest {
+  string tenant_id = 1;
+}
+
+message CompleteStarterStepResponse {
+  OnboardingState state = 1;
+}
+
+message CompleteOnboardingRequest {
+  string tenant_id = 1;
+}
+
+message CompleteOnboardingResponse {
+  OnboardingState state = 1;
+}
+
+message CreateInvitesRequest {
+  string tenant_id = 1;
+  repeated string emails = 2;
+}
+
+message CreateInvitesResponse {
+  OnboardingState state = 1;
+  repeated InviteSummary invites = 2;
+}
+
+service OnboardingService {
+  rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse);
+  rpc GetState(GetStateRequest) returns (GetStateResponse);
+  rpc SaveWelcome(SaveWelcomeRequest) returns (SaveWelcomeResponse);
+  rpc EnsureInstallBundle(EnsureInstallBundleRequest)
+      returns (EnsureInstallBundleResponse);
+  rpc GetAgentConnectionStatus(GetAgentConnectionStatusRequest)
+      returns (GetAgentConnectionStatusResponse);
+  rpc ConfigureDatabase(ConfigureDatabaseRequest)
+      returns (ConfigureDatabaseResponse);
+  rpc RunSchemaIntrospection(RunSchemaIntrospectionRequest)
+      returns (RunSchemaIntrospectionResponse);
+  rpc MarkSemanticApproved(MarkSemanticApprovedRequest)
+      returns (MarkSemanticApprovedResponse);
+  rpc CompleteStarterStep(CompleteStarterStepRequest)
+      returns (CompleteStarterStepResponse);
+  rpc CompleteOnboarding(CompleteOnboardingRequest)
+      returns (CompleteOnboardingResponse);
+  rpc CreateInvites(CreateInvitesRequest) returns (CreateInvitesResponse);
+}

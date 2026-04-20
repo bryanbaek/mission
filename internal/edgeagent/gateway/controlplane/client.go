@@ -126,6 +126,30 @@ func (c *Client) SubmitIntrospectSchemaResult(
 	return err
 }
 
+func (c *Client) SubmitConfigureDatabaseResult(
+	ctx context.Context,
+	req edgecontroller.SubmitConfigureDatabaseResultRequest,
+) error {
+	_, err := c.client.SubmitCommandResult(
+		ctx,
+		connect.NewRequest(&agentv1.SubmitCommandResultRequest{
+			SessionId:   req.SessionID,
+			CommandId:   req.CommandID,
+			CompletedAt: timestamppb.New(req.CompletedAt),
+			Result: &agentv1.SubmitCommandResultRequest_ConfigureDatabase{
+				ConfigureDatabase: &agentv1.ConfigureDatabaseResult{
+					ElapsedMs:    req.ElapsedMS,
+					DatabaseUser: req.DatabaseUser,
+					DatabaseName: req.DatabaseName,
+					Error:        req.Error,
+					ErrorCode:    configureDatabaseErrorCodeToProto(req.ErrorCode),
+				},
+			},
+		}),
+	)
+	return err
+}
+
 type commandStream struct {
 	stream *connect.ServerStreamForClient[agentv1.ControlMessage]
 }
@@ -141,6 +165,7 @@ func (s *commandStream) Message() edgecontroller.ControlMessage {
 		CommandID: msg.GetCommandId(),
 		Kind:      commandKind(msg),
 		SQL:       commandSQL(msg),
+		DSN:       commandDSN(msg),
 	}
 	if msg.GetIssuedAt() != nil {
 		command.IssuedAt = msg.GetIssuedAt().AsTime().UTC()
@@ -195,6 +220,8 @@ func commandKind(msg *agentv1.ControlMessage) edgecontroller.CommandKind {
 		return edgecontroller.CommandKindExecuteQuery
 	case *agentv1.ControlMessage_IntrospectSchema:
 		return edgecontroller.CommandKindIntrospectSchema
+	case *agentv1.ControlMessage_ConfigureDatabase:
+		return edgecontroller.CommandKindConfigureDatabase
 	default:
 		return ""
 	}
@@ -204,6 +231,15 @@ func commandSQL(msg *agentv1.ControlMessage) string {
 	switch payload := msg.Payload.(type) {
 	case *agentv1.ControlMessage_ExecuteQuery:
 		return payload.ExecuteQuery.GetSql()
+	default:
+		return ""
+	}
+}
+
+func commandDSN(msg *agentv1.ControlMessage) string {
+	switch payload := msg.Payload.(type) {
+	case *agentv1.ControlMessage_ConfigureDatabase:
+		return payload.ConfigureDatabase.GetDsn()
 	default:
 		return ""
 	}
@@ -312,5 +348,26 @@ func queryErrorCodeToProto(code queryerror.Code) agentv1.ExecuteQueryErrorCode {
 		return agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_INTERNAL
 	default:
 		return agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED
+	}
+}
+
+func configureDatabaseErrorCodeToProto(
+	code edgecontroller.ConfigureDatabaseErrorCode,
+) agentv1.ConfigureDatabaseErrorCode {
+	switch code {
+	case edgecontroller.ConfigureDatabaseErrorCodeInvalidDSN:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN
+	case edgecontroller.ConfigureDatabaseErrorCodeConnectFailed:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED
+	case edgecontroller.ConfigureDatabaseErrorCodeAuthFailed:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED
+	case edgecontroller.ConfigureDatabaseErrorCodePrivilegeError:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID
+	case edgecontroller.ConfigureDatabaseErrorCodeWriteConfig:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED
+	case edgecontroller.ConfigureDatabaseErrorCodeTimeout:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT
+	default:
+		return agentv1.ConfigureDatabaseErrorCode_CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED
 	}
 }

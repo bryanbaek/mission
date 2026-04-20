@@ -42,6 +42,11 @@ type tenantStore interface {
 		tenantID uuid.UUID,
 		clerkUserID string,
 	) (model.TenantUser, error)
+	UpdateName(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		name string,
+	) (model.Tenant, error)
 }
 
 type tenantTokenStore interface {
@@ -135,6 +140,17 @@ func (c *TenantController) RevokeAgentToken(
 	tenantID, tokenID uuid.UUID,
 ) error {
 	return c.tokens.Revoke(ctx, tenantID, tokenID)
+}
+
+func (c *TenantController) UpdateName(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	name string,
+) (model.Tenant, error) {
+	if l := len(name); l < 1 || l > 200 {
+		return model.Tenant{}, ErrInvalidName
+	}
+	return c.tenants.UpdateName(ctx, tenantID, name)
 }
 
 func generateToken() (string, error) {

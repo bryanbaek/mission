@@ -232,6 +232,215 @@ const semanticEn = {
   "semantic.notice.cacheUsage": "Cache usage",
 } as const;
 
+const onboardingEn = {
+  "onboarding.common.label": "Onboarding",
+  "onboarding.common.loading": "Loading onboarding...",
+  "onboarding.common.next": "Next",
+  "onboarding.common.back": "Back",
+  "onboarding.common.cancel": "Cancel",
+  "onboarding.common.copy": "Copy",
+  "onboarding.common.copyFix": "Copy fix",
+  "onboarding.common.copied": "Copied",
+  "onboarding.common.connected": "Connected",
+  "onboarding.common.pending": "Pending",
+  "onboarding.common.stepOfTotal": "Step {step} of {total}",
+  "onboarding.common.justHappenedLabel": "What just happened",
+  "onboarding.common.nextLabel": "What comes next",
+  "onboarding.workspacePicker.title": "Choose a workspace to resume",
+  "onboarding.workspacePicker.loadingTitle": "Checking onboarding status",
+  "onboarding.workspacePicker.subtitle":
+    "Owner accounts with unfinished setup can resume from the saved step here.",
+  "onboarding.workspacePicker.resume": "Resume from step {step}.",
+  "onboarding.workspacePicker.updatedAt": "Last saved: {time}",
+  "onboarding.workspacePicker.open": "Open workspace",
+  "onboarding.waiting.title": "Setup is still in progress",
+  "onboarding.waiting.subtitle":
+    "A workspace owner is still finishing setup for this workspace.",
+  "onboarding.waiting.justHappened":
+    "You opened an onboarding route for a workspace that has not finished setup yet.",
+  "onboarding.waiting.next":
+    "Once the owner finishes setup, chat and analytics screens will open normally.",
+  "onboarding.waiting.body":
+    "{workspace} is currently being configured. Please wait for the workspace owner to finish the remaining setup steps.",
+  "onboarding.waiting.updatedAt": "Last update: {time}",
+  "onboarding.step1.title": "Welcome and workspace naming",
+  "onboarding.step1.subtitle":
+    "Confirm that Korean is the primary language and choose the workspace name users will see.",
+  "onboarding.step1.justHappened":
+    "Your sign-in was verified and we created a resumable onboarding record for this workspace.",
+  "onboarding.step1.next":
+    "After this, you will install the edge agent with a ready-to-run Docker command.",
+  "onboarding.step1.workspaceName": "Workspace name",
+  "onboarding.step1.workspacePlaceholder": "Ecotech quality workspace",
+  "onboarding.step1.languageConfirm":
+    "I confirm that Korean is the primary language for this workspace.",
+  "onboarding.step1.summaryTitle": "Why we ask this now",
+  "onboarding.step1.summaryBody":
+    "This name is reused in setup commands, invite screens, and the chat workspace label. You can still rename it later in product settings.",
+  "onboarding.step2.title": "Install the edge agent",
+  "onboarding.step2.subtitle":
+    "Run the prepared Docker command on the customer environment. The control plane will detect the connection automatically.",
+  "onboarding.step2.justHappened":
+    "We issued an onboarding-scoped agent token for this workspace and embedded it into the install command.",
+  "onboarding.step2.next":
+    "As soon as the outbound stream opens, onboarding moves to database setup automatically.",
+  "onboarding.step2.commandTitle": "Copy this Docker command",
+  "onboarding.step2.commandBody":
+    "Paste this command into the server where the agent should run. No extra flags are required for onboarding.",
+  "onboarding.step2.statusTitle": "Live connection status",
+  "onboarding.step2.statusWaiting":
+    "We are polling every 5 seconds for the agent session opened by this onboarding token.",
+  "onboarding.step2.statusConnected":
+    "The agent connected successfully. The next step is ready.",
+  "onboarding.step2.connectedAt": "Connected at {time}",
+  "onboarding.step2.troubleshootingTitle": "Troubleshooting",
+  "onboarding.step2.troubleshoot.1.title": "Outbound 443 is blocked",
+  "onboarding.step2.troubleshoot.1.body":
+    "If the server cannot reach the control plane over HTTPS, the agent never opens its outbound stream.",
+  "onboarding.step2.troubleshoot.1.fix":
+    "curl -I https://your-control-plane.example.com/healthz",
+  "onboarding.step2.troubleshoot.2.title": "Wrong tenant token",
+  "onboarding.step2.troubleshoot.2.body":
+    "If the token was edited or partially copied, the control plane will reject the agent stream.",
+  "onboarding.step2.troubleshoot.2.fix":
+    "docker rm -f <workspace>-agent && paste the exact command again from onboarding",
+  "onboarding.step2.troubleshoot.3.title": "Docker is missing or the daemon is stopped",
+  "onboarding.step2.troubleshoot.3.body":
+    "The command requires a working Docker CLI and daemon on the target machine.",
+  "onboarding.step2.troubleshoot.3.fix":
+    "docker version && sudo systemctl start docker",
+  "onboarding.step2.troubleshoot.4.title": "Clock skew or time sync drift",
+  "onboarding.step2.troubleshoot.4.body":
+    "Large clock drift can break mTLS and short-lived token validation in production.",
+  "onboarding.step2.troubleshoot.4.fix":
+    "timedatectl set-ntp true && timedatectl status",
+  "onboarding.step2.troubleshoot.5.title": "Registry pull authentication failed",
+  "onboarding.step2.troubleshoot.5.body":
+    "If the target host cannot pull the image from the registry, the container never starts.",
+  "onboarding.step2.troubleshoot.5.fix":
+    "docker login registry.digitalocean.com",
+  "onboarding.step3.title": "Connect the database safely",
+  "onboarding.step3.subtitle":
+    "Create a dedicated read-only MySQL user, then send the connection string through the control plane to the connected agent.",
+  "onboarding.step3.justHappened":
+    "The agent is online, so it can receive a database configuration command over the existing outbound stream.",
+  "onboarding.step3.next":
+    "Once the connection test passes, onboarding unlocks schema introspection.",
+  "onboarding.step3.host": "MySQL host",
+  "onboarding.step3.port": "Port",
+  "onboarding.step3.database": "Database name",
+  "onboarding.step3.hostPlaceholder": "db.example.local",
+  "onboarding.step3.databasePlaceholder": "mission_app",
+  "onboarding.step3.generateSql": "Generate SQL",
+  "onboarding.step3.sqlTitle": "Run this SQL as MySQL root",
+  "onboarding.step3.sqlBody":
+    "Paste the exact SQL below into MySQL to create a dedicated read-only user for Mission.",
+  "onboarding.step3.whyReadOnly":
+    "Read-only access reduces risk. The agent only needs SELECT privileges to answer questions and capture schema metadata.",
+  "onboarding.step3.whySeparateUser":
+    "A separate account keeps application credentials isolated and makes future auditing easier.",
+  "onboarding.step3.whyReplica":
+    "If a read replica is available, using it avoids putting reporting load on the primary database.",
+  "onboarding.step3.connectionString": "Connection string to send to the agent",
+  "onboarding.step3.connectionPlaceholder":
+    "username:password@tcp(host:3306)/database?parseTime=true",
+  "onboarding.step3.verifiedAt": "Verified at {time}",
+  "onboarding.step3.verify": "Verify and continue",
+  "onboarding.step3.transport":
+    "This browser sends the connection string to the control plane, and the control plane forwards it to the connected agent over the existing outbound command stream.",
+  "onboarding.step4.title": "Run schema introspection",
+  "onboarding.step4.subtitle":
+    "Capture the current schema through the connected agent and review the detected table summary.",
+  "onboarding.step4.justHappened":
+    "The database connection was verified with SELECT 1 and privilege validation.",
+  "onboarding.step4.next":
+    "The captured schema becomes the input for the draft semantic layer in the next step.",
+  "onboarding.step4.body":
+    "This can take up to about a minute depending on schema size. If it fails, you can retry here.",
+  "onboarding.step4.run": "Run introspection",
+  "onboarding.step4.running": "Running introspection...",
+  "onboarding.step4.tables": "Tables found",
+  "onboarding.step4.columns": "Columns found",
+  "onboarding.step4.foreignKeys": "Foreign keys found",
+  "onboarding.step5.title": "Review the semantic layer",
+  "onboarding.step5.subtitle":
+    "Generate or refine the Korean semantic draft, then approve the permanent version when it looks right.",
+  "onboarding.step5.justHappened":
+    "We captured the latest schema and made it available to the semantic-layer workflow.",
+  "onboarding.step5.next":
+    "Once approved, back navigation is removed and onboarding moves to the final starter screen.",
+  "onboarding.step6.title": "You are ready to ask questions",
+  "onboarding.step6.subtitle":
+    "The core setup is complete. You can open chat now or continue to the final onboarding summary.",
+  "onboarding.step6.justHappened":
+    "The semantic layer was approved, so the NL-to-SQL flow now has a durable business context.",
+  "onboarding.step6.next":
+    "The final step records completion and optionally saves teammate invite emails for follow-up.",
+  "onboarding.step6.readyTitle": "Setup is ready",
+  "onboarding.step6.readyBody":
+    "You can go straight to chat and ask a first question now, or open the completion summary before inviting teammates.",
+  "onboarding.step6.chatCta": "Go to chat",
+  "onboarding.step6.finish": "Continue to summary",
+  "onboarding.step7.title": "Workspace setup summary",
+  "onboarding.step7.subtitle":
+    "Review the final workspace status, record teammate invites, and mark onboarding complete.",
+  "onboarding.step7.justHappened":
+    "All required setup steps finished successfully for this workspace.",
+  "onboarding.step7.next":
+    "After completion, owners are no longer redirected into onboarding at sign-in.",
+  "onboarding.step7.workspace": "Workspace",
+  "onboarding.step7.agent": "Agent",
+  "onboarding.step7.database": "Database",
+  "onboarding.step7.semanticLayer": "Semantic layer version",
+  "onboarding.step7.chatCta": "Open chat",
+  "onboarding.step7.inviteCta": "Invite teammates",
+  "onboarding.step7.complete": "Mark onboarding complete",
+  "onboarding.step7.completed": "Onboarding is marked complete.",
+  "onboarding.step7.invitesTitle": "Saved teammate invites",
+  "onboarding.step7.invitesEmpty": "No invite emails have been saved yet.",
+  "onboarding.step7.inviteModalTitle": "Save teammate emails",
+  "onboarding.step7.inviteModalBody":
+    "Enter comma-separated or line-separated emails. This step only records them; it does not send messages yet.",
+  "onboarding.step7.invitePlaceholder":
+    "alex@example.com\nops@example.com",
+  "onboarding.step7.saveInvites": "Save emails",
+  "onboarding.error.workspacePicker":
+    "Failed to load your onboarding workspaces. Please refresh and try again.",
+  "onboarding.error.stateLoad":
+    "Failed to load onboarding state. Please refresh and try again.",
+  "onboarding.error.welcome":
+    "We could not save the welcome step. Check the workspace name and try again.",
+  "onboarding.error.install":
+    "We could not prepare the install bundle. Please try again.",
+  "onboarding.error.status":
+    "We could not refresh the agent status. Polling will continue automatically.",
+  "onboarding.error.database":
+    "We could not verify the database configuration. Check the values and try again.",
+  "onboarding.error.schema":
+    "Schema introspection failed. Please retry after checking the database connection.",
+  "onboarding.error.semantic":
+    "The semantic-layer step failed. Please retry after the current draft finishes loading.",
+  "onboarding.error.invites":
+    "We could not save teammate emails. Check the addresses and try again.",
+  "onboarding.error.complete":
+    "We could not mark onboarding complete. Please try again.",
+  "onboarding.error.permission":
+    "You do not have permission to edit onboarding for this workspace.",
+  "onboarding.error.invalidStep":
+    "This onboarding step is not available yet.",
+  "onboarding.error.stepLocked":
+    "Earlier steps are locked after semantic approval.",
+  "onboarding.error.workspaceNameRequired": "Workspace name is required.",
+  "onboarding.error.primaryLanguage":
+    "Please confirm Korean as the primary language to continue.",
+  "onboarding.error.inviteEmail":
+    "One or more invite emails are not valid.",
+  "onboarding.error.semanticNotApproved":
+    "Approve the semantic layer before moving forward.",
+  "onboarding.error.generic":
+    "Something went wrong during onboarding. Please try again.",
+} as const;
+
 const en = {
   ...commonEn,
   ...layoutEn,
@@ -240,6 +449,7 @@ const en = {
   ...queryDebugEn,
   ...chatEn,
   ...semanticEn,
+  ...onboardingEn,
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -463,6 +673,215 @@ const semanticKo: Record<keyof typeof semanticEn, string> = {
   "semantic.notice.cacheUsage": "캐시 사용량",
 };
 
+const onboardingKo: Record<keyof typeof onboardingEn, string> = {
+  "onboarding.common.label": "온보딩",
+  "onboarding.common.loading": "온보딩 정보를 불러오는 중입니다...",
+  "onboarding.common.next": "다음",
+  "onboarding.common.back": "이전 단계",
+  "onboarding.common.cancel": "취소",
+  "onboarding.common.copy": "복사",
+  "onboarding.common.copyFix": "해결 명령 복사",
+  "onboarding.common.copied": "복사했습니다",
+  "onboarding.common.connected": "연결됨",
+  "onboarding.common.pending": "대기 중",
+  "onboarding.common.stepOfTotal": "{total}단계 중 {step}단계",
+  "onboarding.common.justHappenedLabel": "방금 한 일",
+  "onboarding.common.nextLabel": "다음 단계",
+  "onboarding.workspacePicker.title": "이어서 진행할 작업 공간을 선택하세요",
+  "onboarding.workspacePicker.loadingTitle": "온보딩 상태를 확인하는 중입니다",
+  "onboarding.workspacePicker.subtitle":
+    "설치가 끝나지 않은 오너 작업 공간은 여기서 저장된 단계부터 다시 시작할 수 있습니다.",
+  "onboarding.workspacePicker.resume": "{step}단계부터 이어서 진행합니다.",
+  "onboarding.workspacePicker.updatedAt": "마지막 저장: {time}",
+  "onboarding.workspacePicker.open": "작업 공간 열기",
+  "onboarding.waiting.title": "설정이 아직 진행 중입니다",
+  "onboarding.waiting.subtitle":
+    "이 작업 공간의 오너가 아직 초기 설정을 마치지 않았습니다.",
+  "onboarding.waiting.justHappened":
+    "아직 설정이 완료되지 않은 작업 공간의 온보딩 화면에 들어왔습니다.",
+  "onboarding.waiting.next":
+    "오너가 설정을 완료하면 채팅과 분석 화면을 정상적으로 사용할 수 있습니다.",
+  "onboarding.waiting.body":
+    "{workspace} 작업 공간은 현재 설정 중입니다. 작업 공간 오너가 남은 단계를 끝낼 때까지 기다려 주세요.",
+  "onboarding.waiting.updatedAt": "마지막 업데이트: {time}",
+  "onboarding.step1.title": "환영합니다. 작업 공간 이름을 정하세요",
+  "onboarding.step1.subtitle":
+    "이 작업 공간의 기본 언어가 한국어인지 확인하고, 사용자가 보게 될 작업 공간 이름을 정합니다.",
+  "onboarding.step1.justHappened":
+    "로그인이 확인되었고, 이 작업 공간에 대해 이어서 진행할 수 있는 온보딩 상태를 만들었습니다.",
+  "onboarding.step1.next":
+    "다음 단계에서는 바로 실행할 수 있는 Docker 명령으로 에지 에이전트를 설치합니다.",
+  "onboarding.step1.workspaceName": "작업 공간 이름",
+  "onboarding.step1.workspacePlaceholder": "에코텍 품질 작업 공간",
+  "onboarding.step1.languageConfirm":
+    "이 작업 공간의 기본 언어가 한국어임을 확인합니다.",
+  "onboarding.step1.summaryTitle": "지금 이 정보를 받는 이유",
+  "onboarding.step1.summaryBody":
+    "이 이름은 설치 명령, 초대 화면, 채팅 작업 공간 이름에 함께 사용됩니다. 나중에 설정에서 다시 바꿀 수 있습니다.",
+  "onboarding.step2.title": "에지 에이전트를 설치하세요",
+  "onboarding.step2.subtitle":
+    "고객 환경에서 준비된 Docker 명령을 실행하세요. 연결이 열리면 컨트롤 플레인이 자동으로 감지합니다.",
+  "onboarding.step2.justHappened":
+    "이 작업 공간용 온보딩 전용 에이전트 토큰을 발급했고, 설치 명령에 이미 넣어 두었습니다.",
+  "onboarding.step2.next":
+    "아웃바운드 스트림이 열리는 즉시 데이터베이스 설정 단계로 자동 이동합니다.",
+  "onboarding.step2.commandTitle": "이 Docker 명령을 복사하세요",
+  "onboarding.step2.commandBody":
+    "에이전트를 실행할 서버에서 그대로 붙여 넣으세요. 온보딩에서는 추가 플래그가 필요 없습니다.",
+  "onboarding.step2.statusTitle": "실시간 연결 상태",
+  "onboarding.step2.statusWaiting":
+    "이 온보딩 토큰으로 열린 에이전트 세션을 5초마다 확인하고 있습니다.",
+  "onboarding.step2.statusConnected":
+    "에이전트 연결이 확인되었습니다. 다음 단계로 진행할 준비가 됐습니다.",
+  "onboarding.step2.connectedAt": "{time}에 연결됨",
+  "onboarding.step2.troubleshootingTitle": "문제 해결",
+  "onboarding.step2.troubleshoot.1.title": "아웃바운드 443 또는 방화벽 차단",
+  "onboarding.step2.troubleshoot.1.body":
+    "서버가 HTTPS로 컨트롤 플레인에 나갈 수 없으면 에이전트가 아웃바운드 스트림을 열지 못합니다.",
+  "onboarding.step2.troubleshoot.1.fix":
+    "curl -I https://your-control-plane.example.com/healthz",
+  "onboarding.step2.troubleshoot.2.title": "잘못된 테넌트 토큰 사용",
+  "onboarding.step2.troubleshoot.2.body":
+    "토큰이 중간에 잘렸거나 수정되면 컨트롤 플레인이 에이전트 연결을 거부합니다.",
+  "onboarding.step2.troubleshoot.2.fix":
+    "docker rm -f <workspace>-agent && 온보딩 화면의 명령을 다시 정확히 붙여 넣으세요",
+  "onboarding.step2.troubleshoot.3.title": "Docker 미설치 또는 데몬 중지",
+  "onboarding.step2.troubleshoot.3.body":
+    "이 명령은 동작 중인 Docker CLI와 데몬이 있는 서버에서만 실행할 수 있습니다.",
+  "onboarding.step2.troubleshoot.3.fix":
+    "docker version && sudo systemctl start docker",
+  "onboarding.step2.troubleshoot.4.title": "시계 오차 또는 시간 동기화 문제",
+  "onboarding.step2.troubleshoot.4.body":
+    "서버 시간이 크게 어긋나면 운영 환경에서 mTLS나 짧은 수명의 토큰 검증이 실패할 수 있습니다.",
+  "onboarding.step2.troubleshoot.4.fix":
+    "timedatectl set-ntp true && timedatectl status",
+  "onboarding.step2.troubleshoot.5.title": "레지스트리 이미지 pull 인증 실패",
+  "onboarding.step2.troubleshoot.5.body":
+    "대상 서버가 레지스트리에서 이미지를 내려받지 못하면 컨테이너가 시작되지 않습니다.",
+  "onboarding.step2.troubleshoot.5.fix":
+    "docker login registry.digitalocean.com",
+  "onboarding.step3.title": "안전하게 데이터베이스를 연결하세요",
+  "onboarding.step3.subtitle":
+    "전용 읽기 전용 MySQL 사용자를 만든 뒤, 연결 문자열을 컨트롤 플레인을 통해 연결된 에이전트로 보냅니다.",
+  "onboarding.step3.justHappened":
+    "에이전트가 온라인 상태이므로 기존 아웃바운드 스트림을 통해 데이터베이스 설정 명령을 받을 수 있습니다.",
+  "onboarding.step3.next":
+    "연결 검증이 끝나면 다음 단계에서 스키마 인트로스펙션을 실행할 수 있습니다.",
+  "onboarding.step3.host": "MySQL 호스트",
+  "onboarding.step3.port": "포트",
+  "onboarding.step3.database": "데이터베이스 이름",
+  "onboarding.step3.hostPlaceholder": "db.example.local",
+  "onboarding.step3.databasePlaceholder": "mission_app",
+  "onboarding.step3.generateSql": "SQL 생성",
+  "onboarding.step3.sqlTitle": "MySQL root로 이 SQL을 실행하세요",
+  "onboarding.step3.sqlBody":
+    "아래 SQL을 그대로 붙여 넣어 Mission 전용 읽기 전용 사용자를 생성하세요.",
+  "onboarding.step3.whyReadOnly":
+    "읽기 전용 계정은 위험을 줄입니다. 에이전트는 질문 응답과 스키마 메타데이터 수집에 SELECT 권한만 필요합니다.",
+  "onboarding.step3.whySeparateUser":
+    "애플리케이션 계정과 분리된 전용 사용자를 쓰면 권한을 분명히 관리하고 나중에 감사하기도 쉬워집니다.",
+  "onboarding.step3.whyReplica":
+    "읽기 복제본이 있다면 우선 사용하세요. 운영 원본 DB에 분석 부하가 실리지 않게 할 수 있습니다.",
+  "onboarding.step3.connectionString": "에이전트로 보낼 연결 문자열",
+  "onboarding.step3.connectionPlaceholder":
+    "username:password@tcp(host:3306)/database?parseTime=true",
+  "onboarding.step3.verifiedAt": "{time}에 검증 완료",
+  "onboarding.step3.verify": "검증 후 계속",
+  "onboarding.step3.transport":
+    "이 브라우저는 연결 문자열을 컨트롤 플레인으로 보내고, 컨트롤 플레인은 기존 아웃바운드 명령 스트림을 통해 연결된 에이전트에 전달합니다.",
+  "onboarding.step4.title": "스키마 인트로스펙션 실행",
+  "onboarding.step4.subtitle":
+    "연결된 에이전트를 통해 현재 스키마를 수집하고, 감지된 테이블 요약을 확인합니다.",
+  "onboarding.step4.justHappened":
+    "SELECT 1 실행과 권한 검증으로 데이터베이스 연결을 확인했습니다.",
+  "onboarding.step4.next":
+    "수집한 스키마는 다음 단계에서 시맨틱 레이어 초안의 입력으로 사용됩니다.",
+  "onboarding.step4.body":
+    "스키마 크기에 따라 1분 정도 걸릴 수 있습니다. 실패하면 이 화면에서 다시 시도할 수 있습니다.",
+  "onboarding.step4.run": "인트로스펙션 실행",
+  "onboarding.step4.running": "인트로스펙션 실행 중...",
+  "onboarding.step4.tables": "찾은 테이블 수",
+  "onboarding.step4.columns": "찾은 컬럼 수",
+  "onboarding.step4.foreignKeys": "찾은 외래 키 수",
+  "onboarding.step5.title": "시맨틱 레이어를 검토하세요",
+  "onboarding.step5.subtitle":
+    "한국어 시맨틱 초안을 생성하거나 다듬은 뒤, 괜찮다면 영구 버전으로 승인하세요.",
+  "onboarding.step5.justHappened":
+    "최신 스키마를 수집했고, 시맨틱 레이어 워크플로에서 바로 사용할 수 있게 되었습니다.",
+  "onboarding.step5.next":
+    "이 단계를 승인하면 이전 단계로 돌아갈 수 없고, 마지막 시작 화면으로 이동합니다.",
+  "onboarding.step6.title": "이제 질문할 준비가 되었습니다",
+  "onboarding.step6.subtitle":
+    "핵심 설정이 끝났습니다. 지금 바로 채팅을 열거나 마지막 요약 화면으로 이동할 수 있습니다.",
+  "onboarding.step6.justHappened":
+    "시맨틱 레이어가 승인되어 자연어 질의 흐름이 영구적인 비즈니스 맥락을 사용할 수 있게 되었습니다.",
+  "onboarding.step6.next":
+    "마지막 단계에서는 완료 상태를 기록하고 팀원 이메일을 저장할 수 있습니다.",
+  "onboarding.step6.readyTitle": "설정이 완료되었습니다",
+  "onboarding.step6.readyBody":
+    "지금 바로 채팅으로 이동해 첫 질문을 보내거나, 완료 요약을 본 뒤 팀원 초대 이메일을 저장할 수 있습니다.",
+  "onboarding.step6.chatCta": "채팅으로 이동",
+  "onboarding.step6.finish": "요약으로 계속",
+  "onboarding.step7.title": "작업 공간 설정 요약",
+  "onboarding.step7.subtitle":
+    "최종 상태를 확인하고, 팀원 이메일을 저장한 뒤, 온보딩 완료를 기록하세요.",
+  "onboarding.step7.justHappened":
+    "이 작업 공간에 필요한 모든 설정 단계가 정상적으로 끝났습니다.",
+  "onboarding.step7.next":
+    "완료를 기록하면 오너는 다음 로그인부터 온보딩으로 강제 이동되지 않습니다.",
+  "onboarding.step7.workspace": "작업 공간",
+  "onboarding.step7.agent": "에이전트",
+  "onboarding.step7.database": "데이터베이스",
+  "onboarding.step7.semanticLayer": "시맨틱 레이어 버전",
+  "onboarding.step7.chatCta": "채팅 열기",
+  "onboarding.step7.inviteCta": "팀원 초대",
+  "onboarding.step7.complete": "온보딩 완료 기록",
+  "onboarding.step7.completed": "온보딩 완료를 기록했습니다.",
+  "onboarding.step7.invitesTitle": "저장된 팀원 초대",
+  "onboarding.step7.invitesEmpty": "저장된 초대 이메일이 아직 없습니다.",
+  "onboarding.step7.inviteModalTitle": "팀원 이메일 저장",
+  "onboarding.step7.inviteModalBody":
+    "쉼표나 줄바꿈으로 구분해 이메일을 입력하세요. 이 단계에서는 발송하지 않고 기록만 저장합니다.",
+  "onboarding.step7.invitePlaceholder":
+    "alex@example.com\nops@example.com",
+  "onboarding.step7.saveInvites": "이메일 저장",
+  "onboarding.error.workspacePicker":
+    "온보딩 작업 공간 목록을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.",
+  "onboarding.error.stateLoad":
+    "온보딩 상태를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.",
+  "onboarding.error.welcome":
+    "환영 단계 저장에 실패했습니다. 작업 공간 이름을 확인한 뒤 다시 시도해 주세요.",
+  "onboarding.error.install":
+    "설치 명령을 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  "onboarding.error.status":
+    "에이전트 상태를 새로고침하지 못했습니다. 폴링은 계속 시도됩니다.",
+  "onboarding.error.database":
+    "데이터베이스 설정을 검증하지 못했습니다. 입력값을 확인한 뒤 다시 시도해 주세요.",
+  "onboarding.error.schema":
+    "스키마 인트로스펙션에 실패했습니다. DB 연결 상태를 확인한 뒤 다시 시도해 주세요.",
+  "onboarding.error.semantic":
+    "시맨틱 레이어 단계 처리에 실패했습니다. 현재 초안 상태를 확인한 뒤 다시 시도해 주세요.",
+  "onboarding.error.invites":
+    "팀원 이메일을 저장하지 못했습니다. 주소를 확인한 뒤 다시 시도해 주세요.",
+  "onboarding.error.complete":
+    "온보딩 완료를 기록하지 못했습니다. 다시 시도해 주세요.",
+  "onboarding.error.permission":
+    "이 작업 공간의 온보딩을 수정할 권한이 없습니다.",
+  "onboarding.error.invalidStep":
+    "아직 열 수 없는 온보딩 단계입니다.",
+  "onboarding.error.stepLocked":
+    "시맨틱 레이어 승인 이후에는 이전 단계로 돌아갈 수 없습니다.",
+  "onboarding.error.workspaceNameRequired": "작업 공간 이름을 입력해 주세요.",
+  "onboarding.error.primaryLanguage":
+    "계속하려면 기본 언어가 한국어임을 확인해 주세요.",
+  "onboarding.error.inviteEmail":
+    "초대 이메일 형식이 올바르지 않은 항목이 있습니다.",
+  "onboarding.error.semanticNotApproved":
+    "다음 단계로 가기 전에 시맨틱 레이어를 승인해 주세요.",
+  "onboarding.error.generic":
+    "온보딩 처리 중 문제가 발생했습니다. 다시 시도해 주세요.",
+};
+
 const ko: Record<TranslationKey, string> = {
   ...commonKo,
   ...layoutKo,
@@ -471,6 +890,7 @@ const ko: Record<TranslationKey, string> = {
   ...queryDebugKo,
   ...chatKo,
   ...semanticKo,
+  ...onboardingKo,
 };
 
 const dictionaries: Record<Locale, Record<TranslationKey, string>> = {

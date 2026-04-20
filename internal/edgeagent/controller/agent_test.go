@@ -43,6 +43,7 @@ type fakeControlPlaneClient struct {
 	submitFn       func(context.Context, SubmitPingResultRequest) error
 	submitQueryFn  func(context.Context, SubmitExecuteQueryResultRequest) error
 	submitSchemaFn func(context.Context, SubmitIntrospectSchemaResultRequest) error
+	submitConfigFn func(context.Context, SubmitConfigureDatabaseResultRequest) error
 }
 
 func (c fakeControlPlaneClient) OpenCommandStream(
@@ -93,6 +94,16 @@ func (c fakeControlPlaneClient) SubmitIntrospectSchemaResult(
 		return nil
 	}
 	return c.submitSchemaFn(ctx, req)
+}
+
+func (c fakeControlPlaneClient) SubmitConfigureDatabaseResult(
+	ctx context.Context,
+	req SubmitConfigureDatabaseResultRequest,
+) error {
+	if c.submitConfigFn == nil {
+		return nil
+	}
+	return c.submitConfigFn(ctx, req)
 }
 
 type fakeQueryExecutor struct {

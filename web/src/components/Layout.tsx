@@ -8,7 +8,7 @@ export default function Layout() {
 
   const nav = [
     { to: "/", label: t("layout.nav.tenants") },
-    { to: "/queries", label: t("layout.nav.questions") },
+    { to: "/chat", label: t("layout.nav.questions") },
     { to: "/semantic-layer", label: t("layout.nav.semanticLayer") },
     { to: "/agents", label: t("layout.nav.agents") },
   ];

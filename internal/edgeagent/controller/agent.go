@@ -23,6 +23,8 @@ const CommandKindExecuteQuery CommandKind = "execute_query"
 
 const CommandKindIntrospectSchema CommandKind = "introspect_schema"
 
+const CommandKindConfigureDatabase CommandKind = "configure_database"
+
 type OpenCommandStreamRequest struct {
 	SessionID    string
 	Hostname     string
@@ -68,12 +70,36 @@ type SubmitIntrospectSchemaResultRequest struct {
 	Error        string
 }
 
+type ConfigureDatabaseErrorCode string
+
+const (
+	ConfigureDatabaseErrorCodeUnspecified    ConfigureDatabaseErrorCode = ""
+	ConfigureDatabaseErrorCodeInvalidDSN     ConfigureDatabaseErrorCode = "INVALID_DSN"
+	ConfigureDatabaseErrorCodeConnectFailed  ConfigureDatabaseErrorCode = "CONNECT_FAILED"
+	ConfigureDatabaseErrorCodeAuthFailed     ConfigureDatabaseErrorCode = "AUTH_FAILED"
+	ConfigureDatabaseErrorCodePrivilegeError ConfigureDatabaseErrorCode = "PRIVILEGE_INVALID"
+	ConfigureDatabaseErrorCodeWriteConfig    ConfigureDatabaseErrorCode = "WRITE_CONFIG_FAILED"
+	ConfigureDatabaseErrorCodeTimeout        ConfigureDatabaseErrorCode = "TIMEOUT"
+)
+
+type SubmitConfigureDatabaseResultRequest struct {
+	SessionID    string
+	CommandID    string
+	CompletedAt  time.Time
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
+	ErrorCode    ConfigureDatabaseErrorCode
+}
+
 type ControlMessage struct {
 	SessionID string
 	CommandID string
 	IssuedAt  time.Time
 	Kind      CommandKind
 	SQL       string
+	DSN       string
 }
 
 type CommandStream interface {
@@ -97,6 +123,10 @@ type ControlPlaneClient interface {
 		ctx context.Context,
 		req SubmitIntrospectSchemaResultRequest,
 	) error
+	SubmitConfigureDatabaseResult(
+		ctx context.Context,
+		req SubmitConfigureDatabaseResultRequest,
+	) error
 }
 
 type QueryResult struct {
@@ -117,6 +147,18 @@ type SchemaIntrospector interface {
 	) (introspect.SchemaBlob, int64, string, string, error)
 }
 
+type ConfigureDatabaseResult struct {
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
+	ErrorCode    ConfigureDatabaseErrorCode
+}
+
+type DatabaseConfigurer interface {
+	ConfigureDatabase(ctx context.Context, dsn string) (ConfigureDatabaseResult, error)
+}
+
 type AgentServiceConfig struct {
 	SessionID          string
 	Hostname           string
@@ -131,6 +173,7 @@ type AgentServiceConfig struct {
 	Rand               *rand.Rand
 	QueryExecutor      QueryExecutor
 	SchemaIntrospector SchemaIntrospector
+	DatabaseConfigurer DatabaseConfigurer
 }
 
 type AgentService struct {
@@ -148,6 +191,7 @@ type AgentService struct {
 	rand               *rand.Rand
 	queryExecutor      QueryExecutor
 	schemaIntrospector SchemaIntrospector
+	databaseConfigurer DatabaseConfigurer
 }
 
 func NewAgentService(
@@ -220,6 +264,7 @@ func NewAgentService(
 		rand:               random,
 		queryExecutor:      cfg.QueryExecutor,
 		schemaIntrospector: cfg.SchemaIntrospector,
+		databaseConfigurer: cfg.DatabaseConfigurer,
 	}, nil
 }
 
@@ -368,6 +413,8 @@ func (s *AgentService) handleCommand(
 		return s.handleExecuteQuery(ctx, command)
 	case CommandKindIntrospectSchema:
 		return s.handleIntrospectSchema(ctx, command)
+	case CommandKindConfigureDatabase:
+		return s.handleConfigureDatabase(ctx, command)
 	default:
 		return fmt.Errorf("unsupported command kind %q", command.Kind)
 	}
@@ -483,6 +530,52 @@ func (s *AgentService) handleIntrospectSchema(
 			ElapsedMS:    elapsedMS,
 			DatabaseUser: databaseUser,
 			DatabaseName: databaseName,
+		},
+	)
+}
+
+func (s *AgentService) handleConfigureDatabase(
+	ctx context.Context,
+	command ControlMessage,
+) error {
+	if s.databaseConfigurer == nil {
+		return s.client.SubmitConfigureDatabaseResult(
+			ctx,
+			SubmitConfigureDatabaseResultRequest{
+				SessionID:   command.SessionID,
+				CommandID:   command.CommandID,
+				CompletedAt: s.now().UTC(),
+				Error:       "database configurer is not configured",
+			},
+		)
+	}
+
+	startedAt := s.now().UTC()
+	result, err := s.databaseConfigurer.ConfigureDatabase(ctx, command.DSN)
+	if err != nil {
+		return s.client.SubmitConfigureDatabaseResult(
+			ctx,
+			SubmitConfigureDatabaseResultRequest{
+				SessionID:   command.SessionID,
+				CommandID:   command.CommandID,
+				CompletedAt: s.now().UTC(),
+				ElapsedMS:   s.now().UTC().Sub(startedAt).Milliseconds(),
+				Error:       err.Error(),
+			},
+		)
+	}
+
+	return s.client.SubmitConfigureDatabaseResult(
+		ctx,
+		SubmitConfigureDatabaseResultRequest{
+			SessionID:    command.SessionID,
+			CommandID:    command.CommandID,
+			CompletedAt:  s.now().UTC(),
+			ElapsedMS:    result.ElapsedMS,
+			DatabaseUser: result.DatabaseUser,
+			DatabaseName: result.DatabaseName,
+			Error:        result.Error,
+			ErrorCode:    result.ErrorCode,
 		},
 	)
 }

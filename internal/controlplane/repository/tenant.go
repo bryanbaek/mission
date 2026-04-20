@@ -106,3 +106,26 @@ func (r *TenantRepository) GetMembership(
 	tu.Role = model.Role(role)
 	return tu, nil
 }
+
+func (r *TenantRepository) UpdateName(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	name string,
+) (model.Tenant, error) {
+	var t model.Tenant
+	err := r.db.QueryRow(ctx,
+		`UPDATE tenants
+		 SET name = $2
+		 WHERE id = $1
+		 RETURNING id, slug, name, created_at`,
+		tenantID,
+		name,
+	).Scan(&t.ID, &t.Slug, &t.Name, &t.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.Tenant{}, ErrNotFound
+	}
+	if err != nil {
+		return model.Tenant{}, fmt.Errorf("update tenant name: %w", err)
+	}
+	return t, nil
+}

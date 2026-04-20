@@ -29,6 +29,10 @@ message ExecuteQueryCommand {
 
 message IntrospectSchemaCommand {}
 
+message ConfigureDatabaseCommand {
+  string dsn = 1;
+}
+
 message SchemaTable {
   string table_schema = 1;
   string table_name = 2;
@@ -85,6 +89,7 @@ message ControlMessage {
     PingCommand ping = 10;
     ExecuteQueryCommand execute_query = 11;
     IntrospectSchemaCommand introspect_schema = 12;
+    ConfigureDatabaseCommand configure_database = 13;
   }
 }
 
@@ -122,6 +127,24 @@ message IntrospectSchemaResult {
   string error = 5;
 }
 
+enum ConfigureDatabaseErrorCode {
+  CONFIGURE_DATABASE_ERROR_CODE_UNSPECIFIED = 0;
+  CONFIGURE_DATABASE_ERROR_CODE_INVALID_DSN = 1;
+  CONFIGURE_DATABASE_ERROR_CODE_CONNECT_FAILED = 2;
+  CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED = 3;
+  CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID = 4;
+  CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED = 5;
+  CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT = 6;
+}
+
+message ConfigureDatabaseResult {
+  int64 elapsed_ms = 1;
+  string database_user = 2;
+  string database_name = 3;
+  string error = 4;
+  ConfigureDatabaseErrorCode error_code = 5;
+}
+
 message SubmitCommandResultRequest {
   string session_id = 1;
   string command_id = 2;
@@ -131,6 +154,7 @@ message SubmitCommandResultRequest {
     PingResult ping = 10;
     ExecuteQueryResult execute_query = 11;
     IntrospectSchemaResult introspect_schema = 12;
+    ConfigureDatabaseResult configure_database = 13;
   }
 }
 

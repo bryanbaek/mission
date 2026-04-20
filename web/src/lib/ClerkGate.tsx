@@ -23,6 +23,11 @@ import {
   QueryClientContext,
   type QueryClient,
 } from "./queryClient";
+import {
+  createOnboardingClientFromTransport,
+  OnboardingClientContext,
+  type OnboardingClient,
+} from "./onboardingClient";
 
 type Props = {
   children: React.ReactNode;
@@ -78,11 +83,17 @@ function AuthedClientProvider({ children }: Props) {
     () => createQueryClientFromTransport(transport),
     [transport],
   );
+  const onboardingClient: OnboardingClient = useMemo(
+    () => createOnboardingClientFromTransport(transport),
+    [transport],
+  );
   return (
     <TenantClientContext.Provider value={client}>
       <SemanticClientContext.Provider value={semanticClient}>
         <QueryClientContext.Provider value={queryClient}>
-          {children}
+          <OnboardingClientContext.Provider value={onboardingClient}>
+            {children}
+          </OnboardingClientContext.Provider>
         </QueryClientContext.Provider>
       </SemanticClientContext.Provider>
     </TenantClientContext.Provider>
