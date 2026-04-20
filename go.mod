@@ -13,6 +13,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20260420043424-b6200ce8d009
 	github.com/vgarvardt/pgx-google-uuid/v5 v5.6.0
+	golang.org/x/net v0.53.0
 	google.golang.org/protobuf v1.36.9
 )
 
@@ -30,7 +31,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.50.0 // indirect
-	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect

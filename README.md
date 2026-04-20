@@ -1,10 +1,10 @@
 # Mission
 
-Multi-tenant AI-over-your-database product. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the stack and [/Users/baek/.claude/plans/a-korean-client-reached-velvet-mountain.md](../.claude/plans/a-korean-client-reached-velvet-mountain.md) for the strategic plan and week-by-week action items.
+Multi-tenant AI-over-your-database product. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the stack and [DIGITALOCEAN.md](./DIGITALOCEAN.md) for a production deployment guide.
 
 ## Prerequisites
 
-- Go 1.23+
+- Go 1.25+
 - Node 20+
 - Docker + Docker Compose
 - [just](https://github.com/casey/just) (optional but recommended)
@@ -81,29 +81,17 @@ Read-write: mission_rw:mission_rw@tcp(127.0.0.1:3306)/mission_app
 ```
 cmd/                    executable entry points (control-plane, edge-agent)
 internal/controlplane/  control-plane packages (handler/controller/gateway/repository/model/db/config)
-internal/edgeagent/     edge-agent packages (filled in Week 2+)
-proto/                  Connect-RPC schemas (codegen wired in 1.2)
+internal/edgeagent/     edge-agent packages
+proto/                  Connect-RPC schemas and generated clients
 web/                    Vite + React + Tailwind SPA
 Dockerfile.control-plane, Dockerfile.edge-agent
-docker-compose.yaml     local dev stack (postgres + control-plane + web)
+docker-compose.yaml     local dev stack (postgres + mysql + control-plane + web)
 Justfile                common commands
 ```
 
-## Deploying the control plane to DigitalOcean App Platform
+## Deployment
 
-Week 1.1 target: push the Docker image and run it on App Platform.
-
-```bash
-# Build and push to DO Container Registry (replace <registry>)
-doctl registry login
-docker build -f Dockerfile.control-plane -t registry.digitalocean.com/<registry>/control-plane:latest .
-docker push registry.digitalocean.com/<registry>/control-plane:latest
-
-# Create a Managed Postgres cluster in the DO dashboard, then set the
-# control-plane app's env vars from its connection string.
-```
-
-Minimum env vars on App Platform: `ENV=production`, `HTTP_PORT=8080`, `DATABASE_URL=<managed-postgres-url>`, `LOG_LEVEL=info`.
+For production deployment on DigitalOcean App Platform, use [DIGITALOCEAN.md](./DIGITALOCEAN.md). It covers the control-plane service, web static site, managed Postgres, ingress rules, and the edge-agent image registry flow.
 
 ## Verify
 

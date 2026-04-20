@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -196,27 +195,4 @@ func (r *StarterQuestionsRepository) insertSet(
 		}
 	}
 	return nil
-}
-
-func scanStarterQuestion(rows pgx.Rows) (model.StarterQuestion, error) {
-	var rec model.StarterQuestion
-	err := rows.Scan(
-		&rec.ID,
-		&rec.SetID,
-		&rec.TenantID,
-		&rec.SemanticLayerID,
-		&rec.Ordinal,
-		&rec.Text,
-		&rec.Category,
-		&rec.PrimaryTable,
-		&rec.CreatedAt,
-		&rec.IsActive,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return model.StarterQuestion{}, ErrNotFound
-	}
-	if err != nil {
-		return model.StarterQuestion{}, fmt.Errorf("scan starter question: %w", err)
-	}
-	return rec, nil
 }

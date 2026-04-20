@@ -1,6 +1,6 @@
 # Architecture
 
-One-page reference for the stack decisions locked in Week 1.1. Rationale is short by design — detailed strategy lives in the plan file.
+One-page reference for the current stack decisions. Rationale is short by design.
 
 ## Product shape
 
@@ -18,7 +18,7 @@ Multi-tenant SaaS. Each tenant = a privacy-sensitive SMB running their own on-pr
 
 | Concern | Choice | Why |
 |---|---|---|
-| Backend language | Go (`1.23`) | Team strength; single static binary; same language across control plane and edge agent |
+| Backend language | Go (`1.25`) | Team strength; single static binary; same language across control plane and edge agent |
 | Web framework | [go-chi](https://github.com/go-chi/chi) | Stdlib-compatible, composable middleware, no magic |
 | RPC | [Connect-RPC](https://connectrpc.com/) | gRPC-compatible protobuf, runs over plain HTTP/1+JSON and HTTP/2, no Envoy proxy, Go + TS codegen |
 | Control-plane DB | Postgres 16 (DigitalOcean Managed Databases) | Boring, reliable, same-vendor consolidation |
@@ -26,7 +26,7 @@ Multi-tenant SaaS. Each tenant = a privacy-sensitive SMB running their own on-pr
 | Auth | [Clerk](https://clerk.com) | SaaS-only; JWT verification via middleware; removes hand-rolled auth risk |
 | Frontend | Vite + React + TypeScript + Tailwind + shadcn/ui | Plain SPA, no SSR/edge concerns; backend-eng-friendly mental model |
 | Frontend hosting | DigitalOcean App Platform Static Sites | Same vendor as backend |
-| LLM providers | Anthropic (Claude) + OpenAI, behind a `gateway/llm.Provider` interface | Switching per tenant = config change, not code change |
+| LLM providers | Anthropic + OpenAI, behind a `gateway/llm.Provider` interface | Switching per tenant = config change, not code change |
 | Edge-agent transport | Connect-RPC server streams over HTTPS (SSE-shaped) for commands, unary POST for results; mTLS | Tenant is behind NAT (outbound only). Simpler ops than WebSocket; aligns with Connect stack. |
 | SQL safety | Pure-Go AST parser (`pingcap/tidb/parser`) + read-only MySQL user + read replica + `LIMIT` injection + statement timeout | Defense in depth — no single layer is trusted |
 | Container registry | DigitalOcean Container Registry | Same vendor |
@@ -39,7 +39,7 @@ Mirrors the conventions from the original template. Enforced per package.
 ```
 cmd/
   control-plane/        main.go — wires config → db → repos → controllers → handlers → router
-  edge-agent/           main.go — agent binary (Week 2+)
+  edge-agent/           main.go — agent binary
 internal/
   controlplane/
     config/             env loading, typed config
@@ -50,7 +50,7 @@ internal/
       llm/              LLM Provider interface + Anthropic/OpenAI implementations
     controller/         workflow orchestration; deterministic; no HTTP or SQL
     handler/            thin HTTP / Connect-RPC handlers — parse request, call controller, shape response
-  edgeagent/            same layered shape (Week 2+)
+  edgeagent/            same layered shape
 proto/                  Connect-RPC .proto schemas
 web/                    Vite + React SPA
 ```
@@ -87,12 +87,3 @@ Single vendor: DigitalOcean. One bill, one dashboard.
 - Spaces (later): generated PDFs, exports
 
 External dependencies we accept: Clerk (auth SaaS), Anthropic API, OpenAI API.
-
-## What's not in 1.1 (intentional)
-
-- Connect-RPC codegen tooling (buf, protoc plugins) — schemas stubbed in `proto/`; wire in 1.2 when first real RPC lands.
-- Clerk middleware — wired in 1.2 with tenant tables.
-- Tenant/tenant_users/tenant_tokens tables — 1.2.
-- Edge-agent transport — Week 2.
-- MySQL driver in edge agent — Week 2.
-- SQL AST validator — Week 4.

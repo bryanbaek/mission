@@ -2,6 +2,14 @@
 .env
 *.env.local
 
+# Local agent instructions / notes
+/.claude/
+/.codex/
+/AGENTS.md
+/AGENTS.MD
+/CLAUDE.md
+/CLAUDE.MD
+
 # Go
 bin/
 /tmp/
