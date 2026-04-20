@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,9 +15,17 @@ type Config struct {
 	HeartbeatInterval time.Duration
 	ReconnectBase     time.Duration
 	ReconnectMax      time.Duration
+	MySQLDSNFile      string
+	MySQLDSN          string
 }
 
 func Load() (Config, error) {
+	mysqlDSNFile := getenv("MYSQL_DSN_FILE", "/etc/mission/mysql.dsn")
+	mysqlDSN, err := loadDSNFile(mysqlDSNFile)
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		ControlPlaneURL:   os.Getenv("CONTROL_PLANE_URL"),
 		TenantToken:       os.Getenv("TENANT_TOKEN"),
@@ -24,6 +33,8 @@ func Load() (Config, error) {
 		HeartbeatInterval: getenvDurationSeconds("HEARTBEAT_INTERVAL_SECONDS", 10),
 		ReconnectBase:     getenvDurationSeconds("RECONNECT_BASE_SECONDS", 1),
 		ReconnectMax:      getenvDurationSeconds("RECONNECT_MAX_SECONDS", 30),
+		MySQLDSNFile:      mysqlDSNFile,
+		MySQLDSN:          mysqlDSN,
 	}
 	if cfg.ControlPlaneURL == "" {
 		return Config{}, fmt.Errorf("CONTROL_PLANE_URL is required")
@@ -43,6 +54,18 @@ func Load() (Config, error) {
 		)
 	}
 	return cfg, nil
+}
+
+func loadDSNFile(path string) (string, error) {
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read MYSQL_DSN_FILE %q: %w", path, err)
+	}
+	dsn := strings.TrimSpace(string(body))
+	if dsn == "" {
+		return "", fmt.Errorf("MYSQL_DSN_FILE %q is empty", path)
+	}
+	return dsn, nil
 }
 
 func getenv(key, fallback string) string {

@@ -12,6 +12,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	agentv1 "github.com/bryanbaek/mission/gen/go/agent/v1"
@@ -215,6 +216,87 @@ func TestAgentHandlerHeartbeatAndSubmitResult(t *testing.T) {
 	}
 }
 
+func TestAgentHandlerExecuteQueryResult(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	manager := controller.NewAgentSessionManager(controller.AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	handler := NewAgentHandler(manager)
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+	stream, err := manager.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	agentCtx := auth.WithAgent(context.Background(), auth.Agent{
+		TokenID:  token.ID,
+		TenantID: token.TenantID,
+		Label:    token.Label,
+	})
+
+	resultCh := make(chan controller.AgentExecuteQueryResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		result, queryErr := manager.ExecuteQuery(
+			context.Background(),
+			tenantID,
+			"SELECT 1",
+		)
+		if queryErr != nil {
+			errCh <- queryErr
+			return
+		}
+		resultCh <- result
+	}()
+
+	command := <-stream.Commands
+	if command.Kind != controller.AgentCommandKindExecuteQuery {
+		t.Fatalf("Kind = %q, want execute_query", command.Kind)
+	}
+
+	_, err = handler.SubmitCommandResult(
+		agentCtx,
+		connect.NewRequest(&agentv1.SubmitCommandResultRequest{
+			SessionId:   "session-1",
+			CommandId:   command.CommandID,
+			CompletedAt: timestamppb.New(now.Add(time.Second)),
+			Result: &agentv1.SubmitCommandResultRequest_ExecuteQuery{
+				ExecuteQuery: &agentv1.ExecuteQueryResult{
+					Columns:      []string{"1"},
+					Rows:         []*agentv1.ExecuteQueryRow{{Values: map[string]*structpb.Value{"1": structpb.NewNumberValue(1)}}},
+					ElapsedMs:    14,
+					DatabaseUser: "mission_ro@%",
+					DatabaseName: "mission_app",
+				},
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatalf("SubmitCommandResult returned error: %v", err)
+	}
+
+	select {
+	case queryErr := <-errCh:
+		t.Fatalf("ExecuteQuery returned error: %v", queryErr)
+	case result := <-resultCh:
+		if result.ElapsedMS != 14 {
+			t.Fatalf("ElapsedMS = %d, want 14", result.ElapsedMS)
+		}
+		if got := result.Rows[0]["1"]; got != float64(1) {
+			t.Fatalf("row value = %#v, want 1", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for query result")
+	}
+}
+
 func TestAgentHandlerHelpersAndDebugEndpoints(t *testing.T) {
 	t.Parallel()
 
@@ -242,6 +324,17 @@ func TestAgentHandlerHelpersAndDebugEndpoints(t *testing.T) {
 		t.Fatal("expected ping payload")
 	}
 
+	queryMessage := commandToProto(controller.AgentCommand{
+		SessionID: "session-1",
+		CommandID: "command-2",
+		IssuedAt:  now,
+		Kind:      controller.AgentCommandKindExecuteQuery,
+		SQL:       "SELECT 1",
+	})
+	if queryMessage.GetExecuteQuery().GetSql() != "SELECT 1" {
+		t.Fatalf("query sql = %q, want SELECT 1", queryMessage.GetExecuteQuery().GetSql())
+	}
+
 	var connectErr *connect.Error
 	if err := connectErrorForSession(controller.ErrInvalidHostname); !errors.As(err, &connectErr) {
 		t.Fatalf("err = %v, want connect error", err)
@@ -254,6 +347,12 @@ func TestAgentHandlerHelpersAndDebugEndpoints(t *testing.T) {
 	}
 	if connectErr.Code() != connect.CodeInternal {
 		t.Fatalf("code = %v, want internal", connectErr.Code())
+	}
+	if err := connectErrorForSession(controller.ErrTenantNotConnected); !errors.As(err, &connectErr) {
+		t.Fatalf("err = %v, want connect error", err)
+	}
+	if connectErr.Code() != connect.CodeFailedPrecondition {
+		t.Fatalf("code = %v, want failed precondition", connectErr.Code())
 	}
 
 	debugHandler := NewAgentDebugHandler(manager)

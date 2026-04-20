@@ -2,9 +2,11 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	agentv1 "github.com/bryanbaek/mission/gen/go/agent/v1"
@@ -80,6 +82,29 @@ func (c *Client) SubmitPingResult(
 	return err
 }
 
+func (c *Client) SubmitExecuteQueryResult(
+	ctx context.Context,
+	req edgecontroller.SubmitExecuteQueryResultRequest,
+) error {
+	result, err := queryResultToProto(req)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.client.SubmitCommandResult(
+		ctx,
+		connect.NewRequest(&agentv1.SubmitCommandResultRequest{
+			SessionId:   req.SessionID,
+			CommandId:   req.CommandID,
+			CompletedAt: timestamppb.New(req.CompletedAt),
+			Result: &agentv1.SubmitCommandResultRequest_ExecuteQuery{
+				ExecuteQuery: result,
+			},
+		}),
+	)
+	return err
+}
+
 type commandStream struct {
 	stream *connect.ServerStreamForClient[agentv1.ControlMessage]
 }
@@ -94,6 +119,7 @@ func (s *commandStream) Message() edgecontroller.ControlMessage {
 		SessionID: msg.GetSessionId(),
 		CommandID: msg.GetCommandId(),
 		Kind:      commandKind(msg),
+		SQL:       commandSQL(msg),
 	}
 	if msg.GetIssuedAt() != nil {
 		command.IssuedAt = msg.GetIssuedAt().AsTime().UTC()
@@ -144,7 +170,44 @@ func commandKind(msg *agentv1.ControlMessage) edgecontroller.CommandKind {
 	switch msg.Payload.(type) {
 	case *agentv1.ControlMessage_Ping:
 		return edgecontroller.CommandKindPing
+	case *agentv1.ControlMessage_ExecuteQuery:
+		return edgecontroller.CommandKindExecuteQuery
 	default:
 		return ""
 	}
+}
+
+func commandSQL(msg *agentv1.ControlMessage) string {
+	switch payload := msg.Payload.(type) {
+	case *agentv1.ControlMessage_ExecuteQuery:
+		return payload.ExecuteQuery.GetSql()
+	default:
+		return ""
+	}
+}
+
+func queryResultToProto(
+	req edgecontroller.SubmitExecuteQueryResultRequest,
+) (*agentv1.ExecuteQueryResult, error) {
+	rows := make([]*agentv1.ExecuteQueryRow, 0, len(req.Rows))
+	for _, row := range req.Rows {
+		values := make(map[string]*structpb.Value, len(row))
+		for key, value := range row {
+			pbValue, err := structpb.NewValue(value)
+			if err != nil {
+				return nil, fmt.Errorf("convert row value %q: %w", key, err)
+			}
+			values[key] = pbValue
+		}
+		rows = append(rows, &agentv1.ExecuteQueryRow{Values: values})
+	}
+
+	return &agentv1.ExecuteQueryResult{
+		Columns:      append([]string(nil), req.Columns...),
+		Rows:         rows,
+		ElapsedMs:    req.ElapsedMS,
+		DatabaseUser: req.DatabaseUser,
+		DatabaseName: req.DatabaseName,
+		Error:        req.Error,
+	}, nil
 }

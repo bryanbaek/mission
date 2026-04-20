@@ -124,6 +124,31 @@ func TestClientRoundTripsRequests(t *testing.T) {
 			service.lastResult.GetPing().GetRoundTripMs(),
 		)
 	}
+
+	if err := client.SubmitExecuteQueryResult(
+		context.Background(),
+		edgecontroller.SubmitExecuteQueryResultRequest{
+			SessionID:    "session-1",
+			CommandID:    "command-2",
+			CompletedAt:  time.Unix(1_700_000_003, 0).UTC(),
+			Columns:      []string{"value"},
+			Rows:         []map[string]any{{"value": int64(7), "label": "ok"}},
+			ElapsedMS:    18,
+			DatabaseUser: "mission_ro@%",
+			DatabaseName: "mission_app",
+		},
+	); err != nil {
+		t.Fatalf("SubmitExecuteQueryResult returned error: %v", err)
+	}
+	if service.lastResult.GetExecuteQuery().GetElapsedMs() != 18 {
+		t.Fatalf(
+			"ElapsedMs = %d, want 18",
+			service.lastResult.GetExecuteQuery().GetElapsedMs(),
+		)
+	}
+	if service.lastResult.GetExecuteQuery().GetRows()[0].GetValues()["label"].GetStringValue() != "ok" {
+		t.Fatalf("label = %q, want ok", service.lastResult.GetExecuteQuery().GetRows()[0].GetValues()["label"].GetStringValue())
+	}
 }
 
 func TestBearerInterceptorWrapStreamingHandler(t *testing.T) {
@@ -151,5 +176,21 @@ func TestCommandKindUnknownPayload(t *testing.T) {
 
 	if got := commandKind(&agentv1.ControlMessage{}); got != "" {
 		t.Fatalf("commandKind = %q, want empty", got)
+	}
+
+	if got := commandKind(&agentv1.ControlMessage{
+		Payload: &agentv1.ControlMessage_ExecuteQuery{
+			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: "SELECT 1"},
+		},
+	}); got != edgecontroller.CommandKindExecuteQuery {
+		t.Fatalf("commandKind = %q, want execute_query", got)
+	}
+
+	if got := commandSQL(&agentv1.ControlMessage{
+		Payload: &agentv1.ControlMessage_ExecuteQuery{
+			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: "SELECT 1"},
+		},
+	}); got != "SELECT 1" {
+		t.Fatalf("commandSQL = %q, want SELECT 1", got)
 	}
 }

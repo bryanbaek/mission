@@ -397,7 +397,8 @@ func (x *IssueAgentTokenRequest) GetLabel() string {
 type IssueAgentTokenResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Token *TenantTokenSummary    `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	// Plaintext token. Returned exactly once at issuance; never retrievable later.
+	// Plaintext token. Returned exactly once at issuance; never retrievable
+	// later.
 	Plaintext     string `protobuf:"bytes,2,opt,name=plaintext,proto3" json:"plaintext,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

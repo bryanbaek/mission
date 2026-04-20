@@ -9,6 +9,7 @@ package agentv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -214,6 +215,50 @@ func (*PingCommand) Descriptor() ([]byte, []int) {
 	return file_agent_v1_agent_proto_rawDescGZIP(), []int{3}
 }
 
+type ExecuteQueryCommand struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sql           string                 `protobuf:"bytes,1,opt,name=sql,proto3" json:"sql,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecuteQueryCommand) Reset() {
+	*x = ExecuteQueryCommand{}
+	mi := &file_agent_v1_agent_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecuteQueryCommand) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecuteQueryCommand) ProtoMessage() {}
+
+func (x *ExecuteQueryCommand) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecuteQueryCommand.ProtoReflect.Descriptor instead.
+func (*ExecuteQueryCommand) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ExecuteQueryCommand) GetSql() string {
+	if x != nil {
+		return x.Sql
+	}
+	return ""
+}
+
 type ControlMessage struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -222,6 +267,7 @@ type ControlMessage struct {
 	// Types that are valid to be assigned to Payload:
 	//
 	//	*ControlMessage_Ping
+	//	*ControlMessage_ExecuteQuery
 	Payload       isControlMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -229,7 +275,7 @@ type ControlMessage struct {
 
 func (x *ControlMessage) Reset() {
 	*x = ControlMessage{}
-	mi := &file_agent_v1_agent_proto_msgTypes[4]
+	mi := &file_agent_v1_agent_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -241,7 +287,7 @@ func (x *ControlMessage) String() string {
 func (*ControlMessage) ProtoMessage() {}
 
 func (x *ControlMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[4]
+	mi := &file_agent_v1_agent_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -254,7 +300,7 @@ func (x *ControlMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ControlMessage.ProtoReflect.Descriptor instead.
 func (*ControlMessage) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{4}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ControlMessage) GetSessionId() string {
@@ -294,6 +340,15 @@ func (x *ControlMessage) GetPing() *PingCommand {
 	return nil
 }
 
+func (x *ControlMessage) GetExecuteQuery() *ExecuteQueryCommand {
+	if x != nil {
+		if x, ok := x.Payload.(*ControlMessage_ExecuteQuery); ok {
+			return x.ExecuteQuery
+		}
+	}
+	return nil
+}
+
 type isControlMessage_Payload interface {
 	isControlMessage_Payload()
 }
@@ -302,7 +357,13 @@ type ControlMessage_Ping struct {
 	Ping *PingCommand `protobuf:"bytes,10,opt,name=ping,proto3,oneof"`
 }
 
+type ControlMessage_ExecuteQuery struct {
+	ExecuteQuery *ExecuteQueryCommand `protobuf:"bytes,11,opt,name=execute_query,json=executeQuery,proto3,oneof"`
+}
+
 func (*ControlMessage_Ping) isControlMessage_Payload() {}
+
+func (*ControlMessage_ExecuteQuery) isControlMessage_Payload() {}
 
 type PingResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -313,7 +374,7 @@ type PingResult struct {
 
 func (x *PingResult) Reset() {
 	*x = PingResult{}
-	mi := &file_agent_v1_agent_proto_msgTypes[5]
+	mi := &file_agent_v1_agent_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -325,7 +386,7 @@ func (x *PingResult) String() string {
 func (*PingResult) ProtoMessage() {}
 
 func (x *PingResult) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[5]
+	mi := &file_agent_v1_agent_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -338,7 +399,7 @@ func (x *PingResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingResult.ProtoReflect.Descriptor instead.
 func (*PingResult) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{5}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PingResult) GetRoundTripMs() int64 {
@@ -346,6 +407,134 @@ func (x *PingResult) GetRoundTripMs() int64 {
 		return x.RoundTripMs
 	}
 	return 0
+}
+
+type ExecuteQueryRow struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Values        map[string]*structpb.Value `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecuteQueryRow) Reset() {
+	*x = ExecuteQueryRow{}
+	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecuteQueryRow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecuteQueryRow) ProtoMessage() {}
+
+func (x *ExecuteQueryRow) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecuteQueryRow.ProtoReflect.Descriptor instead.
+func (*ExecuteQueryRow) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ExecuteQueryRow) GetValues() map[string]*structpb.Value {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type ExecuteQueryResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Columns       []string               `protobuf:"bytes,1,rep,name=columns,proto3" json:"columns,omitempty"`
+	Rows          []*ExecuteQueryRow     `protobuf:"bytes,2,rep,name=rows,proto3" json:"rows,omitempty"`
+	ElapsedMs     int64                  `protobuf:"varint,3,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
+	DatabaseUser  string                 `protobuf:"bytes,4,opt,name=database_user,json=databaseUser,proto3" json:"database_user,omitempty"`
+	DatabaseName  string                 `protobuf:"bytes,5,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecuteQueryResult) Reset() {
+	*x = ExecuteQueryResult{}
+	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecuteQueryResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecuteQueryResult) ProtoMessage() {}
+
+func (x *ExecuteQueryResult) ProtoReflect() protoreflect.Message {
+	mi := &file_agent_v1_agent_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecuteQueryResult.ProtoReflect.Descriptor instead.
+func (*ExecuteQueryResult) Descriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ExecuteQueryResult) GetColumns() []string {
+	if x != nil {
+		return x.Columns
+	}
+	return nil
+}
+
+func (x *ExecuteQueryResult) GetRows() []*ExecuteQueryRow {
+	if x != nil {
+		return x.Rows
+	}
+	return nil
+}
+
+func (x *ExecuteQueryResult) GetElapsedMs() int64 {
+	if x != nil {
+		return x.ElapsedMs
+	}
+	return 0
+}
+
+func (x *ExecuteQueryResult) GetDatabaseUser() string {
+	if x != nil {
+		return x.DatabaseUser
+	}
+	return ""
+}
+
+func (x *ExecuteQueryResult) GetDatabaseName() string {
+	if x != nil {
+		return x.DatabaseName
+	}
+	return ""
+}
+
+func (x *ExecuteQueryResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
 }
 
 type SubmitCommandResultRequest struct {
@@ -356,6 +545,7 @@ type SubmitCommandResultRequest struct {
 	// Types that are valid to be assigned to Result:
 	//
 	//	*SubmitCommandResultRequest_Ping
+	//	*SubmitCommandResultRequest_ExecuteQuery
 	Result        isSubmitCommandResultRequest_Result `protobuf_oneof:"result"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -363,7 +553,7 @@ type SubmitCommandResultRequest struct {
 
 func (x *SubmitCommandResultRequest) Reset() {
 	*x = SubmitCommandResultRequest{}
-	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	mi := &file_agent_v1_agent_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -375,7 +565,7 @@ func (x *SubmitCommandResultRequest) String() string {
 func (*SubmitCommandResultRequest) ProtoMessage() {}
 
 func (x *SubmitCommandResultRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[6]
+	mi := &file_agent_v1_agent_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -388,7 +578,7 @@ func (x *SubmitCommandResultRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitCommandResultRequest.ProtoReflect.Descriptor instead.
 func (*SubmitCommandResultRequest) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{6}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SubmitCommandResultRequest) GetSessionId() string {
@@ -428,6 +618,15 @@ func (x *SubmitCommandResultRequest) GetPing() *PingResult {
 	return nil
 }
 
+func (x *SubmitCommandResultRequest) GetExecuteQuery() *ExecuteQueryResult {
+	if x != nil {
+		if x, ok := x.Result.(*SubmitCommandResultRequest_ExecuteQuery); ok {
+			return x.ExecuteQuery
+		}
+	}
+	return nil
+}
+
 type isSubmitCommandResultRequest_Result interface {
 	isSubmitCommandResultRequest_Result()
 }
@@ -436,7 +635,13 @@ type SubmitCommandResultRequest_Ping struct {
 	Ping *PingResult `protobuf:"bytes,10,opt,name=ping,proto3,oneof"`
 }
 
+type SubmitCommandResultRequest_ExecuteQuery struct {
+	ExecuteQuery *ExecuteQueryResult `protobuf:"bytes,11,opt,name=execute_query,json=executeQuery,proto3,oneof"`
+}
+
 func (*SubmitCommandResultRequest_Ping) isSubmitCommandResultRequest_Result() {}
+
+func (*SubmitCommandResultRequest_ExecuteQuery) isSubmitCommandResultRequest_Result() {}
 
 type SubmitCommandResultResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -446,7 +651,7 @@ type SubmitCommandResultResponse struct {
 
 func (x *SubmitCommandResultResponse) Reset() {
 	*x = SubmitCommandResultResponse{}
-	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	mi := &file_agent_v1_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -458,7 +663,7 @@ func (x *SubmitCommandResultResponse) String() string {
 func (*SubmitCommandResultResponse) ProtoMessage() {}
 
 func (x *SubmitCommandResultResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agent_v1_agent_proto_msgTypes[7]
+	mi := &file_agent_v1_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -471,14 +676,14 @@ func (x *SubmitCommandResultResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitCommandResultResponse.ProtoReflect.Descriptor instead.
 func (*SubmitCommandResultResponse) Descriptor() ([]byte, []int) {
-	return file_agent_v1_agent_proto_rawDescGZIP(), []int{7}
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{10}
 }
 
 var File_agent_v1_agent_proto protoreflect.FileDescriptor
 
 const file_agent_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x14agent/v1/agent.proto\x12\bagent.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb5\x01\n" +
+	"\x14agent/v1/agent.proto\x12\bagent.v1\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb5\x01\n" +
 	"\x18OpenCommandStreamRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1a\n" +
@@ -491,7 +696,9 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x123\n" +
 	"\asent_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06sentAt\"\x13\n" +
 	"\x11HeartbeatResponse\"\r\n" +
-	"\vPingCommand\"\xbf\x01\n" +
+	"\vPingCommand\"'\n" +
+	"\x13ExecuteQueryCommand\x12\x10\n" +
+	"\x03sql\x18\x01 \x01(\tR\x03sql\"\x85\x02\n" +
 	"\x0eControlMessage\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
@@ -499,11 +706,25 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"command_id\x18\x02 \x01(\tR\tcommandId\x127\n" +
 	"\tissued_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x12+\n" +
 	"\x04ping\x18\n" +
-	" \x01(\v2\x15.agent.v1.PingCommandH\x00R\x04pingB\t\n" +
+	" \x01(\v2\x15.agent.v1.PingCommandH\x00R\x04ping\x12D\n" +
+	"\rexecute_query\x18\v \x01(\v2\x1d.agent.v1.ExecuteQueryCommandH\x00R\fexecuteQueryB\t\n" +
 	"\apayload\"0\n" +
 	"\n" +
 	"PingResult\x12\"\n" +
-	"\rround_trip_ms\x18\x01 \x01(\x03R\vroundTripMs\"\xcf\x01\n" +
+	"\rround_trip_ms\x18\x01 \x01(\x03R\vroundTripMs\"\xa3\x01\n" +
+	"\x0fExecuteQueryRow\x12=\n" +
+	"\x06values\x18\x01 \x03(\v2%.agent.v1.ExecuteQueryRow.ValuesEntryR\x06values\x1aQ\n" +
+	"\vValuesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"\xdc\x01\n" +
+	"\x12ExecuteQueryResult\x12\x18\n" +
+	"\acolumns\x18\x01 \x03(\tR\acolumns\x12-\n" +
+	"\x04rows\x18\x02 \x03(\v2\x19.agent.v1.ExecuteQueryRowR\x04rows\x12\x1d\n" +
+	"\n" +
+	"elapsed_ms\x18\x03 \x01(\x03R\telapsedMs\x12#\n" +
+	"\rdatabase_user\x18\x04 \x01(\tR\fdatabaseUser\x12#\n" +
+	"\rdatabase_name\x18\x05 \x01(\tR\fdatabaseName\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\"\x94\x02\n" +
 	"\x1aSubmitCommandResultRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
@@ -511,7 +732,8 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"command_id\x18\x02 \x01(\tR\tcommandId\x12=\n" +
 	"\fcompleted_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12*\n" +
 	"\x04ping\x18\n" +
-	" \x01(\v2\x14.agent.v1.PingResultH\x00R\x04pingB\b\n" +
+	" \x01(\v2\x14.agent.v1.PingResultH\x00R\x04ping\x12C\n" +
+	"\rexecute_query\x18\v \x01(\v2\x1c.agent.v1.ExecuteQueryResultH\x00R\fexecuteQueryB\b\n" +
 	"\x06result\"\x1d\n" +
 	"\x1bSubmitCommandResultResponse2\x8d\x02\n" +
 	"\fAgentService\x12S\n" +
@@ -533,36 +755,46 @@ func file_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_agent_v1_agent_proto_rawDescData
 }
 
-var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_agent_v1_agent_proto_goTypes = []any{
 	(*OpenCommandStreamRequest)(nil),    // 0: agent.v1.OpenCommandStreamRequest
 	(*HeartbeatRequest)(nil),            // 1: agent.v1.HeartbeatRequest
 	(*HeartbeatResponse)(nil),           // 2: agent.v1.HeartbeatResponse
 	(*PingCommand)(nil),                 // 3: agent.v1.PingCommand
-	(*ControlMessage)(nil),              // 4: agent.v1.ControlMessage
-	(*PingResult)(nil),                  // 5: agent.v1.PingResult
-	(*SubmitCommandResultRequest)(nil),  // 6: agent.v1.SubmitCommandResultRequest
-	(*SubmitCommandResultResponse)(nil), // 7: agent.v1.SubmitCommandResultResponse
-	(*timestamppb.Timestamp)(nil),       // 8: google.protobuf.Timestamp
+	(*ExecuteQueryCommand)(nil),         // 4: agent.v1.ExecuteQueryCommand
+	(*ControlMessage)(nil),              // 5: agent.v1.ControlMessage
+	(*PingResult)(nil),                  // 6: agent.v1.PingResult
+	(*ExecuteQueryRow)(nil),             // 7: agent.v1.ExecuteQueryRow
+	(*ExecuteQueryResult)(nil),          // 8: agent.v1.ExecuteQueryResult
+	(*SubmitCommandResultRequest)(nil),  // 9: agent.v1.SubmitCommandResultRequest
+	(*SubmitCommandResultResponse)(nil), // 10: agent.v1.SubmitCommandResultResponse
+	nil,                                 // 11: agent.v1.ExecuteQueryRow.ValuesEntry
+	(*timestamppb.Timestamp)(nil),       // 12: google.protobuf.Timestamp
+	(*structpb.Value)(nil),              // 13: google.protobuf.Value
 }
 var file_agent_v1_agent_proto_depIdxs = []int32{
-	8, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
-	8, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
-	8, // 2: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
-	3, // 3: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
-	8, // 4: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
-	5, // 5: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
-	0, // 6: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
-	1, // 7: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
-	6, // 8: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
-	4, // 9: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
-	2, // 10: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
-	7, // 11: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
-	9, // [9:12] is the sub-list for method output_type
-	6, // [6:9] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	12, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
+	12, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
+	12, // 2: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
+	3,  // 3: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
+	4,  // 4: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
+	11, // 5: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
+	7,  // 6: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
+	12, // 7: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
+	6,  // 8: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
+	8,  // 9: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
+	13, // 10: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
+	0,  // 11: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
+	1,  // 12: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
+	9,  // 13: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
+	5,  // 14: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
+	2,  // 15: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
+	10, // 16: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
+	14, // [14:17] is the sub-list for method output_type
+	11, // [11:14] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_agent_v1_agent_proto_init() }
@@ -570,11 +802,13 @@ func file_agent_v1_agent_proto_init() {
 	if File_agent_v1_agent_proto != nil {
 		return
 	}
-	file_agent_v1_agent_proto_msgTypes[4].OneofWrappers = []any{
+	file_agent_v1_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ControlMessage_Ping)(nil),
+		(*ControlMessage_ExecuteQuery)(nil),
 	}
-	file_agent_v1_agent_proto_msgTypes[6].OneofWrappers = []any{
+	file_agent_v1_agent_proto_msgTypes[9].OneofWrappers = []any{
 		(*SubmitCommandResultRequest_Ping)(nil),
+		(*SubmitCommandResultRequest_ExecuteQuery)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -582,7 +816,7 @@ func file_agent_v1_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_v1_agent_proto_rawDesc), len(file_agent_v1_agent_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

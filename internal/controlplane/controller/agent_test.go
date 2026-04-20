@@ -153,6 +153,82 @@ func TestAgentSessionManagerPingRoundTrip(t *testing.T) {
 	}
 }
 
+func TestAgentSessionManagerExecuteQueryRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	manager := NewAgentSessionManager(AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+
+	stream, err := manager.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	resultCh := make(chan AgentExecuteQueryResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		result, queryErr := manager.ExecuteQuery(
+			context.Background(),
+			tenantID,
+			"SELECT 1",
+		)
+		if queryErr != nil {
+			errCh <- queryErr
+			return
+		}
+		resultCh <- result
+	}()
+
+	command := <-stream.Commands
+	if command.Kind != AgentCommandKindExecuteQuery {
+		t.Fatalf("Kind = %q, want execute_query", command.Kind)
+	}
+	if command.SQL != "SELECT 1" {
+		t.Fatalf("SQL = %q, want SELECT 1", command.SQL)
+	}
+
+	completedAt := now.Add(2 * time.Second)
+	if err := manager.SubmitExecuteQueryResult(
+		token.ID,
+		"session-1",
+		command.CommandID,
+		completedAt,
+		[]string{"1"},
+		[]map[string]any{{"1": int64(1)}},
+		15,
+		"mission_ro@%",
+		"mission_app",
+		"",
+	); err != nil {
+		t.Fatalf("SubmitExecuteQueryResult returned error: %v", err)
+	}
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("ExecuteQuery returned error: %v", err)
+	case result := <-resultCh:
+		if result.CommandID != command.CommandID {
+			t.Fatalf("CommandID = %q, want %q", result.CommandID, command.CommandID)
+		}
+		if len(result.Rows) != 1 || result.Rows[0]["1"] != int64(1) {
+			t.Fatalf("Rows = %#v, want one row with 1", result.Rows)
+		}
+		if result.DatabaseName != "mission_app" {
+			t.Fatalf("DatabaseName = %q, want mission_app", result.DatabaseName)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for query result")
+	}
+}
+
 func TestAgentSessionManagerErrors(t *testing.T) {
 	t.Parallel()
 
@@ -185,6 +261,14 @@ func TestAgentSessionManagerErrors(t *testing.T) {
 		1,
 	); !errors.Is(err, ErrCommandNotFound) {
 		t.Fatalf("err = %v, want ErrCommandNotFound", err)
+	}
+
+	if _, err := manager.ExecuteQuery(
+		context.Background(),
+		uuid.New(),
+		"SELECT 1",
+	); !errors.Is(err, ErrTenantNotConnected) {
+		t.Fatalf("err = %v, want ErrTenantNotConnected", err)
 	}
 
 	now = now.Add(500 * time.Millisecond)
@@ -287,5 +371,47 @@ func TestAgentSessionManagerListSessionsSortedAndOffline(t *testing.T) {
 	}
 	if snapshots[1].SessionID != "session-1" {
 		t.Fatalf("second SessionID = %q, want session-1", snapshots[1].SessionID)
+	}
+}
+
+func TestAgentSessionManagerLatestSessionForTenant(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	manager := NewAgentSessionManager(AgentSessionManagerConfig{
+		Now:        func() time.Time { return now },
+		StaleAfter: time.Second,
+	})
+
+	firstToken := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+	secondToken := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-2",
+	}
+
+	if _, err := manager.RegisterSession(firstToken, "session-1", "host-a", "v1"); err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+	now = now.Add(time.Second)
+	if _, err := manager.RegisterSession(secondToken, "session-2", "host-b", "v2"); err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	now = now.Add(2 * time.Second)
+	snapshot, ok := manager.LatestSessionForTenant(tenantID)
+	if !ok {
+		t.Fatal("LatestSessionForTenant returned ok=false")
+	}
+	if snapshot.SessionID != "session-2" {
+		t.Fatalf("SessionID = %q, want session-2", snapshot.SessionID)
+	}
+	if snapshot.Status != "offline" {
+		t.Fatalf("Status = %q, want offline", snapshot.Status)
 	}
 }

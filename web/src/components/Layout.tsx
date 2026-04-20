@@ -4,6 +4,7 @@ import { UserButton } from "@clerk/clerk-react";
 const nav = [
   { to: "/", label: "Tenants" },
   { to: "/agents", label: "Agents" },
+  { to: "/queries", label: "Queries" },
 ];
 
 export default function Layout() {

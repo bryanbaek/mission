@@ -11,6 +11,7 @@ import (
 	edgeconfig "github.com/bryanbaek/mission/internal/edgeagent/config"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
 	controlplane "github.com/bryanbaek/mission/internal/edgeagent/gateway/controlplane"
+	mysqlgateway "github.com/bryanbaek/mission/internal/edgeagent/gateway/mysql"
 )
 
 func main() {
@@ -41,6 +42,12 @@ func run() error {
 	)
 	defer cancel()
 
+	mysqlGateway, err := mysqlgateway.Open(ctx, cfg.MySQLDSN)
+	if err != nil {
+		return fmt.Errorf("open mysql gateway: %w", err)
+	}
+	defer mysqlGateway.Close()
+
 	client := controlplane.NewClient(cfg.ControlPlaneURL, cfg.TenantToken, nil)
 	service, err := edgecontroller.NewAgentService(
 		client,
@@ -50,6 +57,7 @@ func run() error {
 			ReconnectBase:     cfg.ReconnectBase,
 			ReconnectMax:      cfg.ReconnectMax,
 			Logger:            logger,
+			QueryExecutor:     mysqlQueryExecutor{gateway: mysqlGateway},
 		},
 	)
 	if err != nil {
@@ -64,4 +72,25 @@ func run() error {
 		cfg.AgentVersion,
 	)
 	return service.Run(ctx)
+}
+
+type mysqlQueryExecutor struct {
+	gateway *mysqlgateway.Gateway
+}
+
+func (e mysqlQueryExecutor) ExecuteQuery(
+	ctx context.Context,
+	sql string,
+) (edgecontroller.QueryResult, error) {
+	result, err := e.gateway.ExecuteQuery(ctx, sql)
+	if err != nil {
+		return edgecontroller.QueryResult{}, err
+	}
+	return edgecontroller.QueryResult{
+		Columns:      result.Columns,
+		Rows:         result.Rows,
+		ElapsedMS:    result.ElapsedMS,
+		DatabaseUser: result.DatabaseUser,
+		DatabaseName: result.DatabaseName,
+	}, nil
 }

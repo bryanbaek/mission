@@ -13,12 +13,13 @@ import (
 )
 
 var (
-	ErrInvalidSessionID = errors.New("session_id is required")
-	ErrInvalidHostname  = errors.New("hostname is required")
-	ErrSessionNotFound  = errors.New("session not found")
-	ErrSessionNotActive = errors.New("session is not active")
-	ErrCommandNotFound  = errors.New("command not found")
-	ErrCommandRejected  = errors.New("command queue is full")
+	ErrInvalidSessionID   = errors.New("session_id is required")
+	ErrInvalidHostname    = errors.New("hostname is required")
+	ErrSessionNotFound    = errors.New("session not found")
+	ErrSessionNotActive   = errors.New("session is not active")
+	ErrCommandNotFound    = errors.New("command not found")
+	ErrCommandRejected    = errors.New("command queue is full")
+	ErrTenantNotConnected = errors.New("no active agent connected for tenant")
 )
 
 type AgentSessionManagerConfig struct {
@@ -37,17 +38,32 @@ type AgentCommand struct {
 	CommandID string
 	IssuedAt  time.Time
 	Kind      AgentCommandKind
+	SQL       string
 }
 
 type AgentCommandKind string
 
 const AgentCommandKindPing AgentCommandKind = "ping"
 
+const AgentCommandKindExecuteQuery AgentCommandKind = "execute_query"
+
 type AgentPingResult struct {
 	SessionID   string
 	CommandID   string
 	CompletedAt time.Time
 	RoundTripMS int64
+}
+
+type AgentExecuteQueryResult struct {
+	SessionID    string
+	CommandID    string
+	CompletedAt  time.Time
+	Columns      []string
+	Rows         []map[string]any
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
 }
 
 type AgentSessionSnapshot struct {
@@ -73,11 +89,12 @@ type AgentSessionManager struct {
 }
 
 type agentSession struct {
-	snapshot AgentSessionSnapshot
-	active   bool
-	commands chan AgentCommand
-	done     chan struct{}
-	pending  map[string]chan AgentPingResult
+	snapshot       AgentSessionSnapshot
+	active         bool
+	commands       chan AgentCommand
+	done           chan struct{}
+	pendingPings   map[string]chan AgentPingResult
+	pendingQueries map[string]chan AgentExecuteQueryResult
 }
 
 func NewAgentSessionManager(
@@ -139,10 +156,11 @@ func (m *AgentSessionManager) RegisterSession(
 			LastHeartbeatAt: now,
 			Status:          "online",
 		},
-		active:   true,
-		commands: make(chan AgentCommand, 16),
-		done:     make(chan struct{}),
-		pending:  make(map[string]chan AgentPingResult),
+		active:         true,
+		commands:       make(chan AgentCommand, 16),
+		done:           make(chan struct{}),
+		pendingPings:   make(map[string]chan AgentPingResult),
+		pendingQueries: make(map[string]chan AgentExecuteQueryResult),
 	}
 
 	m.byToken[token.ID] = session
@@ -186,12 +204,12 @@ func (m *AgentSessionManager) SubmitPingResult(
 		return err
 	}
 
-	waiter, ok := session.pending[commandID]
+	waiter, ok := session.pendingPings[commandID]
 	if !ok {
 		m.mu.Unlock()
 		return ErrCommandNotFound
 	}
-	delete(session.pending, commandID)
+	delete(session.pendingPings, commandID)
 	m.mu.Unlock()
 
 	waiter <- AgentPingResult{
@@ -234,11 +252,11 @@ func (m *AgentSessionManager) Ping(
 		return AgentPingResult{}, ErrSessionNotActive
 	}
 
-	session.pending[command.CommandID] = waiter
+	session.pendingPings[command.CommandID] = waiter
 	select {
 	case session.commands <- command:
 	default:
-		delete(session.pending, command.CommandID)
+		delete(session.pendingPings, command.CommandID)
 		m.mu.Unlock()
 		return AgentPingResult{}, ErrCommandRejected
 	}
@@ -253,10 +271,99 @@ func (m *AgentSessionManager) Ping(
 	case <-ctx.Done():
 		m.mu.Lock()
 		if current, ok := m.byID[sessionID]; ok && current == session {
-			delete(current.pending, command.CommandID)
+			delete(current.pendingPings, command.CommandID)
 		}
 		m.mu.Unlock()
 		return AgentPingResult{}, ctx.Err()
+	}
+}
+
+func (m *AgentSessionManager) SubmitExecuteQueryResult(
+	tokenID uuid.UUID,
+	sessionID, commandID string,
+	completedAt time.Time,
+	columns []string,
+	rows []map[string]any,
+	elapsedMS int64,
+	databaseUser, databaseName, commandError string,
+) error {
+	var waiter chan AgentExecuteQueryResult
+
+	m.mu.Lock()
+	session, err := m.sessionLocked(tokenID, sessionID)
+	if err != nil {
+		m.mu.Unlock()
+		return err
+	}
+
+	waiter, ok := session.pendingQueries[commandID]
+	if !ok {
+		m.mu.Unlock()
+		return ErrCommandNotFound
+	}
+	delete(session.pendingQueries, commandID)
+	m.mu.Unlock()
+
+	waiter <- AgentExecuteQueryResult{
+		SessionID:    sessionID,
+		CommandID:    commandID,
+		CompletedAt:  completedAt.UTC(),
+		Columns:      append([]string(nil), columns...),
+		Rows:         cloneRows(rows),
+		ElapsedMS:    elapsedMS,
+		DatabaseUser: databaseUser,
+		DatabaseName: databaseName,
+		Error:        commandError,
+	}
+	close(waiter)
+	return nil
+}
+
+func (m *AgentSessionManager) ExecuteQuery(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	sql string,
+) (AgentExecuteQueryResult, error) {
+	command := AgentCommand{
+		CommandID: uuid.NewString(),
+		IssuedAt:  m.now().UTC(),
+		Kind:      AgentCommandKindExecuteQuery,
+		SQL:       sql,
+	}
+	waiter := make(chan AgentExecuteQueryResult, 1)
+
+	m.mu.Lock()
+	session, ok := m.activeTenantSessionLocked(tenantID)
+	switch {
+	case !ok:
+		m.mu.Unlock()
+		return AgentExecuteQueryResult{}, ErrTenantNotConnected
+	}
+
+	command.SessionID = session.snapshot.SessionID
+	session.pendingQueries[command.CommandID] = waiter
+	select {
+	case session.commands <- command:
+	default:
+		delete(session.pendingQueries, command.CommandID)
+		m.mu.Unlock()
+		return AgentExecuteQueryResult{}, ErrCommandRejected
+	}
+	m.mu.Unlock()
+
+	select {
+	case result, ok := <-waiter:
+		if !ok {
+			return AgentExecuteQueryResult{}, ErrSessionNotActive
+		}
+		return result, nil
+	case <-ctx.Done():
+		m.mu.Lock()
+		if current, ok := m.byID[command.SessionID]; ok && current == session {
+			delete(current.pendingQueries, command.CommandID)
+		}
+		m.mu.Unlock()
+		return AgentExecuteQueryResult{}, ctx.Err()
 	}
 }
 
@@ -291,6 +398,34 @@ func (m *AgentSessionManager) ListSessions() []AgentSessionSnapshot {
 		return out[i].ConnectedAt.After(out[j].ConnectedAt)
 	})
 	return out
+}
+
+func (m *AgentSessionManager) LatestSessionForTenant(
+	tenantID uuid.UUID,
+) (AgentSessionSnapshot, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var (
+		found    bool
+		selected AgentSessionSnapshot
+	)
+	for _, session := range m.byToken {
+		if session.snapshot.TenantID != tenantID {
+			continue
+		}
+		snapshot := session.snapshot
+		if session.active && m.now().UTC().Sub(snapshot.LastHeartbeatAt) <= m.staleAfter {
+			snapshot.Status = "online"
+		} else {
+			snapshot.Status = "offline"
+		}
+		if !found || snapshot.ConnectedAt.After(selected.ConnectedAt) {
+			found = true
+			selected = snapshot
+		}
+	}
+	return selected, found
 }
 
 func (m *AgentSessionManager) sessionLocked(
@@ -330,8 +465,43 @@ func (m *AgentSessionManager) closeSessionLocked(
 		close(session.done)
 	}
 
-	for commandID, waiter := range session.pending {
-		delete(session.pending, commandID)
+	for commandID, waiter := range session.pendingPings {
+		delete(session.pendingPings, commandID)
 		close(waiter)
 	}
+	for commandID, waiter := range session.pendingQueries {
+		delete(session.pendingQueries, commandID)
+		close(waiter)
+	}
+}
+
+func (m *AgentSessionManager) activeTenantSessionLocked(
+	tenantID uuid.UUID,
+) (*agentSession, bool) {
+	var (
+		found   bool
+		current *agentSession
+	)
+	for _, session := range m.byToken {
+		if session.snapshot.TenantID != tenantID || !m.isActiveLocked(session) {
+			continue
+		}
+		if !found || session.snapshot.ConnectedAt.After(current.snapshot.ConnectedAt) {
+			found = true
+			current = session
+		}
+	}
+	return current, found
+}
+
+func cloneRows(rows []map[string]any) []map[string]any {
+	out := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		cloned := make(map[string]any, len(row))
+		for key, value := range row {
+			cloned[key] = value
+		}
+		out = append(out, cloned)
+	}
+	return out
 }

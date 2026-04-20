@@ -184,7 +184,8 @@ export type IssueAgentTokenResponse = Message<"tenant.v1.IssueAgentTokenResponse
   token?: TenantTokenSummary;
 
   /**
-   * Plaintext token. Returned exactly once at issuance; never retrievable later.
+   * Plaintext token. Returned exactly once at issuance; never retrievable
+   * later.
    *
    * @generated from field: string plaintext = 2;
    */

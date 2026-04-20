@@ -16,6 +16,8 @@ type CommandKind string
 
 const CommandKindPing CommandKind = "ping"
 
+const CommandKindExecuteQuery CommandKind = "execute_query"
+
 type OpenCommandStreamRequest struct {
 	SessionID    string
 	Hostname     string
@@ -35,11 +37,24 @@ type SubmitPingResultRequest struct {
 	RoundTripMS int64
 }
 
+type SubmitExecuteQueryResultRequest struct {
+	SessionID    string
+	CommandID    string
+	CompletedAt  time.Time
+	Columns      []string
+	Rows         []map[string]any
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+	Error        string
+}
+
 type ControlMessage struct {
 	SessionID string
 	CommandID string
 	IssuedAt  time.Time
 	Kind      CommandKind
+	SQL       string
 }
 
 type CommandStream interface {
@@ -55,6 +70,22 @@ type ControlPlaneClient interface {
 	) (CommandStream, error)
 	Heartbeat(ctx context.Context, req HeartbeatRequest) error
 	SubmitPingResult(ctx context.Context, req SubmitPingResultRequest) error
+	SubmitExecuteQueryResult(
+		ctx context.Context,
+		req SubmitExecuteQueryResultRequest,
+	) error
+}
+
+type QueryResult struct {
+	Columns      []string
+	Rows         []map[string]any
+	ElapsedMS    int64
+	DatabaseUser string
+	DatabaseName string
+}
+
+type QueryExecutor interface {
+	ExecuteQuery(ctx context.Context, sql string) (QueryResult, error)
 }
 
 type AgentServiceConfig struct {
@@ -69,6 +100,7 @@ type AgentServiceConfig struct {
 	Now               func() time.Time
 	Sleep             func(context.Context, time.Duration) error
 	Rand              *rand.Rand
+	QueryExecutor     QueryExecutor
 }
 
 type AgentService struct {
@@ -84,6 +116,7 @@ type AgentService struct {
 	now               func() time.Time
 	sleep             func(context.Context, time.Duration) error
 	rand              *rand.Rand
+	queryExecutor     QueryExecutor
 }
 
 func NewAgentService(
@@ -154,6 +187,7 @@ func NewAgentService(
 		now:               now,
 		sleep:             sleep,
 		rand:              random,
+		queryExecutor:     cfg.QueryExecutor,
 	}, nil
 }
 
@@ -298,9 +332,57 @@ func (s *AgentService) handleCommand(
 				RoundTripMS: roundTrip,
 			},
 		)
+	case CommandKindExecuteQuery:
+		return s.handleExecuteQuery(ctx, command)
 	default:
 		return fmt.Errorf("unsupported command kind %q", command.Kind)
 	}
+}
+
+func (s *AgentService) handleExecuteQuery(
+	ctx context.Context,
+	command ControlMessage,
+) error {
+	if s.queryExecutor == nil {
+		return s.client.SubmitExecuteQueryResult(
+			ctx,
+			SubmitExecuteQueryResultRequest{
+				SessionID:   command.SessionID,
+				CommandID:   command.CommandID,
+				CompletedAt: s.now().UTC(),
+				Error:       "query executor is not configured",
+			},
+		)
+	}
+
+	startedAt := s.now().UTC()
+	result, err := s.queryExecutor.ExecuteQuery(ctx, command.SQL)
+	if err != nil {
+		return s.client.SubmitExecuteQueryResult(
+			ctx,
+			SubmitExecuteQueryResultRequest{
+				SessionID:   command.SessionID,
+				CommandID:   command.CommandID,
+				CompletedAt: s.now().UTC(),
+				ElapsedMS:   s.now().UTC().Sub(startedAt).Milliseconds(),
+				Error:       err.Error(),
+			},
+		)
+	}
+
+	return s.client.SubmitExecuteQueryResult(
+		ctx,
+		SubmitExecuteQueryResultRequest{
+			SessionID:    command.SessionID,
+			CommandID:    command.CommandID,
+			CompletedAt:  s.now().UTC(),
+			Columns:      result.Columns,
+			Rows:         result.Rows,
+			ElapsedMS:    result.ElapsedMS,
+			DatabaseUser: result.DatabaseUser,
+			DatabaseName: result.DatabaseName,
+		},
+	)
 }
 
 func (s *AgentService) jitter(base time.Duration) time.Duration {

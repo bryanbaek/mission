@@ -33,9 +33,10 @@ func (s *fakeCommandStream) Err() error {
 }
 
 type fakeControlPlaneClient struct {
-	openFn   func(context.Context, OpenCommandStreamRequest) (CommandStream, error)
-	beatFn   func(context.Context, HeartbeatRequest) error
-	submitFn func(context.Context, SubmitPingResultRequest) error
+	openFn        func(context.Context, OpenCommandStreamRequest) (CommandStream, error)
+	beatFn        func(context.Context, HeartbeatRequest) error
+	submitFn      func(context.Context, SubmitPingResultRequest) error
+	submitQueryFn func(context.Context, SubmitExecuteQueryResultRequest) error
 }
 
 func (c fakeControlPlaneClient) OpenCommandStream(
@@ -57,6 +58,24 @@ func (c fakeControlPlaneClient) SubmitPingResult(
 	req SubmitPingResultRequest,
 ) error {
 	return c.submitFn(ctx, req)
+}
+
+func (c fakeControlPlaneClient) SubmitExecuteQueryResult(
+	ctx context.Context,
+	req SubmitExecuteQueryResultRequest,
+) error {
+	return c.submitQueryFn(ctx, req)
+}
+
+type fakeQueryExecutor struct {
+	executeFn func(context.Context, string) (QueryResult, error)
+}
+
+func (e fakeQueryExecutor) ExecuteQuery(
+	ctx context.Context,
+	sql string,
+) (QueryResult, error) {
+	return e.executeFn(ctx, sql)
 }
 
 func discardLogger() *slog.Logger {
@@ -127,6 +146,9 @@ func TestAgentServiceHandleCommand(t *testing.T) {
 				submitted = req
 				return nil
 			},
+			submitQueryFn: func(context.Context, SubmitExecuteQueryResultRequest) error {
+				return nil
+			},
 		},
 		AgentServiceConfig{
 			Hostname: "host-a",
@@ -177,6 +199,9 @@ func TestAgentServiceRunHeartbeatLoop(t *testing.T) {
 				return nil
 			},
 			submitFn: func(context.Context, SubmitPingResultRequest) error { return nil },
+			submitQueryFn: func(context.Context, SubmitExecuteQueryResultRequest) error {
+				return nil
+			},
 		},
 		AgentServiceConfig{
 			Hostname:          "host-a",
@@ -232,6 +257,9 @@ func TestAgentServiceRunSessionAndRun(t *testing.T) {
 			_ context.Context,
 			_ SubmitPingResultRequest,
 		) error {
+			return nil
+		},
+		submitQueryFn: func(context.Context, SubmitExecuteQueryResultRequest) error {
 			return nil
 		},
 	}
@@ -302,5 +330,122 @@ func TestJitterAndSleepContext(t *testing.T) {
 	cancel()
 	if err := sleepContext(ctx, time.Second); !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v, want context canceled", err)
+	}
+}
+
+func TestAgentServiceHandleExecuteQuery(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	var submitted SubmitExecuteQueryResultRequest
+	service, err := NewAgentService(
+		fakeControlPlaneClient{
+			openFn: func(context.Context, OpenCommandStreamRequest) (CommandStream, error) {
+				return nil, nil
+			},
+			beatFn:   func(context.Context, HeartbeatRequest) error { return nil },
+			submitFn: func(context.Context, SubmitPingResultRequest) error { return nil },
+			submitQueryFn: func(
+				_ context.Context,
+				req SubmitExecuteQueryResultRequest,
+			) error {
+				submitted = req
+				return nil
+			},
+		},
+		AgentServiceConfig{
+			Hostname: "host-a",
+			Now: func() time.Time {
+				return now
+			},
+			Logger: discardLogger(),
+			QueryExecutor: fakeQueryExecutor{
+				executeFn: func(_ context.Context, sql string) (QueryResult, error) {
+					if sql != "SELECT 1" {
+						t.Fatalf("sql = %q, want SELECT 1", sql)
+					}
+					return QueryResult{
+						Columns:      []string{"1"},
+						Rows:         []map[string]any{{"1": int64(1)}},
+						ElapsedMS:    12,
+						DatabaseUser: "mission_ro@%",
+						DatabaseName: "mission_app",
+					}, nil
+				},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewAgentService returned error: %v", err)
+	}
+
+	err = service.handleCommand(context.Background(), ControlMessage{
+		SessionID: "session-1",
+		CommandID: "command-1",
+		Kind:      CommandKindExecuteQuery,
+		SQL:       "SELECT 1",
+	})
+	if err != nil {
+		t.Fatalf("handleCommand returned error: %v", err)
+	}
+	if submitted.Error != "" {
+		t.Fatalf("submitted error = %q, want empty", submitted.Error)
+	}
+	if len(submitted.Rows) != 1 || submitted.Rows[0]["1"] != int64(1) {
+		t.Fatalf("submitted rows = %#v, want one row with 1", submitted.Rows)
+	}
+	if submitted.DatabaseName != "mission_app" {
+		t.Fatalf("DatabaseName = %q, want mission_app", submitted.DatabaseName)
+	}
+}
+
+func TestAgentServiceHandleExecuteQueryError(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	var submitted SubmitExecuteQueryResultRequest
+	service, err := NewAgentService(
+		fakeControlPlaneClient{
+			openFn: func(context.Context, OpenCommandStreamRequest) (CommandStream, error) {
+				return nil, nil
+			},
+			beatFn:   func(context.Context, HeartbeatRequest) error { return nil },
+			submitFn: func(context.Context, SubmitPingResultRequest) error { return nil },
+			submitQueryFn: func(
+				_ context.Context,
+				req SubmitExecuteQueryResultRequest,
+			) error {
+				submitted = req
+				return nil
+			},
+		},
+		AgentServiceConfig{
+			Hostname: "host-a",
+			Now: func() time.Time {
+				return now
+			},
+			Logger: discardLogger(),
+			QueryExecutor: fakeQueryExecutor{
+				executeFn: func(context.Context, string) (QueryResult, error) {
+					return QueryResult{}, errors.New("syntax error")
+				},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewAgentService returned error: %v", err)
+	}
+
+	err = service.handleCommand(context.Background(), ControlMessage{
+		SessionID: "session-1",
+		CommandID: "command-1",
+		Kind:      CommandKindExecuteQuery,
+		SQL:       "SELECT nope",
+	})
+	if err != nil {
+		t.Fatalf("handleCommand returned error: %v", err)
+	}
+	if submitted.Error != "syntax error" {
+		t.Fatalf("submitted error = %q, want syntax error", submitted.Error)
 	}
 }

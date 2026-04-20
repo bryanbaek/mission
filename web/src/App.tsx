@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import AgentsPage from "./pages/AgentsPage";
+import QueryPage from "./pages/QueryPage";
 import TenantsPage from "./pages/TenantsPage";
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<TenantsPage />} />
           <Route path="agents" element={<AgentsPage />} />
+          <Route path="queries" element={<QueryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

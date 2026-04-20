@@ -4,15 +4,15 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp, Value } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_struct, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file agent/v1/agent.proto.
  */
 export const file_agent_v1_agent: GenFile = /*@__PURE__*/
-  fileDesc("ChRhZ2VudC92MS9hZ2VudC5wcm90bxIIYWdlbnQudjEihwEKGE9wZW5Db21tYW5kU3RyZWFtUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGhvc3RuYW1lGAIgASgJEhUKDWFnZW50X3ZlcnNpb24YAyABKAkSLgoKc3RhcnRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUwoQSGVhcnRiZWF0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEisKB3NlbnRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhMKEUhlYXJ0YmVhdFJlc3BvbnNlIg0KC1BpbmdDb21tYW5kIpkBCg5Db250cm9sTWVzc2FnZRISCgpzZXNzaW9uX2lkGAEgASgJEhIKCmNvbW1hbmRfaWQYAiABKAkSLQoJaXNzdWVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIlCgRwaW5nGAogASgLMhUuYWdlbnQudjEuUGluZ0NvbW1hbmRIAEIJCgdwYXlsb2FkIiMKClBpbmdSZXN1bHQSFQoNcm91bmRfdHJpcF9tcxgBIAEoAyKmAQoaU3VibWl0Q29tbWFuZFJlc3VsdFJlcXVlc3QSEgoKc2Vzc2lvbl9pZBgBIAEoCRISCgpjb21tYW5kX2lkGAIgASgJEjAKDGNvbXBsZXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJAoEcGluZxgKIAEoCzIULmFnZW50LnYxLlBpbmdSZXN1bHRIAEIICgZyZXN1bHQiHQobU3VibWl0Q29tbWFuZFJlc3VsdFJlc3BvbnNlMo0CCgxBZ2VudFNlcnZpY2USUwoRT3BlbkNvbW1hbmRTdHJlYW0SIi5hZ2VudC52MS5PcGVuQ29tbWFuZFN0cmVhbVJlcXVlc3QaGC5hZ2VudC52MS5Db250cm9sTWVzc2FnZTABEkQKCUhlYXJ0YmVhdBIaLmFnZW50LnYxLkhlYXJ0YmVhdFJlcXVlc3QaGy5hZ2VudC52MS5IZWFydGJlYXRSZXNwb25zZRJiChNTdWJtaXRDb21tYW5kUmVzdWx0EiQuYWdlbnQudjEuU3VibWl0Q29tbWFuZFJlc3VsdFJlcXVlc3QaJS5hZ2VudC52MS5TdWJtaXRDb21tYW5kUmVzdWx0UmVzcG9uc2VCkQEKDGNvbS5hZ2VudC52MUIKQWdlbnRQcm90b1ABWjRnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9hZ2VudC92MTthZ2VudHYxogIDQVhYqgIIQWdlbnQuVjHKAghBZ2VudFxWMeICFEFnZW50XFYxXEdQQk1ldGFkYXRh6gIJQWdlbnQ6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChRhZ2VudC92MS9hZ2VudC5wcm90bxIIYWdlbnQudjEihwEKGE9wZW5Db21tYW5kU3RyZWFtUmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEhAKCGhvc3RuYW1lGAIgASgJEhUKDWFnZW50X3ZlcnNpb24YAyABKAkSLgoKc3RhcnRlZF9hdBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiUwoQSGVhcnRiZWF0UmVxdWVzdBISCgpzZXNzaW9uX2lkGAEgASgJEisKB3NlbnRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIhMKEUhlYXJ0YmVhdFJlc3BvbnNlIg0KC1BpbmdDb21tYW5kIiIKE0V4ZWN1dGVRdWVyeUNvbW1hbmQSCwoDc3FsGAEgASgJItEBCg5Db250cm9sTWVzc2FnZRISCgpzZXNzaW9uX2lkGAEgASgJEhIKCmNvbW1hbmRfaWQYAiABKAkSLQoJaXNzdWVkX2F0GAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIlCgRwaW5nGAogASgLMhUuYWdlbnQudjEuUGluZ0NvbW1hbmRIABI2Cg1leGVjdXRlX3F1ZXJ5GAsgASgLMh0uYWdlbnQudjEuRXhlY3V0ZVF1ZXJ5Q29tbWFuZEgAQgkKB3BheWxvYWQiIwoKUGluZ1Jlc3VsdBIVCg1yb3VuZF90cmlwX21zGAEgASgDIo8BCg9FeGVjdXRlUXVlcnlSb3cSNQoGdmFsdWVzGAEgAygLMiUuYWdlbnQudjEuRXhlY3V0ZVF1ZXJ5Um93LlZhbHVlc0VudHJ5GkUKC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRIlCgV2YWx1ZRgCIAEoCzIWLmdvb2dsZS5wcm90b2J1Zi5WYWx1ZToCOAEinwEKEkV4ZWN1dGVRdWVyeVJlc3VsdBIPCgdjb2x1bW5zGAEgAygJEicKBHJvd3MYAiADKAsyGS5hZ2VudC52MS5FeGVjdXRlUXVlcnlSb3cSEgoKZWxhcHNlZF9tcxgDIAEoAxIVCg1kYXRhYmFzZV91c2VyGAQgASgJEhUKDWRhdGFiYXNlX25hbWUYBSABKAkSDQoFZXJyb3IYBiABKAki3QEKGlN1Ym1pdENvbW1hbmRSZXN1bHRSZXF1ZXN0EhIKCnNlc3Npb25faWQYASABKAkSEgoKY29tbWFuZF9pZBgCIAEoCRIwCgxjb21wbGV0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiQKBHBpbmcYCiABKAsyFC5hZ2VudC52MS5QaW5nUmVzdWx0SAASNQoNZXhlY3V0ZV9xdWVyeRgLIAEoCzIcLmFnZW50LnYxLkV4ZWN1dGVRdWVyeVJlc3VsdEgAQggKBnJlc3VsdCIdChtTdWJtaXRDb21tYW5kUmVzdWx0UmVzcG9uc2UyjQIKDEFnZW50U2VydmljZRJTChFPcGVuQ29tbWFuZFN0cmVhbRIiLmFnZW50LnYxLk9wZW5Db21tYW5kU3RyZWFtUmVxdWVzdBoYLmFnZW50LnYxLkNvbnRyb2xNZXNzYWdlMAESRAoJSGVhcnRiZWF0EhouYWdlbnQudjEuSGVhcnRiZWF0UmVxdWVzdBobLmFnZW50LnYxLkhlYXJ0YmVhdFJlc3BvbnNlEmIKE1N1Ym1pdENvbW1hbmRSZXN1bHQSJC5hZ2VudC52MS5TdWJtaXRDb21tYW5kUmVzdWx0UmVxdWVzdBolLmFnZW50LnYxLlN1Ym1pdENvbW1hbmRSZXN1bHRSZXNwb25zZUKRAQoMY29tLmFnZW50LnYxQgpBZ2VudFByb3RvUAFaNGdpdGh1Yi5jb20vYnJ5YW5iYWVrL21pc3Npb24vZ2VuL2dvL2FnZW50L3YxO2FnZW50djGiAgNBWFiqAghBZ2VudC5WMcoCCEFnZW50XFYx4gIUQWdlbnRcVjFcR1BCTWV0YWRhdGHqAglBZ2VudDo6VjFiBnByb3RvMw", [file_google_protobuf_struct, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message agent.v1.OpenCommandStreamRequest
@@ -95,6 +95,23 @@ export const PingCommandSchema: GenMessage<PingCommand> = /*@__PURE__*/
   messageDesc(file_agent_v1_agent, 3);
 
 /**
+ * @generated from message agent.v1.ExecuteQueryCommand
+ */
+export type ExecuteQueryCommand = Message<"agent.v1.ExecuteQueryCommand"> & {
+  /**
+   * @generated from field: string sql = 1;
+   */
+  sql: string;
+};
+
+/**
+ * Describes the message agent.v1.ExecuteQueryCommand.
+ * Use `create(ExecuteQueryCommandSchema)` to create a new message.
+ */
+export const ExecuteQueryCommandSchema: GenMessage<ExecuteQueryCommand> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 4);
+
+/**
  * @generated from message agent.v1.ControlMessage
  */
 export type ControlMessage = Message<"agent.v1.ControlMessage"> & {
@@ -122,6 +139,12 @@ export type ControlMessage = Message<"agent.v1.ControlMessage"> & {
      */
     value: PingCommand;
     case: "ping";
+  } | {
+    /**
+     * @generated from field: agent.v1.ExecuteQueryCommand execute_query = 11;
+     */
+    value: ExecuteQueryCommand;
+    case: "executeQuery";
   } | { case: undefined; value?: undefined };
 };
 
@@ -130,7 +153,7 @@ export type ControlMessage = Message<"agent.v1.ControlMessage"> & {
  * Use `create(ControlMessageSchema)` to create a new message.
  */
 export const ControlMessageSchema: GenMessage<ControlMessage> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 4);
+  messageDesc(file_agent_v1_agent, 5);
 
 /**
  * @generated from message agent.v1.PingResult
@@ -147,7 +170,66 @@ export type PingResult = Message<"agent.v1.PingResult"> & {
  * Use `create(PingResultSchema)` to create a new message.
  */
 export const PingResultSchema: GenMessage<PingResult> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 5);
+  messageDesc(file_agent_v1_agent, 6);
+
+/**
+ * @generated from message agent.v1.ExecuteQueryRow
+ */
+export type ExecuteQueryRow = Message<"agent.v1.ExecuteQueryRow"> & {
+  /**
+   * @generated from field: map<string, google.protobuf.Value> values = 1;
+   */
+  values: { [key: string]: Value };
+};
+
+/**
+ * Describes the message agent.v1.ExecuteQueryRow.
+ * Use `create(ExecuteQueryRowSchema)` to create a new message.
+ */
+export const ExecuteQueryRowSchema: GenMessage<ExecuteQueryRow> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 7);
+
+/**
+ * @generated from message agent.v1.ExecuteQueryResult
+ */
+export type ExecuteQueryResult = Message<"agent.v1.ExecuteQueryResult"> & {
+  /**
+   * @generated from field: repeated string columns = 1;
+   */
+  columns: string[];
+
+  /**
+   * @generated from field: repeated agent.v1.ExecuteQueryRow rows = 2;
+   */
+  rows: ExecuteQueryRow[];
+
+  /**
+   * @generated from field: int64 elapsed_ms = 3;
+   */
+  elapsedMs: bigint;
+
+  /**
+   * @generated from field: string database_user = 4;
+   */
+  databaseUser: string;
+
+  /**
+   * @generated from field: string database_name = 5;
+   */
+  databaseName: string;
+
+  /**
+   * @generated from field: string error = 6;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message agent.v1.ExecuteQueryResult.
+ * Use `create(ExecuteQueryResultSchema)` to create a new message.
+ */
+export const ExecuteQueryResultSchema: GenMessage<ExecuteQueryResult> = /*@__PURE__*/
+  messageDesc(file_agent_v1_agent, 8);
 
 /**
  * @generated from message agent.v1.SubmitCommandResultRequest
@@ -177,6 +259,12 @@ export type SubmitCommandResultRequest = Message<"agent.v1.SubmitCommandResultRe
      */
     value: PingResult;
     case: "ping";
+  } | {
+    /**
+     * @generated from field: agent.v1.ExecuteQueryResult execute_query = 11;
+     */
+    value: ExecuteQueryResult;
+    case: "executeQuery";
   } | { case: undefined; value?: undefined };
 };
 
@@ -185,7 +273,7 @@ export type SubmitCommandResultRequest = Message<"agent.v1.SubmitCommandResultRe
  * Use `create(SubmitCommandResultRequestSchema)` to create a new message.
  */
 export const SubmitCommandResultRequestSchema: GenMessage<SubmitCommandResultRequest> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 6);
+  messageDesc(file_agent_v1_agent, 9);
 
 /**
  * @generated from message agent.v1.SubmitCommandResultResponse
@@ -198,7 +286,7 @@ export type SubmitCommandResultResponse = Message<"agent.v1.SubmitCommandResultR
  * Use `create(SubmitCommandResultResponseSchema)` to create a new message.
  */
 export const SubmitCommandResultResponseSchema: GenMessage<SubmitCommandResultResponse> = /*@__PURE__*/
-  messageDesc(file_agent_v1_agent, 7);
+  messageDesc(file_agent_v1_agent, 10);
 
 /**
  * @generated from service agent.v1.AgentService

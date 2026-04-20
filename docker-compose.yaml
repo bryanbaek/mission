@@ -16,6 +16,27 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: mission
+      MYSQL_DATABASE: mission_app
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./dev/mysql/init:/docker-entrypoint-initdb.d:ro
+
   control-plane:
     build:
       context: .
@@ -48,3 +69,4 @@ services:
 
 volumes:
   postgres-data:
+  mysql-data:

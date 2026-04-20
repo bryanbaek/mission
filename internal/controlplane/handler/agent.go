@@ -119,25 +119,41 @@ func (h *AgentHandler) SubmitCommandResult(
 			errors.New("unauthenticated"),
 		)
 	}
-	if req.Msg.GetPing() == nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("missing result payload"),
-		)
-	}
-
 	completedAt := time.Now().UTC()
 	if req.Msg.GetCompletedAt() != nil {
 		completedAt = req.Msg.GetCompletedAt().AsTime().UTC()
 	}
 
-	if err := h.sessions.SubmitPingResult(
-		agent.TokenID,
-		req.Msg.GetSessionId(),
-		req.Msg.GetCommandId(),
-		completedAt,
-		req.Msg.GetPing().GetRoundTripMs(),
-	); err != nil {
+	var err error
+	switch result := req.Msg.Result.(type) {
+	case *agentv1.SubmitCommandResultRequest_Ping:
+		err = h.sessions.SubmitPingResult(
+			agent.TokenID,
+			req.Msg.GetSessionId(),
+			req.Msg.GetCommandId(),
+			completedAt,
+			result.Ping.GetRoundTripMs(),
+		)
+	case *agentv1.SubmitCommandResultRequest_ExecuteQuery:
+		err = h.sessions.SubmitExecuteQueryResult(
+			agent.TokenID,
+			req.Msg.GetSessionId(),
+			req.Msg.GetCommandId(),
+			completedAt,
+			result.ExecuteQuery.GetColumns(),
+			protoRowsToMaps(result.ExecuteQuery.GetRows()),
+			result.ExecuteQuery.GetElapsedMs(),
+			result.ExecuteQuery.GetDatabaseUser(),
+			result.ExecuteQuery.GetDatabaseName(),
+			result.ExecuteQuery.GetError(),
+		)
+	default:
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			errors.New("missing result payload"),
+		)
+	}
+	if err != nil {
 		return nil, connectErrorForSession(err)
 	}
 	return connect.NewResponse(&agentv1.SubmitCommandResultResponse{}), nil
@@ -152,6 +168,10 @@ func commandToProto(command controller.AgentCommand) *agentv1.ControlMessage {
 	switch command.Kind {
 	case controller.AgentCommandKindPing:
 		out.Payload = &agentv1.ControlMessage_Ping{Ping: &agentv1.PingCommand{}}
+	case controller.AgentCommandKindExecuteQuery:
+		out.Payload = &agentv1.ControlMessage_ExecuteQuery{
+			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: command.SQL},
+		}
 	}
 	return out
 }
@@ -165,11 +185,24 @@ func connectErrorForSession(err error) error {
 		errors.Is(err, controller.ErrCommandNotFound):
 		return connect.NewError(connect.CodeNotFound, err)
 	case errors.Is(err, controller.ErrSessionNotActive),
-		errors.Is(err, controller.ErrCommandRejected):
+		errors.Is(err, controller.ErrCommandRejected),
+		errors.Is(err, controller.ErrTenantNotConnected):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	default:
 		return connect.NewError(connect.CodeInternal, err)
 	}
+}
+
+func protoRowsToMaps(rows []*agentv1.ExecuteQueryRow) []map[string]any {
+	out := make([]map[string]any, 0, len(rows))
+	for _, row := range rows {
+		values := make(map[string]any, len(row.GetValues()))
+		for key, value := range row.GetValues() {
+			values[key] = value.AsInterface()
+		}
+		out = append(out, values)
+	}
+	return out
 }
 
 type AgentDebugHandler struct {

@@ -93,6 +93,7 @@ func run() error {
 	tenantHandler := handler.NewTenantHandler(tenantCtrl)
 	agentHandler := handler.NewAgentHandler(agentSessions)
 	debugAgentHandler := handler.NewAgentDebugHandler(agentSessions)
+	queryDebugHandler := handler.NewQueryDebugHandler(tenantCtrl, agentSessions)
 	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
 
@@ -110,6 +111,13 @@ func run() error {
 		r.Use(middleware.Timeout(30 * time.Second))
 		r.Use(auth.RequireAuth(verifier))
 		r.Mount(tenantPath, tenantSvc)
+	})
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Timeout(45 * time.Second))
+		r.Use(auth.RequireAuth(verifier))
+		r.Get("/api/debug/tenants/{tenantID}/query", queryDebugHandler.GetStatus)
+		r.Post("/api/debug/tenants/{tenantID}/query", queryDebugHandler.ExecuteQuery)
 	})
 
 	r.Group(func(r chi.Router) {

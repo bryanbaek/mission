@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package agent.v1;
 
+import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/bryanbaek/mission/gen/go/agent/v1;agentv1";
@@ -22,18 +23,36 @@ message HeartbeatResponse {}
 
 message PingCommand {}
 
-message ControlMessage {
+message ExecuteQueryCommand {
+  string sql = 1;
+}
+
+message OpenCommandStreamResponse {
   string session_id = 1;
   string command_id = 2;
   google.protobuf.Timestamp issued_at = 3;
 
   oneof payload {
     PingCommand ping = 10;
+    ExecuteQueryCommand execute_query = 11;
   }
 }
 
 message PingResult {
   int64 round_trip_ms = 1;
+}
+
+message ExecuteQueryRow {
+  map<string, google.protobuf.Value> values = 1;
+}
+
+message ExecuteQueryResult {
+  repeated string columns = 1;
+  repeated ExecuteQueryRow rows = 2;
+  int64 elapsed_ms = 3;
+  string database_user = 4;
+  string database_name = 5;
+  string error = 6;
 }
 
 message SubmitCommandResultRequest {
@@ -43,15 +62,14 @@ message SubmitCommandResultRequest {
 
   oneof result {
     PingResult ping = 10;
+    ExecuteQueryResult execute_query = 11;
   }
 }
 
 message SubmitCommandResultResponse {}
 
 service AgentService {
-  rpc OpenCommandStream(OpenCommandStreamRequest)
-      returns (stream ControlMessage);
+  rpc OpenCommandStream(OpenCommandStreamRequest) returns (stream OpenCommandStreamResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
-  rpc SubmitCommandResult(SubmitCommandResultRequest)
-      returns (SubmitCommandResultResponse);
+  rpc SubmitCommandResult(SubmitCommandResultRequest) returns (SubmitCommandResultResponse);
 }
