@@ -16,6 +16,7 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 type AgentHandler struct {
@@ -146,6 +147,9 @@ func (h *AgentHandler) SubmitCommandResult(
 			result.ExecuteQuery.GetDatabaseUser(),
 			result.ExecuteQuery.GetDatabaseName(),
 			result.ExecuteQuery.GetError(),
+			queryErrorCodeFromProto(result.ExecuteQuery.GetErrorCode()),
+			result.ExecuteQuery.GetErrorReason(),
+			result.ExecuteQuery.GetBlockedConstructs(),
 		)
 	case *agentv1.SubmitCommandResultRequest_IntrospectSchema:
 		err = h.sessions.SubmitIntrospectSchemaResult(
@@ -169,6 +173,17 @@ func (h *AgentHandler) SubmitCommandResult(
 		return nil, connectErrorForSession(err)
 	}
 	return connect.NewResponse(&agentv1.SubmitCommandResultResponse{}), nil
+}
+
+func queryErrorCodeFromProto(code agentv1.ExecuteQueryErrorCode) queryerror.Code {
+	switch code {
+	case agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED:
+		return queryerror.CodePermissionDenied
+	case agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_INTERNAL:
+		return queryerror.CodeInternal
+	default:
+		return queryerror.CodeUnspecified
+	}
 }
 
 func commandToProto(command controller.AgentCommand) *agentv1.ControlMessage {

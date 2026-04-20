@@ -17,6 +17,7 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 func queryRequest(
@@ -127,6 +128,9 @@ func TestQueryDebugHandlerOwnerFlow(t *testing.T) {
 			"mission_ro@%",
 			"mission_app",
 			"",
+			"",
+			"",
+			nil,
 		)
 	}()
 
@@ -217,6 +221,111 @@ func TestQueryDebugHandlerRejectsNonOwnersAndNonMembers(t *testing.T) {
 	makeHandler(model.RoleOwner, repository.ErrNotFound).ExecuteQuery(nonMemberRec, nonMemberReq)
 	if nonMemberRec.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", nonMemberRec.Code)
+	}
+}
+
+func TestQueryDebugHandlerPermissionDenied(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+	sessions := controller.NewAgentSessionManager(controller.AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	stream, err := sessions.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	handler := NewQueryDebugHandler(
+		controller.NewTenantController(
+			unitTenantStore{
+				createFn: func(context.Context, string, string, string) (model.Tenant, error) {
+					return model.Tenant{}, nil
+				},
+				listFn: func(context.Context, string) ([]model.Tenant, error) {
+					return nil, nil
+				},
+				membershipFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+					return model.TenantUser{
+						TenantID: tenantID,
+						Role:     model.RoleOwner,
+					}, nil
+				},
+			},
+			unitTokenStore{
+				createFn: func(context.Context, uuid.UUID, string, []byte) (model.TenantToken, error) {
+					return model.TenantToken{}, nil
+				},
+				listFn: func(context.Context, uuid.UUID) ([]model.TenantToken, error) {
+					return nil, nil
+				},
+				revokeFn: func(context.Context, uuid.UUID, uuid.UUID) error { return nil },
+			},
+		),
+		sessions,
+	)
+
+	errCh := make(chan error, 1)
+	go func() {
+		command := <-stream.Commands
+		errCh <- sessions.SubmitExecuteQueryResult(
+			token.ID,
+			"session-1",
+			command.CommandID,
+			now.Add(time.Second),
+			nil,
+			nil,
+			3,
+			"mission_ro@%",
+			"mission_app",
+			"SQL comments are not allowed",
+			queryerror.CodePermissionDenied,
+			"SQL comments are not allowed",
+			[]string{"comment"},
+		)
+	}()
+
+	rec := httptest.NewRecorder()
+	req := queryRequest(
+		http.MethodPost,
+		"/api/debug/tenants/"+tenantID.String()+"/query",
+		tenantID.String(),
+		[]byte(`{"sql":"SELECT 1 # injected"}`),
+	)
+	req = req.WithContext(auth.WithUser(req.Context(), auth.User{ID: "user_123"}))
+	handler.ExecuteQuery(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("SubmitExecuteQueryResult returned error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for permission-denied result")
+	}
+
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json.Unmarshal returned error: %v", err)
+	}
+	if got := body["error"]; got != "SQL comments are not allowed" {
+		t.Fatalf("error = %#v, want SQL comments are not allowed", got)
+	}
+	if got := body["error_code"]; got != string(queryerror.CodePermissionDenied) {
+		t.Fatalf("error_code = %#v, want %q", got, queryerror.CodePermissionDenied)
+	}
+	constructs, ok := body["blocked_constructs"].([]any)
+	if !ok || len(constructs) != 1 || constructs[0] != "comment" {
+		t.Fatalf("blocked_constructs = %#v, want [comment]", body["blocked_constructs"])
 	}
 }
 

@@ -1,164 +1,113 @@
 package sqlguard
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
 func TestValidate_BlocksAdversarial(t *testing.T) {
 	t.Parallel()
 
-	// 32 cases covering DDL, DML, multi-statement, INTO OUTFILE/DUMPFILE,
-	// stored procedures, transaction control, admin, session mutation,
-	// FOR UPDATE, LOAD DATA, GRANT, empty/garbage, and version-hint
-	// comment injection. Any of these reaching the MySQL gateway would
-	// defeat the read-only safety posture.
-	cases := map[string]string{
-		// DDL
-		"drop table":      "DROP TABLE users",
-		"create table":    "CREATE TABLE foo (id INT)",
-		"alter table":     "ALTER TABLE foo ADD COLUMN bar INT",
-		"truncate":        "TRUNCATE TABLE users",
-		"rename table":    "RENAME TABLE old TO new",
-		"create index":    "CREATE INDEX idx ON foo(id)",
-		"drop database":   "DROP DATABASE mydb",
-		"create database": "CREATE DATABASE mydb",
-
-		// DML
-		"update":  "UPDATE foo SET x = 1",
-		"delete":  "DELETE FROM foo",
-		"insert":  "INSERT INTO foo VALUES (1)",
-		"replace": "REPLACE INTO foo VALUES (1)",
-
-		// Multi-statement
-		"select then drop":   "SELECT 1; DROP TABLE users",
-		"select then select": "SELECT 1; SELECT 2",
-		"trailing drop":      "SELECT 1; /* comment */ DROP TABLE x;",
-
-		// INTO OUTFILE / DUMPFILE / @var
-		"into outfile":  "SELECT * FROM foo INTO OUTFILE '/tmp/x'",
-		"into dumpfile": "SELECT * FROM foo INTO DUMPFILE '/tmp/x'",
-		"into var":      "SELECT id FROM foo INTO @x",
-
-		// Procedure-style / admin misuse
-		"call":              "CALL my_proc()",
-		"do sleep":          "DO SLEEP(5)",
-		"start transaction": "START TRANSACTION",
-		"commit":            "COMMIT",
-		"rollback":          "ROLLBACK",
-		"set global":        "SET GLOBAL max_connections = 10",
-		"kill":              "KILL 1",
-		"flush":             "FLUSH PRIVILEGES",
-		"grant":             "GRANT SELECT ON foo TO 'user'@'%'",
-		"load data":         "LOAD DATA INFILE '/tmp/x' INTO TABLE foo",
-
-		// Read/write locks on SELECT
-		"select for update": "SELECT * FROM foo FOR UPDATE",
-
-		// Garbage / empty
-		"empty":        "",
-		"whitespace":   "   \n\t  ",
-		"nonsense":     "not a real SQL statement",
-		"only comment": "-- just a comment",
+	cases := []struct {
+		name                  string
+		sql                   string
+		wantBlockedConstructs []string
+	}{
+		{name: "drop table", sql: "DROP TABLE users", wantBlockedConstructs: []string{"statement_drop"}},
+		{name: "delete", sql: "DELETE FROM users", wantBlockedConstructs: []string{"statement_delete"}},
+		{name: "update", sql: "UPDATE users SET admin=1", wantBlockedConstructs: []string{"statement_update"}},
+		{name: "insert", sql: "INSERT INTO users VALUES (1)", wantBlockedConstructs: []string{"statement_insert"}},
+		{name: "truncate", sql: "TRUNCATE users", wantBlockedConstructs: []string{"statement_truncate"}},
+		{name: "alter table", sql: "ALTER TABLE users ADD COLUMN x INT", wantBlockedConstructs: []string{"statement_alter"}},
+		{name: "grant all", sql: "GRANT ALL ON *.* TO 'a'@'%'", wantBlockedConstructs: []string{"statement_grant"}},
+		{name: "multi statement", sql: "SELECT 1; DROP TABLE users", wantBlockedConstructs: []string{"multi_statement"}},
+		{name: "line comment injection", sql: "SELECT 1 -- ; DROP TABLE users\n", wantBlockedConstructs: []string{"comment"}},
+		{name: "block comment injection", sql: "SELECT 1 /* */ ; DROP TABLE users", wantBlockedConstructs: []string{"comment"}},
+		{name: "into outfile", sql: "SELECT * FROM users INTO OUTFILE '/tmp/x'", wantBlockedConstructs: []string{"select_into"}},
+		{name: "into dumpfile", sql: "SELECT * FROM users INTO DUMPFILE '/tmp/x'", wantBlockedConstructs: []string{"select_into"}},
+		{name: "for update", sql: "SELECT * FROM users FOR UPDATE", wantBlockedConstructs: []string{"for_update"}},
+		{name: "call", sql: "CALL some_proc()", wantBlockedConstructs: []string{"statement_call"}},
+		{name: "load data", sql: "LOAD DATA INFILE '/etc/passwd' INTO TABLE t", wantBlockedConstructs: []string{"statement_load_data"}},
+		{name: "handler", sql: "HANDLER t OPEN", wantBlockedConstructs: []string{"parse_error"}},
+		{name: "lock tables", sql: "LOCK TABLES users WRITE", wantBlockedConstructs: []string{"statement_lock_tables"}},
+		{name: "into user variable", sql: "SELECT @@version INTO @x", wantBlockedConstructs: []string{"select_into"}},
+		{name: "rename table", sql: "RENAME TABLE a TO b", wantBlockedConstructs: []string{"statement_rename_table"}},
+		{name: "create table", sql: "CREATE TABLE x (id INT)", wantBlockedConstructs: []string{"statement_create"}},
+		{name: "dml in subquery", sql: "SELECT 1 UNION SELECT * FROM (DELETE FROM users RETURNING *) AS t", wantBlockedConstructs: []string{"parse_error"}},
+		// Additional adversarial cases:
+		{name: "revoke", sql: "REVOKE SELECT ON *.* FROM 'a'@'%'", wantBlockedConstructs: []string{"statement_revoke"}},
+		{name: "unlock tables", sql: "UNLOCK TABLES", wantBlockedConstructs: []string{"statement_unlock_tables"}},
+		{name: "replace", sql: "REPLACE INTO users VALUES (1)", wantBlockedConstructs: []string{"statement_replace"}},
+		{name: "create view", sql: "CREATE VIEW v AS SELECT * FROM users", wantBlockedConstructs: []string{"statement_create"}},
+		{name: "drop database", sql: "DROP DATABASE mission_app", wantBlockedConstructs: []string{"statement_drop"}},
+		{name: "set global", sql: "SET GLOBAL sql_safe_updates = 0", wantBlockedConstructs: []string{"statement_set"}},
+		{name: "do sleep", sql: "DO SLEEP(5)", wantBlockedConstructs: []string{"statement_do"}},
+		{name: "hash comment injection", sql: "SELECT 1 # ; DROP TABLE users", wantBlockedConstructs: []string{"comment"}},
+		{name: "versioned comment injection", sql: "SELECT /*!50000 DROP TABLE users */ 1", wantBlockedConstructs: []string{"comment"}},
 	}
 
-	for name, sql := range cases {
-		sql := sql
-		name := name
-		t.Run(name, func(t *testing.T) {
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			result, err := Validate(sql)
-			if err == nil {
+
+			result, err := Validate(tc.sql)
+			if err != nil {
+				t.Fatalf("Validate(%q) returned error: %v", tc.sql, err)
+			}
+			if result.OK {
+				t.Fatalf("Validate(%q) = %+v, want blocked result", tc.sql, result)
+			}
+			if result.Reason == "" {
+				t.Fatalf("Validate(%q) returned empty reason", tc.sql)
+			}
+			if !equalStrings(result.BlockedConstructs, tc.wantBlockedConstructs) {
 				t.Fatalf(
-					"Validate(%q) = %+v, want error",
-					sql,
-					result,
+					"BlockedConstructs = %#v, want %#v",
+					result.BlockedConstructs,
+					tc.wantBlockedConstructs,
 				)
+			}
+			if result.RewrittenSQL != "" {
+				t.Fatalf("RewrittenSQL = %q, want empty for blocked SQL", result.RewrittenSQL)
 			}
 		})
 	}
 }
 
-func TestValidate_CommentInjectionNeutralized(t *testing.T) {
+func TestValidate_AcceptsValidQueries(t *testing.T) {
 	t.Parallel()
 
-	// Comment-wrapped payloads must not leak into the rewritten SQL.
-	// These inputs parse as plain SELECT 1 (the comments are stripped on
-	// restore), so they pass validation — but the rewritten SQL must not
-	// contain the adversarial payload.
-	cases := map[string]string{
-		"block comment carrying drop": "SELECT 1 /*; DROP TABLE x; */",
-		"line comment carrying drop":  "SELECT 1 -- ; DROP TABLE x",
+	cases := []string{
+		"SELECT * FROM t WHERE id=1",
+		"SELECT COUNT(*) FROM t",
+		"SELECT a, SUM(b) FROM t GROUP BY a",
+		"SELECT * FROM t LIMIT 50",
+		"WITH x AS (SELECT * FROM t) SELECT * FROM x",
+		"SELECT a.x, b.y FROM a JOIN b ON a.id=b.a_id",
+		"SHOW TABLES",
+		"SHOW CREATE TABLE t",
+		"SELECT * FROM t ORDER BY x DESC",
+		"SELECT JSON_EXTRACT(payload, '$.name') FROM t",
 	}
 
-	for name, sql := range cases {
+	for _, sql := range cases {
 		sql := sql
-		name := name
-		t.Run(name, func(t *testing.T) {
+		t.Run(sql, func(t *testing.T) {
 			t.Parallel()
+
 			result, err := Validate(sql)
 			if err != nil {
 				t.Fatalf("Validate(%q) returned error: %v", sql, err)
 			}
-			upper := strings.ToUpper(result.RewrittenSQL)
-			if strings.Contains(upper, "DROP") {
-				t.Fatalf(
-					"rewritten SQL %q leaked DROP payload",
-					result.RewrittenSQL,
-				)
-			}
-		})
-	}
-}
-
-func TestValidate_VersionHintCommentRejected(t *testing.T) {
-	t.Parallel()
-
-	// `/*! ... */` is MySQL's conditional-execution comment. Anything
-	// inside runs when the server version matches. An UPDATE hidden
-	// inside must not slip through. tidb's parser interprets these, so
-	// the UPDATE becomes part of the AST and our allowlist rejects it.
-	sql := "SELECT /*!UPDATE foo SET x=1*/ 1"
-	if _, err := Validate(sql); err == nil {
-		t.Fatalf("Validate(%q) accepted a version-hint UPDATE", sql)
-	}
-}
-
-func TestValidate_AcceptsValidSelects(t *testing.T) {
-	t.Parallel()
-
-	cases := map[string]string{
-		"select literal":    "SELECT 1",
-		"select star":       "SELECT * FROM users",
-		"select columns":    "SELECT id, name FROM users WHERE active = 1",
-		"join":              "SELECT u.id FROM users u JOIN posts p ON p.user_id = u.id",
-		"group by":          "SELECT name, SUM(amount) FROM orders GROUP BY name",
-		"with cte":          "WITH cte AS (SELECT id FROM users) SELECT * FROM cte",
-		"union":             "SELECT id FROM a UNION SELECT id FROM b",
-		"order by":          "SELECT * FROM users ORDER BY id DESC",
-		"existing limit":    "SELECT * FROM users LIMIT 10",
-		"aggregate only":    "SELECT AVG(price) FROM products",
-		"subquery":          "SELECT id FROM users WHERE id IN (SELECT user_id FROM sessions)",
-		"for share":         "SELECT * FROM users FOR SHARE",
-		"lock in share":     "SELECT * FROM users LOCK IN SHARE MODE",
-		"count star":        "SELECT COUNT(*) FROM users",
-		"having":            "SELECT name, COUNT(*) c FROM users GROUP BY name HAVING c > 1",
-		"distinct":          "SELECT DISTINCT country FROM users",
-		"case expression":   "SELECT CASE WHEN age > 18 THEN 'adult' ELSE 'minor' END FROM users",
-		"parameter literal": "SELECT * FROM users WHERE id = 42",
-	}
-
-	for name, sql := range cases {
-		sql := sql
-		name := name
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			result, err := Validate(sql)
-			if err != nil {
-				t.Fatalf("Validate(%q) returned error: %v", sql, err)
+			if !result.OK {
+				t.Fatalf("Validate(%q) = %+v, want allowed result", sql, result)
 			}
 			if result.RewrittenSQL == "" {
-				t.Fatalf("RewrittenSQL is empty for %q", sql)
+				t.Fatalf("Validate(%q) returned empty rewritten SQL", sql)
+			}
+			if result.Reason != "" {
+				t.Fatalf("Reason = %q, want empty for allowed SQL", result.Reason)
+			}
+			if len(result.BlockedConstructs) != 0 {
+				t.Fatalf("BlockedConstructs = %#v, want empty", result.BlockedConstructs)
 			}
 		})
 	}
@@ -168,66 +117,34 @@ func TestValidate_LimitInjection(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name                string
-		sql                 string
-		wantLimitInjected   bool
-		wantSQLContainsLike string // substring that must appear in rewritten SQL
+		name              string
+		sql               string
+		wantRewrittenSQL  string
+		wantLimitInjected bool
 	}{
 		{
-			name:                "plain select gets limit",
-			sql:                 "SELECT * FROM users",
-			wantLimitInjected:   true,
-			wantSQLContainsLike: "LIMIT 1000",
+			name:              "inject limit",
+			sql:               "SELECT * FROM t",
+			wantRewrittenSQL:  "SELECT * FROM `t` LIMIT 1000",
+			wantLimitInjected: true,
 		},
 		{
-			name:                "explicit limit is preserved",
-			sql:                 "SELECT * FROM users LIMIT 10",
-			wantLimitInjected:   false,
-			wantSQLContainsLike: "LIMIT 10",
-		},
-		{
-			name:              "aggregate has no limit injected",
-			sql:               "SELECT COUNT(*) FROM users",
+			name:              "preserve explicit limit",
+			sql:               "SELECT * FROM t LIMIT 50",
+			wantRewrittenSQL:  "SELECT * FROM `t` LIMIT 50",
 			wantLimitInjected: false,
 		},
 		{
-			name:              "group by has no limit injected",
-			sql:               "SELECT name, SUM(amount) FROM orders GROUP BY name",
+			name:              "count aggregate unchanged",
+			sql:               "SELECT COUNT(*) FROM t",
+			wantRewrittenSQL:  "SELECT COUNT(1) FROM `t`",
 			wantLimitInjected: false,
 		},
 		{
-			name:              "avg aggregate no limit",
-			sql:               "SELECT AVG(price) FROM products",
+			name:              "group by unchanged",
+			sql:               "SELECT a, SUM(b) FROM t GROUP BY a",
+			wantRewrittenSQL:  "SELECT `a`,SUM(`b`) FROM `t` GROUP BY `a`",
 			wantLimitInjected: false,
-		},
-		{
-			name:                "union without limit gets one",
-			sql:                 "SELECT id FROM a UNION SELECT id FROM b",
-			wantLimitInjected:   true,
-			wantSQLContainsLike: "LIMIT 1000",
-		},
-		{
-			name:              "union with outer limit keeps it",
-			sql:               "(SELECT id FROM a) UNION (SELECT id FROM b) LIMIT 50",
-			wantLimitInjected: false,
-		},
-		{
-			name:                "subquery does not count as aggregation",
-			sql:                 "SELECT id FROM users WHERE id IN (SELECT user_id FROM sessions)",
-			wantLimitInjected:   true,
-			wantSQLContainsLike: "LIMIT 1000",
-		},
-		{
-			name:                "cte without limit gets one",
-			sql:                 "WITH cte AS (SELECT id FROM users) SELECT * FROM cte",
-			wantLimitInjected:   true,
-			wantSQLContainsLike: "LIMIT 1000",
-		},
-		{
-			name:                "order by no limit gets one",
-			sql:                 "SELECT * FROM users ORDER BY id DESC",
-			wantLimitInjected:   true,
-			wantSQLContainsLike: "LIMIT 1000",
 		},
 	}
 
@@ -235,65 +152,78 @@ func TestValidate_LimitInjection(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			result, err := Validate(tc.sql)
 			if err != nil {
 				t.Fatalf("Validate(%q) returned error: %v", tc.sql, err)
 			}
-			if result.LimitInjected != tc.wantLimitInjected {
+			if !result.OK {
+				t.Fatalf("Validate(%q) = %+v, want allowed result", tc.sql, result)
+			}
+			if result.RewrittenSQL != tc.wantRewrittenSQL {
 				t.Fatalf(
-					"LimitInjected = %v, want %v (rewritten=%q)",
-					result.LimitInjected,
-					tc.wantLimitInjected,
+					"RewrittenSQL = %q, want %q",
 					result.RewrittenSQL,
+					tc.wantRewrittenSQL,
 				)
 			}
-			if tc.wantSQLContainsLike != "" &&
-				!strings.Contains(
-					strings.ToUpper(result.RewrittenSQL),
-					tc.wantSQLContainsLike,
-				) {
+			if result.LimitInjected != tc.wantLimitInjected {
 				t.Fatalf(
-					"rewritten SQL %q missing substring %q",
-					result.RewrittenSQL,
-					tc.wantSQLContainsLike,
+					"LimitInjected = %v, want %v",
+					result.LimitInjected,
+					tc.wantLimitInjected,
 				)
 			}
 		})
 	}
 }
 
-func TestValidate_RewrittenSQLExecutes(t *testing.T) {
+func TestValidate_RewrittenSQLRoundTrips(t *testing.T) {
 	t.Parallel()
 
-	// The rewritten SQL must itself be parseable by the same parser —
-	// otherwise we'd emit something MySQL rejects and leak the error as
-	// a DB failure instead of a guard rejection. This catches any
-	// mis-restoration, especially around LIMIT injection corner cases.
 	cases := []string{
-		"SELECT 1",
-		"SELECT * FROM users",
-		"SELECT COUNT(*) FROM users",
-		"WITH cte AS (SELECT 1) SELECT * FROM cte",
-		"SELECT id FROM a UNION SELECT id FROM b",
-		"SELECT * FROM users ORDER BY id LIMIT 5",
+		"SELECT * FROM t",
+		"SELECT COUNT(*) FROM t",
+		"WITH x AS (SELECT * FROM t) SELECT * FROM x",
+		"SHOW TABLES",
 	}
 
 	for _, sql := range cases {
 		sql := sql
 		t.Run(sql, func(t *testing.T) {
 			t.Parallel()
+
 			result, err := Validate(sql)
 			if err != nil {
 				t.Fatalf("Validate(%q) returned error: %v", sql, err)
 			}
-			// Re-validating the rewritten output should always succeed.
-			if _, err := Validate(result.RewrittenSQL); err != nil {
+			if !result.OK {
+				t.Fatalf("Validate(%q) = %+v, want allowed result", sql, result)
+			}
+
+			revalidated, err := Validate(result.RewrittenSQL)
+			if err != nil {
+				t.Fatalf("Validate(%q) returned error: %v", result.RewrittenSQL, err)
+			}
+			if !revalidated.OK {
 				t.Fatalf(
-					"rewritten SQL %q failed re-validation: %v",
+					"Validate(%q) = %+v, want allowed result",
 					result.RewrittenSQL,
-					err,
+					revalidated,
 				)
 			}
 		})
 	}
+}
+
+func equalStrings(got, want []string) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
 }

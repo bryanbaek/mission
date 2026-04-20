@@ -1,15 +1,18 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"log/slog"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 type fakeCommandStream struct {
@@ -482,6 +485,83 @@ func TestAgentServiceHandleExecuteQueryError(t *testing.T) {
 	}
 	if submitted.Error != "syntax error" {
 		t.Fatalf("submitted error = %q, want syntax error", submitted.Error)
+	}
+}
+
+func TestAgentServiceHandleExecuteQueryPermissionDenied(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	var submitted SubmitExecuteQueryResultRequest
+	var logs bytes.Buffer
+	service, err := NewAgentService(
+		fakeControlPlaneClient{
+			submitQueryFn: func(
+				_ context.Context,
+				req SubmitExecuteQueryResultRequest,
+			) error {
+				submitted = req
+				return nil
+			},
+		},
+		AgentServiceConfig{
+			Hostname: "host-a",
+			Now: func() time.Time {
+				return now
+			},
+			Logger: slog.New(slog.NewTextHandler(&logs, nil)),
+			QueryExecutor: fakeQueryExecutor{
+				executeFn: func(context.Context, string) (QueryResult, error) {
+					return QueryResult{}, queryerror.PermissionDenied(
+						"SQL comments are not allowed",
+						[]string{"comment"},
+					)
+				},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewAgentService returned error: %v", err)
+	}
+
+	err = service.handleCommand(context.Background(), ControlMessage{
+		SessionID: "session-1",
+		CommandID: "command-1",
+		Kind:      CommandKindExecuteQuery,
+		SQL:       "SELECT 1 # injected",
+	})
+	if err != nil {
+		t.Fatalf("handleCommand returned error: %v", err)
+	}
+
+	if submitted.ErrorCode != queryerror.CodePermissionDenied {
+		t.Fatalf(
+			"ErrorCode = %q, want %q",
+			submitted.ErrorCode,
+			queryerror.CodePermissionDenied,
+		)
+	}
+	if submitted.ErrorReason != "SQL comments are not allowed" {
+		t.Fatalf("ErrorReason = %q, want SQL comments are not allowed", submitted.ErrorReason)
+	}
+	if len(submitted.BlockedConstructs) != 1 || submitted.BlockedConstructs[0] != "comment" {
+		t.Fatalf("BlockedConstructs = %#v, want [comment]", submitted.BlockedConstructs)
+	}
+	if submitted.Error != "SQL comments are not allowed" {
+		t.Fatalf("Error = %q, want SQL comments are not allowed", submitted.Error)
+	}
+
+	logOutput := logs.String()
+	for _, want := range []string{
+		"query rejected by sqlguard",
+		"session_id=session-1",
+		"command_id=command-1",
+		"reason=\"SQL comments are not allowed\"",
+		"blocked_constructs=[comment]",
+	} {
+		if !strings.Contains(logOutput, want) {
+			t.Fatalf("log output %q missing %q", logOutput, want)
+		}
 	}
 }
 

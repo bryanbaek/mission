@@ -13,6 +13,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 type recordingAgentService struct {
@@ -149,6 +150,33 @@ func TestClientRoundTripsRequests(t *testing.T) {
 	}
 	if service.lastResult.GetExecuteQuery().GetRows()[0].GetValues()["label"].GetStringValue() != "ok" {
 		t.Fatalf("label = %q, want ok", service.lastResult.GetExecuteQuery().GetRows()[0].GetValues()["label"].GetStringValue())
+	}
+
+	if err := client.SubmitExecuteQueryResult(
+		context.Background(),
+		edgecontroller.SubmitExecuteQueryResultRequest{
+			SessionID:         "session-1",
+			CommandID:         "command-2b",
+			CompletedAt:       time.Unix(1_700_000_003, 0).UTC(),
+			ElapsedMS:         2,
+			DatabaseUser:      "mission_ro@%",
+			DatabaseName:      "mission_app",
+			Error:             "SQL comments are not allowed",
+			ErrorCode:         queryerror.CodePermissionDenied,
+			ErrorReason:       "SQL comments are not allowed",
+			BlockedConstructs: []string{"comment"},
+		},
+	); err != nil {
+		t.Fatalf("SubmitExecuteQueryResult returned error: %v", err)
+	}
+	if service.lastResult.GetExecuteQuery().GetErrorCode() != agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED {
+		t.Fatalf("ErrorCode = %v, want permission denied", service.lastResult.GetExecuteQuery().GetErrorCode())
+	}
+	if service.lastResult.GetExecuteQuery().GetErrorReason() != "SQL comments are not allowed" {
+		t.Fatalf("ErrorReason = %q, want SQL comments are not allowed", service.lastResult.GetExecuteQuery().GetErrorReason())
+	}
+	if got := service.lastResult.GetExecuteQuery().GetBlockedConstructs(); len(got) != 1 || got[0] != "comment" {
+		t.Fatalf("BlockedConstructs = %#v, want [comment]", got)
 	}
 
 	if err := client.SubmitIntrospectSchemaResult(

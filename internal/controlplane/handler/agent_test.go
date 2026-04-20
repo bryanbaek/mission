@@ -21,6 +21,7 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 func routeRequest(
@@ -291,6 +292,92 @@ func TestAgentHandlerExecuteQueryResult(t *testing.T) {
 		}
 		if got := result.Rows[0]["1"]; got != float64(1) {
 			t.Fatalf("row value = %#v, want 1", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for query result")
+	}
+}
+
+func TestAgentHandlerExecuteQueryPermissionDeniedRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	tenantID := uuid.New()
+	manager := controller.NewAgentSessionManager(controller.AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	handler := NewAgentHandler(manager)
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: tenantID,
+		Label:    "edge-1",
+	}
+	stream, err := manager.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("RegisterSession returned error: %v", err)
+	}
+
+	agentCtx := auth.WithAgent(context.Background(), auth.Agent{
+		TokenID:  token.ID,
+		TenantID: token.TenantID,
+		Label:    token.Label,
+	})
+
+	resultCh := make(chan controller.AgentExecuteQueryResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		result, queryErr := manager.ExecuteQuery(
+			context.Background(),
+			tenantID,
+			"SELECT 1 # injected",
+		)
+		if queryErr != nil {
+			errCh <- queryErr
+			return
+		}
+		resultCh <- result
+	}()
+
+	command := <-stream.Commands
+	if command.Kind != controller.AgentCommandKindExecuteQuery {
+		t.Fatalf("Kind = %q, want execute_query", command.Kind)
+	}
+
+	_, err = handler.SubmitCommandResult(
+		agentCtx,
+		connect.NewRequest(&agentv1.SubmitCommandResultRequest{
+			SessionId:   "session-1",
+			CommandId:   command.CommandID,
+			CompletedAt: timestamppb.New(now.Add(time.Second)),
+			Result: &agentv1.SubmitCommandResultRequest_ExecuteQuery{
+				ExecuteQuery: &agentv1.ExecuteQueryResult{
+					ElapsedMs:         4,
+					DatabaseUser:      "mission_ro@%",
+					DatabaseName:      "mission_app",
+					Error:             "SQL comments are not allowed",
+					ErrorCode:         agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED,
+					ErrorReason:       "SQL comments are not allowed",
+					BlockedConstructs: []string{"comment"},
+				},
+			},
+		}),
+	)
+	if err != nil {
+		t.Fatalf("SubmitCommandResult returned error: %v", err)
+	}
+
+	select {
+	case queryErr := <-errCh:
+		t.Fatalf("ExecuteQuery returned error: %v", queryErr)
+	case result := <-resultCh:
+		if result.ErrorCode != queryerror.CodePermissionDenied {
+			t.Fatalf("ErrorCode = %q, want %q", result.ErrorCode, queryerror.CodePermissionDenied)
+		}
+		if result.ErrorReason != "SQL comments are not allowed" {
+			t.Fatalf("ErrorReason = %q, want SQL comments are not allowed", result.ErrorReason)
+		}
+		if len(result.BlockedConstructs) != 1 || result.BlockedConstructs[0] != "comment" {
+			t.Fatalf("BlockedConstructs = %#v, want [comment]", result.BlockedConstructs)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for query result")

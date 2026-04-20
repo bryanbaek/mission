@@ -23,6 +23,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ExecuteQueryErrorCode int32
+
+const (
+	ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED       ExecuteQueryErrorCode = 0
+	ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED ExecuteQueryErrorCode = 1
+	ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_INTERNAL          ExecuteQueryErrorCode = 2
+)
+
+// Enum value maps for ExecuteQueryErrorCode.
+var (
+	ExecuteQueryErrorCode_name = map[int32]string{
+		0: "EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED",
+		1: "EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED",
+		2: "EXECUTE_QUERY_ERROR_CODE_INTERNAL",
+	}
+	ExecuteQueryErrorCode_value = map[string]int32{
+		"EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED":       0,
+		"EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED": 1,
+		"EXECUTE_QUERY_ERROR_CODE_INTERNAL":          2,
+	}
+)
+
+func (x ExecuteQueryErrorCode) Enum() *ExecuteQueryErrorCode {
+	p := new(ExecuteQueryErrorCode)
+	*p = x
+	return p
+}
+
+func (x ExecuteQueryErrorCode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ExecuteQueryErrorCode) Descriptor() protoreflect.EnumDescriptor {
+	return file_agent_v1_agent_proto_enumTypes[0].Descriptor()
+}
+
+func (ExecuteQueryErrorCode) Type() protoreflect.EnumType {
+	return &file_agent_v1_agent_proto_enumTypes[0]
+}
+
+func (x ExecuteQueryErrorCode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ExecuteQueryErrorCode.Descriptor instead.
+func (ExecuteQueryErrorCode) EnumDescriptor() ([]byte, []int) {
+	return file_agent_v1_agent_proto_rawDescGZIP(), []int{0}
+}
+
 type OpenCommandStreamRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
@@ -942,15 +991,18 @@ func (x *ExecuteQueryRow) GetValues() map[string]*structpb.Value {
 }
 
 type ExecuteQueryResult struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Columns       []string               `protobuf:"bytes,1,rep,name=columns,proto3" json:"columns,omitempty"`
-	Rows          []*ExecuteQueryRow     `protobuf:"bytes,2,rep,name=rows,proto3" json:"rows,omitempty"`
-	ElapsedMs     int64                  `protobuf:"varint,3,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
-	DatabaseUser  string                 `protobuf:"bytes,4,opt,name=database_user,json=databaseUser,proto3" json:"database_user,omitempty"`
-	DatabaseName  string                 `protobuf:"bytes,5,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
-	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Columns           []string               `protobuf:"bytes,1,rep,name=columns,proto3" json:"columns,omitempty"`
+	Rows              []*ExecuteQueryRow     `protobuf:"bytes,2,rep,name=rows,proto3" json:"rows,omitempty"`
+	ElapsedMs         int64                  `protobuf:"varint,3,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
+	DatabaseUser      string                 `protobuf:"bytes,4,opt,name=database_user,json=databaseUser,proto3" json:"database_user,omitempty"`
+	DatabaseName      string                 `protobuf:"bytes,5,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
+	Error             string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	ErrorCode         ExecuteQueryErrorCode  `protobuf:"varint,7,opt,name=error_code,json=errorCode,proto3,enum=agent.v1.ExecuteQueryErrorCode" json:"error_code,omitempty"`
+	ErrorReason       string                 `protobuf:"bytes,8,opt,name=error_reason,json=errorReason,proto3" json:"error_reason,omitempty"`
+	BlockedConstructs []string               `protobuf:"bytes,9,rep,name=blocked_constructs,json=blockedConstructs,proto3" json:"blocked_constructs,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ExecuteQueryResult) Reset() {
@@ -1023,6 +1075,27 @@ func (x *ExecuteQueryResult) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *ExecuteQueryResult) GetErrorCode() ExecuteQueryErrorCode {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED
+}
+
+func (x *ExecuteQueryResult) GetErrorReason() string {
+	if x != nil {
+		return x.ErrorReason
+	}
+	return ""
+}
+
+func (x *ExecuteQueryResult) GetBlockedConstructs() []string {
+	if x != nil {
+		return x.BlockedConstructs
+	}
+	return nil
 }
 
 type IntrospectSchemaResult struct {
@@ -1348,7 +1421,7 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x06values\x18\x01 \x03(\v2%.agent.v1.ExecuteQueryRow.ValuesEntryR\x06values\x1aQ\n" +
 	"\vValuesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
-	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"\xdc\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01\"\xee\x02\n" +
 	"\x12ExecuteQueryResult\x12\x18\n" +
 	"\acolumns\x18\x01 \x03(\tR\acolumns\x12-\n" +
 	"\x04rows\x18\x02 \x03(\v2\x19.agent.v1.ExecuteQueryRowR\x04rows\x12\x1d\n" +
@@ -1356,7 +1429,11 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"elapsed_ms\x18\x03 \x01(\x03R\telapsedMs\x12#\n" +
 	"\rdatabase_user\x18\x04 \x01(\tR\fdatabaseUser\x12#\n" +
 	"\rdatabase_name\x18\x05 \x01(\tR\fdatabaseName\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\"\xc5\x01\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x12>\n" +
+	"\n" +
+	"error_code\x18\a \x01(\x0e2\x1f.agent.v1.ExecuteQueryErrorCodeR\terrorCode\x12!\n" +
+	"\ferror_reason\x18\b \x01(\tR\verrorReason\x12-\n" +
+	"\x12blocked_constructs\x18\t \x03(\tR\x11blockedConstructs\"\xc5\x01\n" +
 	"\x16IntrospectSchemaResult\x12,\n" +
 	"\x06schema\x18\x01 \x01(\v2\x14.agent.v1.SchemaBlobR\x06schema\x12\x1d\n" +
 	"\n" +
@@ -1375,7 +1452,11 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\rexecute_query\x18\v \x01(\v2\x1c.agent.v1.ExecuteQueryResultH\x00R\fexecuteQuery\x12O\n" +
 	"\x11introspect_schema\x18\f \x01(\v2 .agent.v1.IntrospectSchemaResultH\x00R\x10introspectSchemaB\b\n" +
 	"\x06result\"\x1d\n" +
-	"\x1bSubmitCommandResultResponse2\x8d\x02\n" +
+	"\x1bSubmitCommandResultResponse*\x98\x01\n" +
+	"\x15ExecuteQueryErrorCode\x12(\n" +
+	"$EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED\x10\x00\x12.\n" +
+	"*EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED\x10\x01\x12%\n" +
+	"!EXECUTE_QUERY_ERROR_CODE_INTERNAL\x10\x022\x8d\x02\n" +
 	"\fAgentService\x12S\n" +
 	"\x11OpenCommandStream\x12\".agent.v1.OpenCommandStreamRequest\x1a\x18.agent.v1.ControlMessage0\x01\x12D\n" +
 	"\tHeartbeat\x12\x1a.agent.v1.HeartbeatRequest\x1a\x1b.agent.v1.HeartbeatResponse\x12b\n" +
@@ -1395,60 +1476,63 @@ func file_agent_v1_agent_proto_rawDescGZIP() []byte {
 	return file_agent_v1_agent_proto_rawDescData
 }
 
+var file_agent_v1_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_agent_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_agent_v1_agent_proto_goTypes = []any{
-	(*OpenCommandStreamRequest)(nil),    // 0: agent.v1.OpenCommandStreamRequest
-	(*HeartbeatRequest)(nil),            // 1: agent.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil),           // 2: agent.v1.HeartbeatResponse
-	(*PingCommand)(nil),                 // 3: agent.v1.PingCommand
-	(*ExecuteQueryCommand)(nil),         // 4: agent.v1.ExecuteQueryCommand
-	(*IntrospectSchemaCommand)(nil),     // 5: agent.v1.IntrospectSchemaCommand
-	(*SchemaTable)(nil),                 // 6: agent.v1.SchemaTable
-	(*SchemaColumn)(nil),                // 7: agent.v1.SchemaColumn
-	(*SchemaPrimaryKey)(nil),            // 8: agent.v1.SchemaPrimaryKey
-	(*SchemaForeignKey)(nil),            // 9: agent.v1.SchemaForeignKey
-	(*SchemaBlob)(nil),                  // 10: agent.v1.SchemaBlob
-	(*ControlMessage)(nil),              // 11: agent.v1.ControlMessage
-	(*PingResult)(nil),                  // 12: agent.v1.PingResult
-	(*ExecuteQueryRow)(nil),             // 13: agent.v1.ExecuteQueryRow
-	(*ExecuteQueryResult)(nil),          // 14: agent.v1.ExecuteQueryResult
-	(*IntrospectSchemaResult)(nil),      // 15: agent.v1.IntrospectSchemaResult
-	(*SubmitCommandResultRequest)(nil),  // 16: agent.v1.SubmitCommandResultRequest
-	(*SubmitCommandResultResponse)(nil), // 17: agent.v1.SubmitCommandResultResponse
-	nil,                                 // 18: agent.v1.ExecuteQueryRow.ValuesEntry
-	(*timestamppb.Timestamp)(nil),       // 19: google.protobuf.Timestamp
-	(*structpb.Value)(nil),              // 20: google.protobuf.Value
+	(ExecuteQueryErrorCode)(0),          // 0: agent.v1.ExecuteQueryErrorCode
+	(*OpenCommandStreamRequest)(nil),    // 1: agent.v1.OpenCommandStreamRequest
+	(*HeartbeatRequest)(nil),            // 2: agent.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),           // 3: agent.v1.HeartbeatResponse
+	(*PingCommand)(nil),                 // 4: agent.v1.PingCommand
+	(*ExecuteQueryCommand)(nil),         // 5: agent.v1.ExecuteQueryCommand
+	(*IntrospectSchemaCommand)(nil),     // 6: agent.v1.IntrospectSchemaCommand
+	(*SchemaTable)(nil),                 // 7: agent.v1.SchemaTable
+	(*SchemaColumn)(nil),                // 8: agent.v1.SchemaColumn
+	(*SchemaPrimaryKey)(nil),            // 9: agent.v1.SchemaPrimaryKey
+	(*SchemaForeignKey)(nil),            // 10: agent.v1.SchemaForeignKey
+	(*SchemaBlob)(nil),                  // 11: agent.v1.SchemaBlob
+	(*ControlMessage)(nil),              // 12: agent.v1.ControlMessage
+	(*PingResult)(nil),                  // 13: agent.v1.PingResult
+	(*ExecuteQueryRow)(nil),             // 14: agent.v1.ExecuteQueryRow
+	(*ExecuteQueryResult)(nil),          // 15: agent.v1.ExecuteQueryResult
+	(*IntrospectSchemaResult)(nil),      // 16: agent.v1.IntrospectSchemaResult
+	(*SubmitCommandResultRequest)(nil),  // 17: agent.v1.SubmitCommandResultRequest
+	(*SubmitCommandResultResponse)(nil), // 18: agent.v1.SubmitCommandResultResponse
+	nil,                                 // 19: agent.v1.ExecuteQueryRow.ValuesEntry
+	(*timestamppb.Timestamp)(nil),       // 20: google.protobuf.Timestamp
+	(*structpb.Value)(nil),              // 21: google.protobuf.Value
 }
 var file_agent_v1_agent_proto_depIdxs = []int32{
-	19, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
-	19, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
-	6,  // 2: agent.v1.SchemaBlob.tables:type_name -> agent.v1.SchemaTable
-	7,  // 3: agent.v1.SchemaBlob.columns:type_name -> agent.v1.SchemaColumn
-	8,  // 4: agent.v1.SchemaBlob.primary_keys:type_name -> agent.v1.SchemaPrimaryKey
-	9,  // 5: agent.v1.SchemaBlob.foreign_keys:type_name -> agent.v1.SchemaForeignKey
-	19, // 6: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
-	3,  // 7: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
-	4,  // 8: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
-	5,  // 9: agent.v1.ControlMessage.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
-	18, // 10: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
-	13, // 11: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
-	10, // 12: agent.v1.IntrospectSchemaResult.schema:type_name -> agent.v1.SchemaBlob
-	19, // 13: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
-	12, // 14: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
-	14, // 15: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
-	15, // 16: agent.v1.SubmitCommandResultRequest.introspect_schema:type_name -> agent.v1.IntrospectSchemaResult
-	20, // 17: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
-	0,  // 18: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
-	1,  // 19: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
-	16, // 20: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
-	11, // 21: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
-	2,  // 22: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
-	17, // 23: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
-	21, // [21:24] is the sub-list for method output_type
-	18, // [18:21] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	20, // 0: agent.v1.OpenCommandStreamRequest.started_at:type_name -> google.protobuf.Timestamp
+	20, // 1: agent.v1.HeartbeatRequest.sent_at:type_name -> google.protobuf.Timestamp
+	7,  // 2: agent.v1.SchemaBlob.tables:type_name -> agent.v1.SchemaTable
+	8,  // 3: agent.v1.SchemaBlob.columns:type_name -> agent.v1.SchemaColumn
+	9,  // 4: agent.v1.SchemaBlob.primary_keys:type_name -> agent.v1.SchemaPrimaryKey
+	10, // 5: agent.v1.SchemaBlob.foreign_keys:type_name -> agent.v1.SchemaForeignKey
+	20, // 6: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
+	4,  // 7: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
+	5,  // 8: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
+	6,  // 9: agent.v1.ControlMessage.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
+	19, // 10: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
+	14, // 11: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
+	0,  // 12: agent.v1.ExecuteQueryResult.error_code:type_name -> agent.v1.ExecuteQueryErrorCode
+	11, // 13: agent.v1.IntrospectSchemaResult.schema:type_name -> agent.v1.SchemaBlob
+	20, // 14: agent.v1.SubmitCommandResultRequest.completed_at:type_name -> google.protobuf.Timestamp
+	13, // 15: agent.v1.SubmitCommandResultRequest.ping:type_name -> agent.v1.PingResult
+	15, // 16: agent.v1.SubmitCommandResultRequest.execute_query:type_name -> agent.v1.ExecuteQueryResult
+	16, // 17: agent.v1.SubmitCommandResultRequest.introspect_schema:type_name -> agent.v1.IntrospectSchemaResult
+	21, // 18: agent.v1.ExecuteQueryRow.ValuesEntry.value:type_name -> google.protobuf.Value
+	1,  // 19: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
+	2,  // 20: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
+	17, // 21: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
+	12, // 22: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
+	3,  // 23: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
+	18, // 24: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
+	22, // [22:25] is the sub-list for method output_type
+	19, // [19:22] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_agent_v1_agent_proto_init() }
@@ -1471,13 +1555,14 @@ func file_agent_v1_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agent_v1_agent_proto_rawDesc), len(file_agent_v1_agent_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_agent_v1_agent_proto_goTypes,
 		DependencyIndexes: file_agent_v1_agent_proto_depIdxs,
+		EnumInfos:         file_agent_v1_agent_proto_enumTypes,
 		MessageInfos:      file_agent_v1_agent_proto_msgTypes,
 	}.Build()
 	File_agent_v1_agent_proto = out.File

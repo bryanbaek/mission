@@ -13,6 +13,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	edgecontroller "github.com/bryanbaek/mission/internal/edgeagent/controller"
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 type Client struct {
@@ -225,12 +226,15 @@ func queryResultToProto(
 	}
 
 	return &agentv1.ExecuteQueryResult{
-		Columns:      append([]string(nil), req.Columns...),
-		Rows:         rows,
-		ElapsedMs:    req.ElapsedMS,
-		DatabaseUser: req.DatabaseUser,
-		DatabaseName: req.DatabaseName,
-		Error:        req.Error,
+		Columns:           append([]string(nil), req.Columns...),
+		Rows:              rows,
+		ElapsedMs:         req.ElapsedMS,
+		DatabaseUser:      req.DatabaseUser,
+		DatabaseName:      req.DatabaseName,
+		Error:             req.Error,
+		ErrorCode:         queryErrorCodeToProto(req.ErrorCode),
+		ErrorReason:       req.ErrorReason,
+		BlockedConstructs: append([]string(nil), req.BlockedConstructs...),
 	}, nil
 }
 
@@ -298,4 +302,15 @@ func schemaBlobToProto(blob introspect.SchemaBlob) *agentv1.SchemaBlob {
 		})
 	}
 	return out
+}
+
+func queryErrorCodeToProto(code queryerror.Code) agentv1.ExecuteQueryErrorCode {
+	switch code {
+	case queryerror.CodePermissionDenied:
+		return agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED
+	case queryerror.CodeInternal:
+		return agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_INTERNAL
+	default:
+		return agentv1.ExecuteQueryErrorCode_EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED
+	}
 }

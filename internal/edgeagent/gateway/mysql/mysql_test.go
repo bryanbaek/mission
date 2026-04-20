@@ -7,7 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	mysql "github.com/go-sql-driver/mysql"
+
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 func TestNormalizeDSN(t *testing.T) {
@@ -152,6 +155,41 @@ func TestWithTimeoutCap(t *testing.T) {
 	defer cancelSame()
 	if _, ok := same.Deadline(); !ok {
 		t.Fatal("withTimeoutCap should preserve an existing earlier deadline")
+	}
+}
+
+func TestExecuteQueryRejectsBlockedSQLBeforeDB(t *testing.T) {
+	t.Parallel()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock.New returned error: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	gateway := &Gateway{db: db}
+	_, err = gateway.ExecuteQuery(context.Background(), "SELECT 1 # injected")
+	if err == nil {
+		t.Fatal("ExecuteQuery returned nil error for blocked SQL")
+	}
+
+	var queryErr *queryerror.Error
+	if !errors.As(err, &queryErr) {
+		t.Fatalf("err = %v, want queryerror.Error", err)
+	}
+	if queryErr.Code != queryerror.CodePermissionDenied {
+		t.Fatalf("Code = %q, want %q", queryErr.Code, queryerror.CodePermissionDenied)
+	}
+	if queryErr.Reason != "SQL comments are not allowed" {
+		t.Fatalf("Reason = %q, want SQL comments are not allowed", queryErr.Reason)
+	}
+	if len(queryErr.BlockedConstructs) != 1 || queryErr.BlockedConstructs[0] != "comment" {
+		t.Fatalf("BlockedConstructs = %#v, want [comment]", queryErr.BlockedConstructs)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unexpected database interaction: %v", err)
 	}
 }
 

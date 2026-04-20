@@ -21,7 +21,7 @@ import (
 // --- fakes for controller deps ---
 
 type fakeTenantStore struct {
-	tenants     map[string][]model.Tenant // clerkUserID → tenants
+	tenants     map[string][]model.Tenant   // clerkUserID → tenants
 	memberships map[string]model.TenantUser // "tenantID:clerkUserID" → membership
 }
 

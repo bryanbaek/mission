@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 type CommandKind string
@@ -42,15 +43,18 @@ type SubmitPingResultRequest struct {
 }
 
 type SubmitExecuteQueryResultRequest struct {
-	SessionID    string
-	CommandID    string
-	CompletedAt  time.Time
-	Columns      []string
-	Rows         []map[string]any
-	ElapsedMS    int64
-	DatabaseUser string
-	DatabaseName string
-	Error        string
+	SessionID         string
+	CommandID         string
+	CompletedAt       time.Time
+	Columns           []string
+	Rows              []map[string]any
+	ElapsedMS         int64
+	DatabaseUser      string
+	DatabaseName      string
+	Error             string
+	ErrorCode         queryerror.Code
+	ErrorReason       string
+	BlockedConstructs []string
 }
 
 type SubmitIntrospectSchemaResultRequest struct {
@@ -388,15 +392,38 @@ func (s *AgentService) handleExecuteQuery(
 	startedAt := s.now().UTC()
 	result, err := s.queryExecutor.ExecuteQuery(ctx, command.SQL)
 	if err != nil {
+		var queryErr *queryerror.Error
+		req := SubmitExecuteQueryResultRequest{
+			SessionID:   command.SessionID,
+			CommandID:   command.CommandID,
+			CompletedAt: s.now().UTC(),
+			ElapsedMS:   s.now().UTC().Sub(startedAt).Milliseconds(),
+			Error:       err.Error(),
+		}
+		if errors.As(err, &queryErr) {
+			req.ErrorCode = queryErr.Code
+			req.ErrorReason = queryErr.Reason
+			req.BlockedConstructs = append([]string(nil), queryErr.BlockedConstructs...)
+
+			if queryErr.Code == queryerror.CodePermissionDenied {
+				s.logger.Warn(
+					"query rejected by sqlguard",
+					"session_id",
+					command.SessionID,
+					"command_id",
+					command.CommandID,
+					"sql",
+					command.SQL,
+					"reason",
+					queryErr.Reason,
+					"blocked_constructs",
+					queryErr.BlockedConstructs,
+				)
+			}
+		}
 		return s.client.SubmitExecuteQueryResult(
 			ctx,
-			SubmitExecuteQueryResultRequest{
-				SessionID:   command.SessionID,
-				CommandID:   command.CommandID,
-				CompletedAt: s.now().UTC(),
-				ElapsedMS:   s.now().UTC().Sub(startedAt).Milliseconds(),
-				Error:       err.Error(),
-			},
+			req,
 		)
 	}
 

@@ -254,6 +254,9 @@ func TestAgentSessionManagerExecuteQueryRoundTrip(t *testing.T) {
 		"mission_ro@%",
 		"mission_app",
 		"",
+		"",
+		"",
+		nil,
 	); err != nil {
 		t.Fatalf("SubmitExecuteQueryResult returned error: %v", err)
 	}

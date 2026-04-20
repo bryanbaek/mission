@@ -13,6 +13,7 @@ import (
 	mysql "github.com/go-sql-driver/mysql"
 
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
+	"github.com/bryanbaek/mission/internal/queryerror"
 	"github.com/bryanbaek/mission/internal/sqlguard"
 )
 
@@ -153,7 +154,13 @@ func (g *Gateway) ExecuteQuery(
 	// is rejected here without opening a connection.
 	guarded, err := sqlguard.Validate(sqlText)
 	if err != nil {
-		return Result{}, fmt.Errorf("sqlguard reject: %w", err)
+		return Result{}, fmt.Errorf("validate sqlguard result: %w", err)
+	}
+	if !guarded.OK {
+		return Result{}, queryerror.PermissionDenied(
+			guarded.Reason,
+			guarded.BlockedConstructs,
+		)
 	}
 
 	queryCtx, cancel := withTimeoutCap(ctx, queryTimeout)

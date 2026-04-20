@@ -96,6 +96,12 @@ message ExecuteQueryRow {
   map<string, google.protobuf.Value> values = 1;
 }
 
+enum ExecuteQueryErrorCode {
+  EXECUTE_QUERY_ERROR_CODE_UNSPECIFIED = 0;
+  EXECUTE_QUERY_ERROR_CODE_PERMISSION_DENIED = 1;
+  EXECUTE_QUERY_ERROR_CODE_INTERNAL = 2;
+}
+
 message ExecuteQueryResult {
   repeated string columns = 1;
   repeated ExecuteQueryRow rows = 2;
@@ -103,6 +109,9 @@ message ExecuteQueryResult {
   string database_user = 4;
   string database_name = 5;
   string error = 6;
+  ExecuteQueryErrorCode error_code = 7;
+  string error_reason = 8;
+  repeated string blocked_constructs = 9;
 }
 
 message IntrospectSchemaResult {

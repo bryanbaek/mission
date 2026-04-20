@@ -15,6 +15,7 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 type queryMembershipChecker interface {
@@ -122,6 +123,23 @@ func (h *QueryDebugHandler) ExecuteQuery(
 		return
 	}
 
+	if result.ErrorCode == queryerror.CodePermissionDenied {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"error":              firstNonEmpty(result.ErrorReason, result.Error),
+			"error_code":         result.ErrorCode,
+			"blocked_constructs": result.BlockedConstructs,
+		})
+		return
+	}
+
+	if result.ErrorCode == queryerror.CodeInternal {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"error":      firstNonEmpty(result.ErrorReason, result.Error),
+			"error_code": result.ErrorCode,
+		})
+		return
+	}
+
 	if result.Error != "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
 			"error": result.Error,
@@ -183,4 +201,13 @@ func (h *QueryDebugHandler) authorizeOwner(
 	}
 
 	return tenantID, true
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }

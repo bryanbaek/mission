@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/bryanbaek/mission/internal/controlplane/model"
+	"github.com/bryanbaek/mission/internal/queryerror"
 )
 
 var (
@@ -64,15 +65,18 @@ type AgentPingResult struct {
 }
 
 type AgentExecuteQueryResult struct {
-	SessionID    string
-	CommandID    string
-	CompletedAt  time.Time
-	Columns      []string
-	Rows         []map[string]any
-	ElapsedMS    int64
-	DatabaseUser string
-	DatabaseName string
-	Error        string
+	SessionID         string
+	CommandID         string
+	CompletedAt       time.Time
+	Columns           []string
+	Rows              []map[string]any
+	ElapsedMS         int64
+	DatabaseUser      string
+	DatabaseName      string
+	Error             string
+	ErrorCode         queryerror.Code
+	ErrorReason       string
+	BlockedConstructs []string
 }
 
 type AgentIntrospectSchemaResult struct {
@@ -311,6 +315,9 @@ func (m *AgentSessionManager) SubmitExecuteQueryResult(
 	rows []map[string]any,
 	elapsedMS int64,
 	databaseUser, databaseName, commandError string,
+	errorCode queryerror.Code,
+	errorReason string,
+	blockedConstructs []string,
 ) error {
 	var waiter chan AgentExecuteQueryResult
 
@@ -330,15 +337,18 @@ func (m *AgentSessionManager) SubmitExecuteQueryResult(
 	m.mu.Unlock()
 
 	waiter <- AgentExecuteQueryResult{
-		SessionID:    sessionID,
-		CommandID:    commandID,
-		CompletedAt:  completedAt.UTC(),
-		Columns:      append([]string(nil), columns...),
-		Rows:         cloneRows(rows),
-		ElapsedMS:    elapsedMS,
-		DatabaseUser: databaseUser,
-		DatabaseName: databaseName,
-		Error:        commandError,
+		SessionID:         sessionID,
+		CommandID:         commandID,
+		CompletedAt:       completedAt.UTC(),
+		Columns:           append([]string(nil), columns...),
+		Rows:              cloneRows(rows),
+		ElapsedMS:         elapsedMS,
+		DatabaseUser:      databaseUser,
+		DatabaseName:      databaseName,
+		Error:             commandError,
+		ErrorCode:         errorCode,
+		ErrorReason:       errorReason,
+		BlockedConstructs: append([]string(nil), blockedConstructs...),
 	}
 	close(waiter)
 	return nil
