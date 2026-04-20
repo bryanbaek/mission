@@ -15,9 +15,7 @@ func TestLoadEmptySchema(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	t.Cleanup(func() {
-		closeAndReport(t, "sqlmock db", db.Close)
-	})
+	registerMockCleanup(t, db, mock)
 
 	expectSchemaQueries(
 		mock,
@@ -59,9 +57,6 @@ func TestLoadEmptySchema(t *testing.T) {
 	if len(blob.Tables) != 0 || len(blob.Columns) != 0 || len(blob.ForeignKeys) != 0 {
 		t.Fatalf("unexpected non-empty blob: %+v", blob)
 	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Fatalf("ExpectationsWereMet returned error: %v", err)
-	}
 }
 
 func TestLoadCapturesForeignKeysAndSorts(t *testing.T) {
@@ -71,9 +66,7 @@ func TestLoadCapturesForeignKeysAndSorts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	t.Cleanup(func() {
-		closeAndReport(t, "sqlmock db", db.Close)
-	})
+	registerMockCleanup(t, db, mock)
 
 	expectSchemaQueries(
 		mock,
@@ -134,9 +127,7 @@ func TestLoadCapturesComments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	t.Cleanup(func() {
-		closeAndReport(t, "sqlmock db", db.Close)
-	})
+	registerMockCleanup(t, db, mock)
 
 	expectSchemaQueries(
 		mock,
@@ -193,9 +184,7 @@ func TestLoadCapturesColumnTypes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock.New returned error: %v", err)
 	}
-	t.Cleanup(func() {
-		closeAndReport(t, "sqlmock db", db.Close)
-	})
+	registerMockCleanup(t, db, mock)
 
 	expectSchemaQueries(
 		mock,
@@ -267,6 +256,7 @@ func expectSchemaQueries(
 		WillReturnRows(primaryKeys)
 	mock.ExpectQuery(regexp.QuoteMeta("FROM information_schema.table_constraints tc")).
 		WillReturnRows(foreignKeys)
+	mock.ExpectClose()
 }
 
 func closeAndReport(t *testing.T, name string, closeFn func() error) {
@@ -274,4 +264,14 @@ func closeAndReport(t *testing.T, name string, closeFn func() error) {
 	if err := closeFn(); err != nil {
 		t.Errorf("close %s: %v", name, err)
 	}
+}
+
+func registerMockCleanup(t *testing.T, db interface{ Close() error }, mock sqlmock.Sqlmock) {
+	t.Helper()
+	t.Cleanup(func() {
+		closeAndReport(t, "sqlmock db", db.Close)
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("ExpectationsWereMet returned error: %v", err)
+		}
+	})
 }

@@ -53,7 +53,7 @@ func (h *AgentHandler) OpenCommandStream(
 	if err != nil {
 		return connectErrorForSession(err)
 	}
-	defer h.sessions.DisconnectSession(req.Msg.GetSessionId())
+	defer session.Disconnect()
 
 	// Connect's server-streaming client call doesn't complete until the server
 	// emits the first frame. Send an immediate payloadless ack so the agent can

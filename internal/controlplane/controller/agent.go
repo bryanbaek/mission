@@ -29,8 +29,15 @@ type AgentSessionManagerConfig struct {
 }
 
 type AgentSessionStream struct {
-	Commands chan AgentCommand
-	Done     <-chan struct{}
+	Commands   <-chan AgentCommand
+	Done       <-chan struct{}
+	disconnect func()
+}
+
+func (s AgentSessionStream) Disconnect() {
+	if s.disconnect != nil {
+		s.disconnect()
+	}
 }
 
 type AgentCommand struct {
@@ -184,6 +191,9 @@ func (m *AgentSessionManager) RegisterSession(
 	return AgentSessionStream{
 		Commands: session.commands,
 		Done:     session.done,
+		disconnect: func() {
+			m.disconnectRegisteredSession(sessionID, session)
+		},
 	}, nil
 }
 
@@ -473,6 +483,20 @@ func (m *AgentSessionManager) DisconnectSession(sessionID string) {
 
 	session, ok := m.byID[sessionID]
 	if !ok {
+		return
+	}
+	m.closeSessionLocked(session, m.now().UTC())
+}
+
+func (m *AgentSessionManager) disconnectRegisteredSession(
+	sessionID string,
+	target *agentSession,
+) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	session, ok := m.byID[sessionID]
+	if !ok || session != target {
 		return
 	}
 	m.closeSessionLocked(session, m.now().UTC())

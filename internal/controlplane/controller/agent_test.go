@@ -84,6 +84,53 @@ func TestRegisterSessionValidatesAndReplacesTokenSession(t *testing.T) {
 	}
 }
 
+func TestRegisterSessionSameIDDisconnectDoesNotCloseReplacement(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	manager := NewAgentSessionManager(AgentSessionManagerConfig{
+		Now: func() time.Time { return now },
+	})
+	token := model.TenantToken{
+		ID:       uuid.New(),
+		TenantID: uuid.New(),
+		Label:    "edge-1",
+	}
+
+	first, err := manager.RegisterSession(token, "session-1", "host-a", "v1")
+	if err != nil {
+		t.Fatalf("first RegisterSession returned error: %v", err)
+	}
+
+	now = now.Add(time.Second)
+	second, err := manager.RegisterSession(token, "session-1", "host-b", "v2")
+	if err != nil {
+		t.Fatalf("second RegisterSession returned error: %v", err)
+	}
+
+	first.Disconnect()
+
+	select {
+	case <-second.Done:
+		t.Fatal("replacement session should remain open")
+	default:
+	}
+
+	snapshots := manager.ListSessions()
+	if len(snapshots) != 1 {
+		t.Fatalf("snapshot count = %d, want 1", len(snapshots))
+	}
+	if snapshots[0].SessionID != "session-1" {
+		t.Fatalf("SessionID = %q, want session-1", snapshots[0].SessionID)
+	}
+	if snapshots[0].Hostname != "host-b" {
+		t.Fatalf("Hostname = %q, want host-b", snapshots[0].Hostname)
+	}
+	if snapshots[0].Status != "online" {
+		t.Fatalf("Status = %q, want online", snapshots[0].Status)
+	}
+}
+
 func TestAgentSessionManagerPingRoundTrip(t *testing.T) {
 	t.Parallel()
 
