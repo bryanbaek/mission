@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ApproveSemanticLayerRequest, ApproveSemanticLayerResponse, DraftSemanticLayerRequest, DraftSemanticLayerResponse, GetSemanticLayerRequest, GetSemanticLayerResponse, UpdateSemanticLayerRequest, UpdateSemanticLayerResponse } from "./semantic_pb.js";
+import { ApproveSemanticLayerRequest, ApproveSemanticLayerResponse, DiffSemanticLayerRequest, DiffSemanticLayerResponse, DraftSemanticLayerRequest, DraftSemanticLayerResponse, GetSemanticLayerRequest, GetSemanticLayerResponse, ListSemanticLayerVersionsRequest, ListSemanticLayerVersionsResponse, UpdateSemanticLayerRequest, UpdateSemanticLayerResponse } from "./semantic_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -46,6 +46,24 @@ export const SemanticLayerService = {
       name: "ApproveSemanticLayer",
       I: ApproveSemanticLayerRequest,
       O: ApproveSemanticLayerResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc semantic.v1.SemanticLayerService.ListSemanticLayerVersions
+     */
+    listSemanticLayerVersions: {
+      name: "ListSemanticLayerVersions",
+      I: ListSemanticLayerVersionsRequest,
+      O: ListSemanticLayerVersionsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc semantic.v1.SemanticLayerService.DiffSemanticLayer
+     */
+    diffSemanticLayer: {
+      name: "DiffSemanticLayer",
+      I: DiffSemanticLayerRequest,
+      O: DiffSemanticLayerResponse,
       kind: MethodKind.Unary,
     },
   }

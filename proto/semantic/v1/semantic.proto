@@ -120,6 +120,60 @@ message ApproveSemanticLayerResponse {
   SemanticLayer layer = 1;
 }
 
+message SemanticLayerVersionSummary {
+  string id = 1;
+  string tenant_id = 2;
+  string schema_version_id = 3;
+  SemanticLayerStatus status = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp approved_at = 6;
+  string approved_by_user_id = 7;
+  SchemaVersionSummary schema_version = 8;
+}
+
+message ListSemanticLayerVersionsRequest {
+  string tenant_id = 1;
+}
+
+message ListSemanticLayerVersionsResponse {
+  repeated SemanticLayerVersionSummary versions = 1;
+}
+
+enum SemanticLayerDiffKind {
+  SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED = 0;
+  SEMANTIC_LAYER_DIFF_KIND_ADDED = 1;
+  SEMANTIC_LAYER_DIFF_KIND_REMOVED = 2;
+  SEMANTIC_LAYER_DIFF_KIND_CHANGED = 3;
+}
+
+enum SemanticLayerDiffScope {
+  SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED = 0;
+  SEMANTIC_LAYER_DIFF_SCOPE_TABLE = 1;
+  SEMANTIC_LAYER_DIFF_SCOPE_COLUMN = 2;
+  SEMANTIC_LAYER_DIFF_SCOPE_ENTITY = 3;
+  SEMANTIC_LAYER_DIFF_SCOPE_METRIC = 4;
+}
+
+message SemanticLayerDiffItem {
+  SemanticLayerDiffKind kind = 1;
+  SemanticLayerDiffScope scope = 2;
+  string key = 3;
+  string before = 4;
+  string after = 5;
+}
+
+message DiffSemanticLayerRequest {
+  string tenant_id = 1;
+  string left_id = 2;
+  string right_id = 3;
+}
+
+message DiffSemanticLayerResponse {
+  SemanticLayerVersionSummary left = 1;
+  SemanticLayerVersionSummary right = 2;
+  repeated SemanticLayerDiffItem items = 3;
+}
+
 service SemanticLayerService {
   rpc GetSemanticLayer(GetSemanticLayerRequest)
       returns (GetSemanticLayerResponse);
@@ -129,4 +183,8 @@ service SemanticLayerService {
       returns (UpdateSemanticLayerResponse);
   rpc ApproveSemanticLayer(ApproveSemanticLayerRequest)
       returns (ApproveSemanticLayerResponse);
+  rpc ListSemanticLayerVersions(ListSemanticLayerVersionsRequest)
+      returns (ListSemanticLayerVersionsResponse);
+  rpc DiffSemanticLayer(DiffSemanticLayerRequest)
+      returns (DiffSemanticLayerResponse);
 }

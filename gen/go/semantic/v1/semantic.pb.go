@@ -74,6 +74,113 @@ func (SemanticLayerStatus) EnumDescriptor() ([]byte, []int) {
 	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{0}
 }
 
+type SemanticLayerDiffKind int32
+
+const (
+	SemanticLayerDiffKind_SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED SemanticLayerDiffKind = 0
+	SemanticLayerDiffKind_SEMANTIC_LAYER_DIFF_KIND_ADDED       SemanticLayerDiffKind = 1
+	SemanticLayerDiffKind_SEMANTIC_LAYER_DIFF_KIND_REMOVED     SemanticLayerDiffKind = 2
+	SemanticLayerDiffKind_SEMANTIC_LAYER_DIFF_KIND_CHANGED     SemanticLayerDiffKind = 3
+)
+
+// Enum value maps for SemanticLayerDiffKind.
+var (
+	SemanticLayerDiffKind_name = map[int32]string{
+		0: "SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED",
+		1: "SEMANTIC_LAYER_DIFF_KIND_ADDED",
+		2: "SEMANTIC_LAYER_DIFF_KIND_REMOVED",
+		3: "SEMANTIC_LAYER_DIFF_KIND_CHANGED",
+	}
+	SemanticLayerDiffKind_value = map[string]int32{
+		"SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED": 0,
+		"SEMANTIC_LAYER_DIFF_KIND_ADDED":       1,
+		"SEMANTIC_LAYER_DIFF_KIND_REMOVED":     2,
+		"SEMANTIC_LAYER_DIFF_KIND_CHANGED":     3,
+	}
+)
+
+func (x SemanticLayerDiffKind) Enum() *SemanticLayerDiffKind {
+	p := new(SemanticLayerDiffKind)
+	*p = x
+	return p
+}
+
+func (x SemanticLayerDiffKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SemanticLayerDiffKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_semantic_v1_semantic_proto_enumTypes[1].Descriptor()
+}
+
+func (SemanticLayerDiffKind) Type() protoreflect.EnumType {
+	return &file_semantic_v1_semantic_proto_enumTypes[1]
+}
+
+func (x SemanticLayerDiffKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SemanticLayerDiffKind.Descriptor instead.
+func (SemanticLayerDiffKind) EnumDescriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{1}
+}
+
+type SemanticLayerDiffScope int32
+
+const (
+	SemanticLayerDiffScope_SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED SemanticLayerDiffScope = 0
+	SemanticLayerDiffScope_SEMANTIC_LAYER_DIFF_SCOPE_TABLE       SemanticLayerDiffScope = 1
+	SemanticLayerDiffScope_SEMANTIC_LAYER_DIFF_SCOPE_COLUMN      SemanticLayerDiffScope = 2
+	SemanticLayerDiffScope_SEMANTIC_LAYER_DIFF_SCOPE_ENTITY      SemanticLayerDiffScope = 3
+	SemanticLayerDiffScope_SEMANTIC_LAYER_DIFF_SCOPE_METRIC      SemanticLayerDiffScope = 4
+)
+
+// Enum value maps for SemanticLayerDiffScope.
+var (
+	SemanticLayerDiffScope_name = map[int32]string{
+		0: "SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED",
+		1: "SEMANTIC_LAYER_DIFF_SCOPE_TABLE",
+		2: "SEMANTIC_LAYER_DIFF_SCOPE_COLUMN",
+		3: "SEMANTIC_LAYER_DIFF_SCOPE_ENTITY",
+		4: "SEMANTIC_LAYER_DIFF_SCOPE_METRIC",
+	}
+	SemanticLayerDiffScope_value = map[string]int32{
+		"SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED": 0,
+		"SEMANTIC_LAYER_DIFF_SCOPE_TABLE":       1,
+		"SEMANTIC_LAYER_DIFF_SCOPE_COLUMN":      2,
+		"SEMANTIC_LAYER_DIFF_SCOPE_ENTITY":      3,
+		"SEMANTIC_LAYER_DIFF_SCOPE_METRIC":      4,
+	}
+)
+
+func (x SemanticLayerDiffScope) Enum() *SemanticLayerDiffScope {
+	p := new(SemanticLayerDiffScope)
+	*p = x
+	return p
+}
+
+func (x SemanticLayerDiffScope) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SemanticLayerDiffScope) Descriptor() protoreflect.EnumDescriptor {
+	return file_semantic_v1_semantic_proto_enumTypes[2].Descriptor()
+}
+
+func (SemanticLayerDiffScope) Type() protoreflect.EnumType {
+	return &file_semantic_v1_semantic_proto_enumTypes[2]
+}
+
+func (x SemanticLayerDiffScope) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SemanticLayerDiffScope.Descriptor instead.
+func (SemanticLayerDiffScope) EnumDescriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{2}
+}
+
 type SchemaVersionSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1122,6 +1229,390 @@ func (x *ApproveSemanticLayerResponse) GetLayer() *SemanticLayer {
 	return nil
 }
 
+type SemanticLayerVersionSummary struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TenantId         string                 `protobuf:"bytes,2,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	SchemaVersionId  string                 `protobuf:"bytes,3,opt,name=schema_version_id,json=schemaVersionId,proto3" json:"schema_version_id,omitempty"`
+	Status           SemanticLayerStatus    `protobuf:"varint,4,opt,name=status,proto3,enum=semantic.v1.SemanticLayerStatus" json:"status,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ApprovedAt       *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=approved_at,json=approvedAt,proto3" json:"approved_at,omitempty"`
+	ApprovedByUserId string                 `protobuf:"bytes,7,opt,name=approved_by_user_id,json=approvedByUserId,proto3" json:"approved_by_user_id,omitempty"`
+	SchemaVersion    *SchemaVersionSummary  `protobuf:"bytes,8,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SemanticLayerVersionSummary) Reset() {
+	*x = SemanticLayerVersionSummary{}
+	mi := &file_semantic_v1_semantic_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SemanticLayerVersionSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SemanticLayerVersionSummary) ProtoMessage() {}
+
+func (x *SemanticLayerVersionSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_semantic_v1_semantic_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SemanticLayerVersionSummary.ProtoReflect.Descriptor instead.
+func (*SemanticLayerVersionSummary) Descriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SemanticLayerVersionSummary) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *SemanticLayerVersionSummary) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *SemanticLayerVersionSummary) GetSchemaVersionId() string {
+	if x != nil {
+		return x.SchemaVersionId
+	}
+	return ""
+}
+
+func (x *SemanticLayerVersionSummary) GetStatus() SemanticLayerStatus {
+	if x != nil {
+		return x.Status
+	}
+	return SemanticLayerStatus_SEMANTIC_LAYER_STATUS_UNSPECIFIED
+}
+
+func (x *SemanticLayerVersionSummary) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *SemanticLayerVersionSummary) GetApprovedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ApprovedAt
+	}
+	return nil
+}
+
+func (x *SemanticLayerVersionSummary) GetApprovedByUserId() string {
+	if x != nil {
+		return x.ApprovedByUserId
+	}
+	return ""
+}
+
+func (x *SemanticLayerVersionSummary) GetSchemaVersion() *SchemaVersionSummary {
+	if x != nil {
+		return x.SchemaVersion
+	}
+	return nil
+}
+
+type ListSemanticLayerVersionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSemanticLayerVersionsRequest) Reset() {
+	*x = ListSemanticLayerVersionsRequest{}
+	mi := &file_semantic_v1_semantic_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSemanticLayerVersionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSemanticLayerVersionsRequest) ProtoMessage() {}
+
+func (x *ListSemanticLayerVersionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_semantic_v1_semantic_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSemanticLayerVersionsRequest.ProtoReflect.Descriptor instead.
+func (*ListSemanticLayerVersionsRequest) Descriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListSemanticLayerVersionsRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+type ListSemanticLayerVersionsResponse struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Versions      []*SemanticLayerVersionSummary `protobuf:"bytes,1,rep,name=versions,proto3" json:"versions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSemanticLayerVersionsResponse) Reset() {
+	*x = ListSemanticLayerVersionsResponse{}
+	mi := &file_semantic_v1_semantic_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSemanticLayerVersionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSemanticLayerVersionsResponse) ProtoMessage() {}
+
+func (x *ListSemanticLayerVersionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_semantic_v1_semantic_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSemanticLayerVersionsResponse.ProtoReflect.Descriptor instead.
+func (*ListSemanticLayerVersionsResponse) Descriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListSemanticLayerVersionsResponse) GetVersions() []*SemanticLayerVersionSummary {
+	if x != nil {
+		return x.Versions
+	}
+	return nil
+}
+
+type SemanticLayerDiffItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Kind          SemanticLayerDiffKind  `protobuf:"varint,1,opt,name=kind,proto3,enum=semantic.v1.SemanticLayerDiffKind" json:"kind,omitempty"`
+	Scope         SemanticLayerDiffScope `protobuf:"varint,2,opt,name=scope,proto3,enum=semantic.v1.SemanticLayerDiffScope" json:"scope,omitempty"`
+	Key           string                 `protobuf:"bytes,3,opt,name=key,proto3" json:"key,omitempty"`
+	Before        string                 `protobuf:"bytes,4,opt,name=before,proto3" json:"before,omitempty"`
+	After         string                 `protobuf:"bytes,5,opt,name=after,proto3" json:"after,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SemanticLayerDiffItem) Reset() {
+	*x = SemanticLayerDiffItem{}
+	mi := &file_semantic_v1_semantic_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SemanticLayerDiffItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SemanticLayerDiffItem) ProtoMessage() {}
+
+func (x *SemanticLayerDiffItem) ProtoReflect() protoreflect.Message {
+	mi := &file_semantic_v1_semantic_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SemanticLayerDiffItem.ProtoReflect.Descriptor instead.
+func (*SemanticLayerDiffItem) Descriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *SemanticLayerDiffItem) GetKind() SemanticLayerDiffKind {
+	if x != nil {
+		return x.Kind
+	}
+	return SemanticLayerDiffKind_SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED
+}
+
+func (x *SemanticLayerDiffItem) GetScope() SemanticLayerDiffScope {
+	if x != nil {
+		return x.Scope
+	}
+	return SemanticLayerDiffScope_SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED
+}
+
+func (x *SemanticLayerDiffItem) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SemanticLayerDiffItem) GetBefore() string {
+	if x != nil {
+		return x.Before
+	}
+	return ""
+}
+
+func (x *SemanticLayerDiffItem) GetAfter() string {
+	if x != nil {
+		return x.After
+	}
+	return ""
+}
+
+type DiffSemanticLayerRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	LeftId        string                 `protobuf:"bytes,2,opt,name=left_id,json=leftId,proto3" json:"left_id,omitempty"`
+	RightId       string                 `protobuf:"bytes,3,opt,name=right_id,json=rightId,proto3" json:"right_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DiffSemanticLayerRequest) Reset() {
+	*x = DiffSemanticLayerRequest{}
+	mi := &file_semantic_v1_semantic_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiffSemanticLayerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiffSemanticLayerRequest) ProtoMessage() {}
+
+func (x *DiffSemanticLayerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_semantic_v1_semantic_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiffSemanticLayerRequest.ProtoReflect.Descriptor instead.
+func (*DiffSemanticLayerRequest) Descriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *DiffSemanticLayerRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *DiffSemanticLayerRequest) GetLeftId() string {
+	if x != nil {
+		return x.LeftId
+	}
+	return ""
+}
+
+func (x *DiffSemanticLayerRequest) GetRightId() string {
+	if x != nil {
+		return x.RightId
+	}
+	return ""
+}
+
+type DiffSemanticLayerResponse struct {
+	state         protoimpl.MessageState       `protogen:"open.v1"`
+	Left          *SemanticLayerVersionSummary `protobuf:"bytes,1,opt,name=left,proto3" json:"left,omitempty"`
+	Right         *SemanticLayerVersionSummary `protobuf:"bytes,2,opt,name=right,proto3" json:"right,omitempty"`
+	Items         []*SemanticLayerDiffItem     `protobuf:"bytes,3,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DiffSemanticLayerResponse) Reset() {
+	*x = DiffSemanticLayerResponse{}
+	mi := &file_semantic_v1_semantic_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DiffSemanticLayerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DiffSemanticLayerResponse) ProtoMessage() {}
+
+func (x *DiffSemanticLayerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_semantic_v1_semantic_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DiffSemanticLayerResponse.ProtoReflect.Descriptor instead.
+func (*DiffSemanticLayerResponse) Descriptor() ([]byte, []int) {
+	return file_semantic_v1_semantic_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *DiffSemanticLayerResponse) GetLeft() *SemanticLayerVersionSummary {
+	if x != nil {
+		return x.Left
+	}
+	return nil
+}
+
+func (x *DiffSemanticLayerResponse) GetRight() *SemanticLayerVersionSummary {
+	if x != nil {
+		return x.Right
+	}
+	return nil
+}
+
+func (x *DiffSemanticLayerResponse) GetItems() []*SemanticLayerDiffItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_semantic_v1_semantic_proto protoreflect.FileDescriptor
 
 const file_semantic_v1_semantic_proto_rawDesc = "" +
@@ -1213,17 +1704,59 @@ const file_semantic_v1_semantic_proto_rawDesc = "" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\"P\n" +
 	"\x1cApproveSemanticLayerResponse\x120\n" +
-	"\x05layer\x18\x01 \x01(\v2\x1a.semantic.v1.SemanticLayerR\x05layer*\xa5\x01\n" +
+	"\x05layer\x18\x01 \x01(\v2\x1a.semantic.v1.SemanticLayerR\x05layer\"\xa1\x03\n" +
+	"\x1bSemanticLayerVersionSummary\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\ttenant_id\x18\x02 \x01(\tR\btenantId\x12*\n" +
+	"\x11schema_version_id\x18\x03 \x01(\tR\x0fschemaVersionId\x128\n" +
+	"\x06status\x18\x04 \x01(\x0e2 .semantic.v1.SemanticLayerStatusR\x06status\x129\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12;\n" +
+	"\vapproved_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"approvedAt\x12-\n" +
+	"\x13approved_by_user_id\x18\a \x01(\tR\x10approvedByUserId\x12H\n" +
+	"\x0eschema_version\x18\b \x01(\v2!.semantic.v1.SchemaVersionSummaryR\rschemaVersion\"?\n" +
+	" ListSemanticLayerVersionsRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"i\n" +
+	"!ListSemanticLayerVersionsResponse\x12D\n" +
+	"\bversions\x18\x01 \x03(\v2(.semantic.v1.SemanticLayerVersionSummaryR\bversions\"\xca\x01\n" +
+	"\x15SemanticLayerDiffItem\x126\n" +
+	"\x04kind\x18\x01 \x01(\x0e2\".semantic.v1.SemanticLayerDiffKindR\x04kind\x129\n" +
+	"\x05scope\x18\x02 \x01(\x0e2#.semantic.v1.SemanticLayerDiffScopeR\x05scope\x12\x10\n" +
+	"\x03key\x18\x03 \x01(\tR\x03key\x12\x16\n" +
+	"\x06before\x18\x04 \x01(\tR\x06before\x12\x14\n" +
+	"\x05after\x18\x05 \x01(\tR\x05after\"k\n" +
+	"\x18DiffSemanticLayerRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x17\n" +
+	"\aleft_id\x18\x02 \x01(\tR\x06leftId\x12\x19\n" +
+	"\bright_id\x18\x03 \x01(\tR\arightId\"\xd3\x01\n" +
+	"\x19DiffSemanticLayerResponse\x12<\n" +
+	"\x04left\x18\x01 \x01(\v2(.semantic.v1.SemanticLayerVersionSummaryR\x04left\x12>\n" +
+	"\x05right\x18\x02 \x01(\v2(.semantic.v1.SemanticLayerVersionSummaryR\x05right\x128\n" +
+	"\x05items\x18\x03 \x03(\v2\".semantic.v1.SemanticLayerDiffItemR\x05items*\xa5\x01\n" +
 	"\x13SemanticLayerStatus\x12%\n" +
 	"!SEMANTIC_LAYER_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bSEMANTIC_LAYER_STATUS_DRAFT\x10\x01\x12\"\n" +
 	"\x1eSEMANTIC_LAYER_STATUS_APPROVED\x10\x02\x12\"\n" +
-	"\x1eSEMANTIC_LAYER_STATUS_ARCHIVED\x10\x032\xb5\x03\n" +
+	"\x1eSEMANTIC_LAYER_STATUS_ARCHIVED\x10\x03*\xb1\x01\n" +
+	"\x15SemanticLayerDiffKind\x12(\n" +
+	"$SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eSEMANTIC_LAYER_DIFF_KIND_ADDED\x10\x01\x12$\n" +
+	" SEMANTIC_LAYER_DIFF_KIND_REMOVED\x10\x02\x12$\n" +
+	" SEMANTIC_LAYER_DIFF_KIND_CHANGED\x10\x03*\xda\x01\n" +
+	"\x16SemanticLayerDiffScope\x12)\n" +
+	"%SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fSEMANTIC_LAYER_DIFF_SCOPE_TABLE\x10\x01\x12$\n" +
+	" SEMANTIC_LAYER_DIFF_SCOPE_COLUMN\x10\x02\x12$\n" +
+	" SEMANTIC_LAYER_DIFF_SCOPE_ENTITY\x10\x03\x12$\n" +
+	" SEMANTIC_LAYER_DIFF_SCOPE_METRIC\x10\x042\x95\x05\n" +
 	"\x14SemanticLayerService\x12_\n" +
 	"\x10GetSemanticLayer\x12$.semantic.v1.GetSemanticLayerRequest\x1a%.semantic.v1.GetSemanticLayerResponse\x12e\n" +
 	"\x12DraftSemanticLayer\x12&.semantic.v1.DraftSemanticLayerRequest\x1a'.semantic.v1.DraftSemanticLayerResponse\x12h\n" +
 	"\x13UpdateSemanticLayer\x12'.semantic.v1.UpdateSemanticLayerRequest\x1a(.semantic.v1.UpdateSemanticLayerResponse\x12k\n" +
-	"\x14ApproveSemanticLayer\x12(.semantic.v1.ApproveSemanticLayerRequest\x1a).semantic.v1.ApproveSemanticLayerResponseB\xa9\x01\n" +
+	"\x14ApproveSemanticLayer\x12(.semantic.v1.ApproveSemanticLayerRequest\x1a).semantic.v1.ApproveSemanticLayerResponse\x12z\n" +
+	"\x19ListSemanticLayerVersions\x12-.semantic.v1.ListSemanticLayerVersionsRequest\x1a..semantic.v1.ListSemanticLayerVersionsResponse\x12b\n" +
+	"\x11DiffSemanticLayer\x12%.semantic.v1.DiffSemanticLayerRequest\x1a&.semantic.v1.DiffSemanticLayerResponseB\xa9\x01\n" +
 	"\x0fcom.semantic.v1B\rSemanticProtoP\x01Z:github.com/bryanbaek/mission/gen/go/semantic/v1;semanticv1\xa2\x02\x03SXX\xaa\x02\vSemantic.V1\xca\x02\vSemantic\\V1\xe2\x02\x17Semantic\\V1\\GPBMetadata\xea\x02\fSemantic::V1b\x06proto3"
 
 var (
@@ -1238,59 +1771,81 @@ func file_semantic_v1_semantic_proto_rawDescGZIP() []byte {
 	return file_semantic_v1_semantic_proto_rawDescData
 }
 
-var file_semantic_v1_semantic_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_semantic_v1_semantic_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_semantic_v1_semantic_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_semantic_v1_semantic_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_semantic_v1_semantic_proto_goTypes = []any{
-	(SemanticLayerStatus)(0),             // 0: semantic.v1.SemanticLayerStatus
-	(*SchemaVersionSummary)(nil),         // 1: semantic.v1.SchemaVersionSummary
-	(*SemanticColumn)(nil),               // 2: semantic.v1.SemanticColumn
-	(*SemanticTable)(nil),                // 3: semantic.v1.SemanticTable
-	(*SemanticEntity)(nil),               // 4: semantic.v1.SemanticEntity
-	(*CandidateMetric)(nil),              // 5: semantic.v1.CandidateMetric
-	(*SemanticLayerContent)(nil),         // 6: semantic.v1.SemanticLayerContent
-	(*SemanticLayer)(nil),                // 7: semantic.v1.SemanticLayer
-	(*CompletionUsage)(nil),              // 8: semantic.v1.CompletionUsage
-	(*GetSemanticLayerRequest)(nil),      // 9: semantic.v1.GetSemanticLayerRequest
-	(*GetSemanticLayerResponse)(nil),     // 10: semantic.v1.GetSemanticLayerResponse
-	(*DraftSemanticLayerRequest)(nil),    // 11: semantic.v1.DraftSemanticLayerRequest
-	(*DraftSemanticLayerResponse)(nil),   // 12: semantic.v1.DraftSemanticLayerResponse
-	(*UpdateSemanticLayerRequest)(nil),   // 13: semantic.v1.UpdateSemanticLayerRequest
-	(*UpdateSemanticLayerResponse)(nil),  // 14: semantic.v1.UpdateSemanticLayerResponse
-	(*ApproveSemanticLayerRequest)(nil),  // 15: semantic.v1.ApproveSemanticLayerRequest
-	(*ApproveSemanticLayerResponse)(nil), // 16: semantic.v1.ApproveSemanticLayerResponse
-	(*timestamppb.Timestamp)(nil),        // 17: google.protobuf.Timestamp
+	(SemanticLayerStatus)(0),                  // 0: semantic.v1.SemanticLayerStatus
+	(SemanticLayerDiffKind)(0),                // 1: semantic.v1.SemanticLayerDiffKind
+	(SemanticLayerDiffScope)(0),               // 2: semantic.v1.SemanticLayerDiffScope
+	(*SchemaVersionSummary)(nil),              // 3: semantic.v1.SchemaVersionSummary
+	(*SemanticColumn)(nil),                    // 4: semantic.v1.SemanticColumn
+	(*SemanticTable)(nil),                     // 5: semantic.v1.SemanticTable
+	(*SemanticEntity)(nil),                    // 6: semantic.v1.SemanticEntity
+	(*CandidateMetric)(nil),                   // 7: semantic.v1.CandidateMetric
+	(*SemanticLayerContent)(nil),              // 8: semantic.v1.SemanticLayerContent
+	(*SemanticLayer)(nil),                     // 9: semantic.v1.SemanticLayer
+	(*CompletionUsage)(nil),                   // 10: semantic.v1.CompletionUsage
+	(*GetSemanticLayerRequest)(nil),           // 11: semantic.v1.GetSemanticLayerRequest
+	(*GetSemanticLayerResponse)(nil),          // 12: semantic.v1.GetSemanticLayerResponse
+	(*DraftSemanticLayerRequest)(nil),         // 13: semantic.v1.DraftSemanticLayerRequest
+	(*DraftSemanticLayerResponse)(nil),        // 14: semantic.v1.DraftSemanticLayerResponse
+	(*UpdateSemanticLayerRequest)(nil),        // 15: semantic.v1.UpdateSemanticLayerRequest
+	(*UpdateSemanticLayerResponse)(nil),       // 16: semantic.v1.UpdateSemanticLayerResponse
+	(*ApproveSemanticLayerRequest)(nil),       // 17: semantic.v1.ApproveSemanticLayerRequest
+	(*ApproveSemanticLayerResponse)(nil),      // 18: semantic.v1.ApproveSemanticLayerResponse
+	(*SemanticLayerVersionSummary)(nil),       // 19: semantic.v1.SemanticLayerVersionSummary
+	(*ListSemanticLayerVersionsRequest)(nil),  // 20: semantic.v1.ListSemanticLayerVersionsRequest
+	(*ListSemanticLayerVersionsResponse)(nil), // 21: semantic.v1.ListSemanticLayerVersionsResponse
+	(*SemanticLayerDiffItem)(nil),             // 22: semantic.v1.SemanticLayerDiffItem
+	(*DiffSemanticLayerRequest)(nil),          // 23: semantic.v1.DiffSemanticLayerRequest
+	(*DiffSemanticLayerResponse)(nil),         // 24: semantic.v1.DiffSemanticLayerResponse
+	(*timestamppb.Timestamp)(nil),             // 25: google.protobuf.Timestamp
 }
 var file_semantic_v1_semantic_proto_depIdxs = []int32{
-	17, // 0: semantic.v1.SchemaVersionSummary.captured_at:type_name -> google.protobuf.Timestamp
-	2,  // 1: semantic.v1.SemanticTable.columns:type_name -> semantic.v1.SemanticColumn
-	3,  // 2: semantic.v1.SemanticLayerContent.tables:type_name -> semantic.v1.SemanticTable
-	4,  // 3: semantic.v1.SemanticLayerContent.entities:type_name -> semantic.v1.SemanticEntity
-	5,  // 4: semantic.v1.SemanticLayerContent.candidate_metrics:type_name -> semantic.v1.CandidateMetric
+	25, // 0: semantic.v1.SchemaVersionSummary.captured_at:type_name -> google.protobuf.Timestamp
+	4,  // 1: semantic.v1.SemanticTable.columns:type_name -> semantic.v1.SemanticColumn
+	5,  // 2: semantic.v1.SemanticLayerContent.tables:type_name -> semantic.v1.SemanticTable
+	6,  // 3: semantic.v1.SemanticLayerContent.entities:type_name -> semantic.v1.SemanticEntity
+	7,  // 4: semantic.v1.SemanticLayerContent.candidate_metrics:type_name -> semantic.v1.CandidateMetric
 	0,  // 5: semantic.v1.SemanticLayer.status:type_name -> semantic.v1.SemanticLayerStatus
-	6,  // 6: semantic.v1.SemanticLayer.content:type_name -> semantic.v1.SemanticLayerContent
-	17, // 7: semantic.v1.SemanticLayer.created_at:type_name -> google.protobuf.Timestamp
-	17, // 8: semantic.v1.SemanticLayer.approved_at:type_name -> google.protobuf.Timestamp
-	1,  // 9: semantic.v1.GetSemanticLayerResponse.latest_schema:type_name -> semantic.v1.SchemaVersionSummary
-	7,  // 10: semantic.v1.GetSemanticLayerResponse.current_layer:type_name -> semantic.v1.SemanticLayer
-	7,  // 11: semantic.v1.GetSemanticLayerResponse.approved_baseline:type_name -> semantic.v1.SemanticLayer
-	7,  // 12: semantic.v1.DraftSemanticLayerResponse.layer:type_name -> semantic.v1.SemanticLayer
-	8,  // 13: semantic.v1.DraftSemanticLayerResponse.usage:type_name -> semantic.v1.CompletionUsage
-	6,  // 14: semantic.v1.UpdateSemanticLayerRequest.content:type_name -> semantic.v1.SemanticLayerContent
-	7,  // 15: semantic.v1.UpdateSemanticLayerResponse.layer:type_name -> semantic.v1.SemanticLayer
-	7,  // 16: semantic.v1.ApproveSemanticLayerResponse.layer:type_name -> semantic.v1.SemanticLayer
-	9,  // 17: semantic.v1.SemanticLayerService.GetSemanticLayer:input_type -> semantic.v1.GetSemanticLayerRequest
-	11, // 18: semantic.v1.SemanticLayerService.DraftSemanticLayer:input_type -> semantic.v1.DraftSemanticLayerRequest
-	13, // 19: semantic.v1.SemanticLayerService.UpdateSemanticLayer:input_type -> semantic.v1.UpdateSemanticLayerRequest
-	15, // 20: semantic.v1.SemanticLayerService.ApproveSemanticLayer:input_type -> semantic.v1.ApproveSemanticLayerRequest
-	10, // 21: semantic.v1.SemanticLayerService.GetSemanticLayer:output_type -> semantic.v1.GetSemanticLayerResponse
-	12, // 22: semantic.v1.SemanticLayerService.DraftSemanticLayer:output_type -> semantic.v1.DraftSemanticLayerResponse
-	14, // 23: semantic.v1.SemanticLayerService.UpdateSemanticLayer:output_type -> semantic.v1.UpdateSemanticLayerResponse
-	16, // 24: semantic.v1.SemanticLayerService.ApproveSemanticLayer:output_type -> semantic.v1.ApproveSemanticLayerResponse
-	21, // [21:25] is the sub-list for method output_type
-	17, // [17:21] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	8,  // 6: semantic.v1.SemanticLayer.content:type_name -> semantic.v1.SemanticLayerContent
+	25, // 7: semantic.v1.SemanticLayer.created_at:type_name -> google.protobuf.Timestamp
+	25, // 8: semantic.v1.SemanticLayer.approved_at:type_name -> google.protobuf.Timestamp
+	3,  // 9: semantic.v1.GetSemanticLayerResponse.latest_schema:type_name -> semantic.v1.SchemaVersionSummary
+	9,  // 10: semantic.v1.GetSemanticLayerResponse.current_layer:type_name -> semantic.v1.SemanticLayer
+	9,  // 11: semantic.v1.GetSemanticLayerResponse.approved_baseline:type_name -> semantic.v1.SemanticLayer
+	9,  // 12: semantic.v1.DraftSemanticLayerResponse.layer:type_name -> semantic.v1.SemanticLayer
+	10, // 13: semantic.v1.DraftSemanticLayerResponse.usage:type_name -> semantic.v1.CompletionUsage
+	8,  // 14: semantic.v1.UpdateSemanticLayerRequest.content:type_name -> semantic.v1.SemanticLayerContent
+	9,  // 15: semantic.v1.UpdateSemanticLayerResponse.layer:type_name -> semantic.v1.SemanticLayer
+	9,  // 16: semantic.v1.ApproveSemanticLayerResponse.layer:type_name -> semantic.v1.SemanticLayer
+	0,  // 17: semantic.v1.SemanticLayerVersionSummary.status:type_name -> semantic.v1.SemanticLayerStatus
+	25, // 18: semantic.v1.SemanticLayerVersionSummary.created_at:type_name -> google.protobuf.Timestamp
+	25, // 19: semantic.v1.SemanticLayerVersionSummary.approved_at:type_name -> google.protobuf.Timestamp
+	3,  // 20: semantic.v1.SemanticLayerVersionSummary.schema_version:type_name -> semantic.v1.SchemaVersionSummary
+	19, // 21: semantic.v1.ListSemanticLayerVersionsResponse.versions:type_name -> semantic.v1.SemanticLayerVersionSummary
+	1,  // 22: semantic.v1.SemanticLayerDiffItem.kind:type_name -> semantic.v1.SemanticLayerDiffKind
+	2,  // 23: semantic.v1.SemanticLayerDiffItem.scope:type_name -> semantic.v1.SemanticLayerDiffScope
+	19, // 24: semantic.v1.DiffSemanticLayerResponse.left:type_name -> semantic.v1.SemanticLayerVersionSummary
+	19, // 25: semantic.v1.DiffSemanticLayerResponse.right:type_name -> semantic.v1.SemanticLayerVersionSummary
+	22, // 26: semantic.v1.DiffSemanticLayerResponse.items:type_name -> semantic.v1.SemanticLayerDiffItem
+	11, // 27: semantic.v1.SemanticLayerService.GetSemanticLayer:input_type -> semantic.v1.GetSemanticLayerRequest
+	13, // 28: semantic.v1.SemanticLayerService.DraftSemanticLayer:input_type -> semantic.v1.DraftSemanticLayerRequest
+	15, // 29: semantic.v1.SemanticLayerService.UpdateSemanticLayer:input_type -> semantic.v1.UpdateSemanticLayerRequest
+	17, // 30: semantic.v1.SemanticLayerService.ApproveSemanticLayer:input_type -> semantic.v1.ApproveSemanticLayerRequest
+	20, // 31: semantic.v1.SemanticLayerService.ListSemanticLayerVersions:input_type -> semantic.v1.ListSemanticLayerVersionsRequest
+	23, // 32: semantic.v1.SemanticLayerService.DiffSemanticLayer:input_type -> semantic.v1.DiffSemanticLayerRequest
+	12, // 33: semantic.v1.SemanticLayerService.GetSemanticLayer:output_type -> semantic.v1.GetSemanticLayerResponse
+	14, // 34: semantic.v1.SemanticLayerService.DraftSemanticLayer:output_type -> semantic.v1.DraftSemanticLayerResponse
+	16, // 35: semantic.v1.SemanticLayerService.UpdateSemanticLayer:output_type -> semantic.v1.UpdateSemanticLayerResponse
+	18, // 36: semantic.v1.SemanticLayerService.ApproveSemanticLayer:output_type -> semantic.v1.ApproveSemanticLayerResponse
+	21, // 37: semantic.v1.SemanticLayerService.ListSemanticLayerVersions:output_type -> semantic.v1.ListSemanticLayerVersionsResponse
+	24, // 38: semantic.v1.SemanticLayerService.DiffSemanticLayer:output_type -> semantic.v1.DiffSemanticLayerResponse
+	33, // [33:39] is the sub-list for method output_type
+	27, // [27:33] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_semantic_v1_semantic_proto_init() }
@@ -1303,8 +1858,8 @@ func file_semantic_v1_semantic_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_semantic_v1_semantic_proto_rawDesc), len(file_semantic_v1_semantic_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   16,
+			NumEnums:      3,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

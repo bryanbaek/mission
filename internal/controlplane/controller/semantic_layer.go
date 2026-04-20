@@ -55,6 +55,10 @@ type semanticLayerStore interface {
 		ctx context.Context,
 		tenantID, id uuid.UUID,
 	) (model.TenantSemanticLayer, error)
+	ListApprovedHistoryByTenant(
+		ctx context.Context,
+		tenantID uuid.UUID,
+	) ([]model.TenantSemanticLayer, error)
 	CreateDraftVersion(
 		ctx context.Context,
 		tenantID, schemaVersionID uuid.UUID,

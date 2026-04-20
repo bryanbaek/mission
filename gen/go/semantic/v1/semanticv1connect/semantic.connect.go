@@ -45,6 +45,12 @@ const (
 	// SemanticLayerServiceApproveSemanticLayerProcedure is the fully-qualified name of the
 	// SemanticLayerService's ApproveSemanticLayer RPC.
 	SemanticLayerServiceApproveSemanticLayerProcedure = "/semantic.v1.SemanticLayerService/ApproveSemanticLayer"
+	// SemanticLayerServiceListSemanticLayerVersionsProcedure is the fully-qualified name of the
+	// SemanticLayerService's ListSemanticLayerVersions RPC.
+	SemanticLayerServiceListSemanticLayerVersionsProcedure = "/semantic.v1.SemanticLayerService/ListSemanticLayerVersions"
+	// SemanticLayerServiceDiffSemanticLayerProcedure is the fully-qualified name of the
+	// SemanticLayerService's DiffSemanticLayer RPC.
+	SemanticLayerServiceDiffSemanticLayerProcedure = "/semantic.v1.SemanticLayerService/DiffSemanticLayer"
 )
 
 // SemanticLayerServiceClient is a client for the semantic.v1.SemanticLayerService service.
@@ -53,6 +59,8 @@ type SemanticLayerServiceClient interface {
 	DraftSemanticLayer(context.Context, *connect.Request[v1.DraftSemanticLayerRequest]) (*connect.Response[v1.DraftSemanticLayerResponse], error)
 	UpdateSemanticLayer(context.Context, *connect.Request[v1.UpdateSemanticLayerRequest]) (*connect.Response[v1.UpdateSemanticLayerResponse], error)
 	ApproveSemanticLayer(context.Context, *connect.Request[v1.ApproveSemanticLayerRequest]) (*connect.Response[v1.ApproveSemanticLayerResponse], error)
+	ListSemanticLayerVersions(context.Context, *connect.Request[v1.ListSemanticLayerVersionsRequest]) (*connect.Response[v1.ListSemanticLayerVersionsResponse], error)
+	DiffSemanticLayer(context.Context, *connect.Request[v1.DiffSemanticLayerRequest]) (*connect.Response[v1.DiffSemanticLayerResponse], error)
 }
 
 // NewSemanticLayerServiceClient constructs a client for the semantic.v1.SemanticLayerService
@@ -90,15 +98,29 @@ func NewSemanticLayerServiceClient(httpClient connect.HTTPClient, baseURL string
 			connect.WithSchema(semanticLayerServiceMethods.ByName("ApproveSemanticLayer")),
 			connect.WithClientOptions(opts...),
 		),
+		listSemanticLayerVersions: connect.NewClient[v1.ListSemanticLayerVersionsRequest, v1.ListSemanticLayerVersionsResponse](
+			httpClient,
+			baseURL+SemanticLayerServiceListSemanticLayerVersionsProcedure,
+			connect.WithSchema(semanticLayerServiceMethods.ByName("ListSemanticLayerVersions")),
+			connect.WithClientOptions(opts...),
+		),
+		diffSemanticLayer: connect.NewClient[v1.DiffSemanticLayerRequest, v1.DiffSemanticLayerResponse](
+			httpClient,
+			baseURL+SemanticLayerServiceDiffSemanticLayerProcedure,
+			connect.WithSchema(semanticLayerServiceMethods.ByName("DiffSemanticLayer")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // semanticLayerServiceClient implements SemanticLayerServiceClient.
 type semanticLayerServiceClient struct {
-	getSemanticLayer     *connect.Client[v1.GetSemanticLayerRequest, v1.GetSemanticLayerResponse]
-	draftSemanticLayer   *connect.Client[v1.DraftSemanticLayerRequest, v1.DraftSemanticLayerResponse]
-	updateSemanticLayer  *connect.Client[v1.UpdateSemanticLayerRequest, v1.UpdateSemanticLayerResponse]
-	approveSemanticLayer *connect.Client[v1.ApproveSemanticLayerRequest, v1.ApproveSemanticLayerResponse]
+	getSemanticLayer          *connect.Client[v1.GetSemanticLayerRequest, v1.GetSemanticLayerResponse]
+	draftSemanticLayer        *connect.Client[v1.DraftSemanticLayerRequest, v1.DraftSemanticLayerResponse]
+	updateSemanticLayer       *connect.Client[v1.UpdateSemanticLayerRequest, v1.UpdateSemanticLayerResponse]
+	approveSemanticLayer      *connect.Client[v1.ApproveSemanticLayerRequest, v1.ApproveSemanticLayerResponse]
+	listSemanticLayerVersions *connect.Client[v1.ListSemanticLayerVersionsRequest, v1.ListSemanticLayerVersionsResponse]
+	diffSemanticLayer         *connect.Client[v1.DiffSemanticLayerRequest, v1.DiffSemanticLayerResponse]
 }
 
 // GetSemanticLayer calls semantic.v1.SemanticLayerService.GetSemanticLayer.
@@ -121,12 +143,24 @@ func (c *semanticLayerServiceClient) ApproveSemanticLayer(ctx context.Context, r
 	return c.approveSemanticLayer.CallUnary(ctx, req)
 }
 
+// ListSemanticLayerVersions calls semantic.v1.SemanticLayerService.ListSemanticLayerVersions.
+func (c *semanticLayerServiceClient) ListSemanticLayerVersions(ctx context.Context, req *connect.Request[v1.ListSemanticLayerVersionsRequest]) (*connect.Response[v1.ListSemanticLayerVersionsResponse], error) {
+	return c.listSemanticLayerVersions.CallUnary(ctx, req)
+}
+
+// DiffSemanticLayer calls semantic.v1.SemanticLayerService.DiffSemanticLayer.
+func (c *semanticLayerServiceClient) DiffSemanticLayer(ctx context.Context, req *connect.Request[v1.DiffSemanticLayerRequest]) (*connect.Response[v1.DiffSemanticLayerResponse], error) {
+	return c.diffSemanticLayer.CallUnary(ctx, req)
+}
+
 // SemanticLayerServiceHandler is an implementation of the semantic.v1.SemanticLayerService service.
 type SemanticLayerServiceHandler interface {
 	GetSemanticLayer(context.Context, *connect.Request[v1.GetSemanticLayerRequest]) (*connect.Response[v1.GetSemanticLayerResponse], error)
 	DraftSemanticLayer(context.Context, *connect.Request[v1.DraftSemanticLayerRequest]) (*connect.Response[v1.DraftSemanticLayerResponse], error)
 	UpdateSemanticLayer(context.Context, *connect.Request[v1.UpdateSemanticLayerRequest]) (*connect.Response[v1.UpdateSemanticLayerResponse], error)
 	ApproveSemanticLayer(context.Context, *connect.Request[v1.ApproveSemanticLayerRequest]) (*connect.Response[v1.ApproveSemanticLayerResponse], error)
+	ListSemanticLayerVersions(context.Context, *connect.Request[v1.ListSemanticLayerVersionsRequest]) (*connect.Response[v1.ListSemanticLayerVersionsResponse], error)
+	DiffSemanticLayer(context.Context, *connect.Request[v1.DiffSemanticLayerRequest]) (*connect.Response[v1.DiffSemanticLayerResponse], error)
 }
 
 // NewSemanticLayerServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -160,6 +194,18 @@ func NewSemanticLayerServiceHandler(svc SemanticLayerServiceHandler, opts ...con
 		connect.WithSchema(semanticLayerServiceMethods.ByName("ApproveSemanticLayer")),
 		connect.WithHandlerOptions(opts...),
 	)
+	semanticLayerServiceListSemanticLayerVersionsHandler := connect.NewUnaryHandler(
+		SemanticLayerServiceListSemanticLayerVersionsProcedure,
+		svc.ListSemanticLayerVersions,
+		connect.WithSchema(semanticLayerServiceMethods.ByName("ListSemanticLayerVersions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	semanticLayerServiceDiffSemanticLayerHandler := connect.NewUnaryHandler(
+		SemanticLayerServiceDiffSemanticLayerProcedure,
+		svc.DiffSemanticLayer,
+		connect.WithSchema(semanticLayerServiceMethods.ByName("DiffSemanticLayer")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/semantic.v1.SemanticLayerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SemanticLayerServiceGetSemanticLayerProcedure:
@@ -170,6 +216,10 @@ func NewSemanticLayerServiceHandler(svc SemanticLayerServiceHandler, opts ...con
 			semanticLayerServiceUpdateSemanticLayerHandler.ServeHTTP(w, r)
 		case SemanticLayerServiceApproveSemanticLayerProcedure:
 			semanticLayerServiceApproveSemanticLayerHandler.ServeHTTP(w, r)
+		case SemanticLayerServiceListSemanticLayerVersionsProcedure:
+			semanticLayerServiceListSemanticLayerVersionsHandler.ServeHTTP(w, r)
+		case SemanticLayerServiceDiffSemanticLayerProcedure:
+			semanticLayerServiceDiffSemanticLayerHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -193,4 +243,12 @@ func (UnimplementedSemanticLayerServiceHandler) UpdateSemanticLayer(context.Cont
 
 func (UnimplementedSemanticLayerServiceHandler) ApproveSemanticLayer(context.Context, *connect.Request[v1.ApproveSemanticLayerRequest]) (*connect.Response[v1.ApproveSemanticLayerResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("semantic.v1.SemanticLayerService.ApproveSemanticLayer is not implemented"))
+}
+
+func (UnimplementedSemanticLayerServiceHandler) ListSemanticLayerVersions(context.Context, *connect.Request[v1.ListSemanticLayerVersionsRequest]) (*connect.Response[v1.ListSemanticLayerVersionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("semantic.v1.SemanticLayerService.ListSemanticLayerVersions is not implemented"))
+}
+
+func (UnimplementedSemanticLayerServiceHandler) DiffSemanticLayer(context.Context, *connect.Request[v1.DiffSemanticLayerRequest]) (*connect.Response[v1.DiffSemanticLayerResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("semantic.v1.SemanticLayerService.DiffSemanticLayer is not implemented"))
 }

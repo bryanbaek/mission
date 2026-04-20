@@ -16,6 +16,7 @@ import (
 
 type semanticLayerDB interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
@@ -78,6 +79,53 @@ func (r *TenantSemanticLayerRepository) LatestApprovedBySchemaVersion(
 		ORDER BY approved_at DESC NULLS LAST, created_at DESC
 		LIMIT 1
 	`, tenantID, schemaVersionID)
+}
+
+func (r *TenantSemanticLayerRepository) ListApprovedHistoryByTenant(
+	ctx context.Context,
+	tenantID uuid.UUID,
+) ([]model.TenantSemanticLayer, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			tenant_id,
+			schema_version_id,
+			status::text,
+			content,
+			created_at,
+			approved_at,
+			approved_by_user_id
+		FROM tenant_semantic_layers
+		WHERE tenant_id = $1
+		  AND approved_at IS NOT NULL
+		ORDER BY approved_at DESC, created_at DESC
+	`, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("list semantic layer history: %w", err)
+	}
+	defer rows.Close()
+
+	var out []model.TenantSemanticLayer
+	for rows.Next() {
+		var rec model.TenantSemanticLayer
+		if err := rows.Scan(
+			&rec.ID,
+			&rec.TenantID,
+			&rec.SchemaVersionID,
+			&rec.Status,
+			&rec.Content,
+			&rec.CreatedAt,
+			&rec.ApprovedAt,
+			&rec.ApprovedByUserID,
+		); err != nil {
+			return nil, fmt.Errorf("scan semantic layer history row: %w", err)
+		}
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate semantic layer history: %w", err)
+	}
+	return out, nil
 }
 
 func (r *TenantSemanticLayerRepository) GetByID(

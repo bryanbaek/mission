@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file semantic/v1/semantic.proto.
  */
 export const file_semantic_v1_semantic: GenFile = /*@__PURE__*/
-  fileDesc("ChpzZW1hbnRpYy92MS9zZW1hbnRpYy5wcm90bxILc2VtYW50aWMudjEifwoUU2NoZW1hVmVyc2lvblN1bW1hcnkSCgoCaWQYASABKAkSLwoLY2FwdHVyZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKC3NjaGVtYV9oYXNoGAMgASgJEhUKDWRhdGFiYXNlX25hbWUYBCABKAki0wEKDlNlbWFudGljQ29sdW1uEhQKDHRhYmxlX3NjaGVtYRgBIAEoCRISCgp0YWJsZV9uYW1lGAIgASgJEhMKC2NvbHVtbl9uYW1lGAMgASgJEhgKEG9yZGluYWxfcG9zaXRpb24YBCABKAUSEQoJZGF0YV90eXBlGAUgASgJEhMKC2NvbHVtbl90eXBlGAYgASgJEhMKC2lzX251bGxhYmxlGAcgASgIEhYKDmNvbHVtbl9jb21tZW50GAggASgJEhMKC2Rlc2NyaXB0aW9uGAkgASgJIqcBCg1TZW1hbnRpY1RhYmxlEhQKDHRhYmxlX3NjaGVtYRgBIAEoCRISCgp0YWJsZV9uYW1lGAIgASgJEhIKCnRhYmxlX3R5cGUYAyABKAkSFQoNdGFibGVfY29tbWVudBgEIAEoCRITCgtkZXNjcmlwdGlvbhgFIAEoCRIsCgdjb2x1bW5zGAYgAygLMhsuc2VtYW50aWMudjEuU2VtYW50aWNDb2x1bW4iSgoOU2VtYW50aWNFbnRpdHkSDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIVCg1zb3VyY2VfdGFibGVzGAMgAygJIksKD0NhbmRpZGF0ZU1ldHJpYxIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEhUKDXNvdXJjZV90YWJsZXMYAyADKAkiqgEKFFNlbWFudGljTGF5ZXJDb250ZW50EioKBnRhYmxlcxgBIAMoCzIaLnNlbWFudGljLnYxLlNlbWFudGljVGFibGUSLQoIZW50aXRpZXMYAiADKAsyGy5zZW1hbnRpYy52MS5TZW1hbnRpY0VudGl0eRI3ChFjYW5kaWRhdGVfbWV0cmljcxgDIAMoCzIcLnNlbWFudGljLnYxLkNhbmRpZGF0ZU1ldHJpYyKtAgoNU2VtYW50aWNMYXllchIKCgJpZBgBIAEoCRIRCgl0ZW5hbnRfaWQYAiABKAkSGQoRc2NoZW1hX3ZlcnNpb25faWQYAyABKAkSMAoGc3RhdHVzGAQgASgOMiAuc2VtYW50aWMudjEuU2VtYW50aWNMYXllclN0YXR1cxIyCgdjb250ZW50GAUgASgLMiEuc2VtYW50aWMudjEuU2VtYW50aWNMYXllckNvbnRlbnQSLgoKY3JlYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLYXBwcm92ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhsKE2FwcHJvdmVkX2J5X3VzZXJfaWQYCCABKAkipQEKD0NvbXBsZXRpb25Vc2FnZRIQCghwcm92aWRlchgBIAEoCRINCgVtb2RlbBgCIAEoCRIUCgxpbnB1dF90b2tlbnMYAyABKAUSFQoNb3V0cHV0X3Rva2VucxgEIAEoBRIjChtjYWNoZV9jcmVhdGlvbl9pbnB1dF90b2tlbnMYBSABKAUSHwoXY2FjaGVfcmVhZF9pbnB1dF90b2tlbnMYBiABKAUiLAoXR2V0U2VtYW50aWNMYXllclJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJIucBChhHZXRTZW1hbnRpY0xheWVyUmVzcG9uc2USEgoKaGFzX3NjaGVtYRgBIAEoCBITCgtuZWVkc19kcmFmdBgCIAEoCBI4Cg1sYXRlc3Rfc2NoZW1hGAMgASgLMiEuc2VtYW50aWMudjEuU2NoZW1hVmVyc2lvblN1bW1hcnkSMQoNY3VycmVudF9sYXllchgEIAEoCzIaLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXISNQoRYXBwcm92ZWRfYmFzZWxpbmUYBSABKAsyGi5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyIkkKGURyYWZ0U2VtYW50aWNMYXllclJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhkKEXNjaGVtYV92ZXJzaW9uX2lkGAIgASgJInQKGkRyYWZ0U2VtYW50aWNMYXllclJlc3BvbnNlEikKBWxheWVyGAEgASgLMhouc2VtYW50aWMudjEuU2VtYW50aWNMYXllchIrCgV1c2FnZRgCIAEoCzIcLnNlbWFudGljLnYxLkNvbXBsZXRpb25Vc2FnZSJvChpVcGRhdGVTZW1hbnRpY0xheWVyUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSCgoCaWQYAiABKAkSMgoHY29udGVudBgDIAEoCzIhLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXJDb250ZW50IkgKG1VwZGF0ZVNlbWFudGljTGF5ZXJSZXNwb25zZRIpCgVsYXllchgBIAEoCzIaLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXIiPAobQXBwcm92ZVNlbWFudGljTGF5ZXJSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIKCgJpZBgCIAEoCSJJChxBcHByb3ZlU2VtYW50aWNMYXllclJlc3BvbnNlEikKBWxheWVyGAEgASgLMhouc2VtYW50aWMudjEuU2VtYW50aWNMYXllciqlAQoTU2VtYW50aWNMYXllclN0YXR1cxIlCiFTRU1BTlRJQ19MQVlFUl9TVEFUVVNfVU5TUEVDSUZJRUQQABIfChtTRU1BTlRJQ19MQVlFUl9TVEFUVVNfRFJBRlQQARIiCh5TRU1BTlRJQ19MQVlFUl9TVEFUVVNfQVBQUk9WRUQQAhIiCh5TRU1BTlRJQ19MQVlFUl9TVEFUVVNfQVJDSElWRUQQAzK1AwoUU2VtYW50aWNMYXllclNlcnZpY2USXwoQR2V0U2VtYW50aWNMYXllchIkLnNlbWFudGljLnYxLkdldFNlbWFudGljTGF5ZXJSZXF1ZXN0GiUuc2VtYW50aWMudjEuR2V0U2VtYW50aWNMYXllclJlc3BvbnNlEmUKEkRyYWZ0U2VtYW50aWNMYXllchImLnNlbWFudGljLnYxLkRyYWZ0U2VtYW50aWNMYXllclJlcXVlc3QaJy5zZW1hbnRpYy52MS5EcmFmdFNlbWFudGljTGF5ZXJSZXNwb25zZRJoChNVcGRhdGVTZW1hbnRpY0xheWVyEicuc2VtYW50aWMudjEuVXBkYXRlU2VtYW50aWNMYXllclJlcXVlc3QaKC5zZW1hbnRpYy52MS5VcGRhdGVTZW1hbnRpY0xheWVyUmVzcG9uc2USawoUQXBwcm92ZVNlbWFudGljTGF5ZXISKC5zZW1hbnRpYy52MS5BcHByb3ZlU2VtYW50aWNMYXllclJlcXVlc3QaKS5zZW1hbnRpYy52MS5BcHByb3ZlU2VtYW50aWNMYXllclJlc3BvbnNlQqkBCg9jb20uc2VtYW50aWMudjFCDVNlbWFudGljUHJvdG9QAVo6Z2l0aHViLmNvbS9icnlhbmJhZWsvbWlzc2lvbi9nZW4vZ28vc2VtYW50aWMvdjE7c2VtYW50aWN2MaICA1NYWKoCC1NlbWFudGljLlYxygILU2VtYW50aWNcVjHiAhdTZW1hbnRpY1xWMVxHUEJNZXRhZGF0YeoCDFNlbWFudGljOjpWMWIGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("ChpzZW1hbnRpYy92MS9zZW1hbnRpYy5wcm90bxILc2VtYW50aWMudjEifwoUU2NoZW1hVmVyc2lvblN1bW1hcnkSCgoCaWQYASABKAkSLwoLY2FwdHVyZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKC3NjaGVtYV9oYXNoGAMgASgJEhUKDWRhdGFiYXNlX25hbWUYBCABKAki0wEKDlNlbWFudGljQ29sdW1uEhQKDHRhYmxlX3NjaGVtYRgBIAEoCRISCgp0YWJsZV9uYW1lGAIgASgJEhMKC2NvbHVtbl9uYW1lGAMgASgJEhgKEG9yZGluYWxfcG9zaXRpb24YBCABKAUSEQoJZGF0YV90eXBlGAUgASgJEhMKC2NvbHVtbl90eXBlGAYgASgJEhMKC2lzX251bGxhYmxlGAcgASgIEhYKDmNvbHVtbl9jb21tZW50GAggASgJEhMKC2Rlc2NyaXB0aW9uGAkgASgJIqcBCg1TZW1hbnRpY1RhYmxlEhQKDHRhYmxlX3NjaGVtYRgBIAEoCRISCgp0YWJsZV9uYW1lGAIgASgJEhIKCnRhYmxlX3R5cGUYAyABKAkSFQoNdGFibGVfY29tbWVudBgEIAEoCRITCgtkZXNjcmlwdGlvbhgFIAEoCRIsCgdjb2x1bW5zGAYgAygLMhsuc2VtYW50aWMudjEuU2VtYW50aWNDb2x1bW4iSgoOU2VtYW50aWNFbnRpdHkSDAoEbmFtZRgBIAEoCRITCgtkZXNjcmlwdGlvbhgCIAEoCRIVCg1zb3VyY2VfdGFibGVzGAMgAygJIksKD0NhbmRpZGF0ZU1ldHJpYxIMCgRuYW1lGAEgASgJEhMKC2Rlc2NyaXB0aW9uGAIgASgJEhUKDXNvdXJjZV90YWJsZXMYAyADKAkiqgEKFFNlbWFudGljTGF5ZXJDb250ZW50EioKBnRhYmxlcxgBIAMoCzIaLnNlbWFudGljLnYxLlNlbWFudGljVGFibGUSLQoIZW50aXRpZXMYAiADKAsyGy5zZW1hbnRpYy52MS5TZW1hbnRpY0VudGl0eRI3ChFjYW5kaWRhdGVfbWV0cmljcxgDIAMoCzIcLnNlbWFudGljLnYxLkNhbmRpZGF0ZU1ldHJpYyKtAgoNU2VtYW50aWNMYXllchIKCgJpZBgBIAEoCRIRCgl0ZW5hbnRfaWQYAiABKAkSGQoRc2NoZW1hX3ZlcnNpb25faWQYAyABKAkSMAoGc3RhdHVzGAQgASgOMiAuc2VtYW50aWMudjEuU2VtYW50aWNMYXllclN0YXR1cxIyCgdjb250ZW50GAUgASgLMiEuc2VtYW50aWMudjEuU2VtYW50aWNMYXllckNvbnRlbnQSLgoKY3JlYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLYXBwcm92ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhsKE2FwcHJvdmVkX2J5X3VzZXJfaWQYCCABKAkipQEKD0NvbXBsZXRpb25Vc2FnZRIQCghwcm92aWRlchgBIAEoCRINCgVtb2RlbBgCIAEoCRIUCgxpbnB1dF90b2tlbnMYAyABKAUSFQoNb3V0cHV0X3Rva2VucxgEIAEoBRIjChtjYWNoZV9jcmVhdGlvbl9pbnB1dF90b2tlbnMYBSABKAUSHwoXY2FjaGVfcmVhZF9pbnB1dF90b2tlbnMYBiABKAUiLAoXR2V0U2VtYW50aWNMYXllclJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJIucBChhHZXRTZW1hbnRpY0xheWVyUmVzcG9uc2USEgoKaGFzX3NjaGVtYRgBIAEoCBITCgtuZWVkc19kcmFmdBgCIAEoCBI4Cg1sYXRlc3Rfc2NoZW1hGAMgASgLMiEuc2VtYW50aWMudjEuU2NoZW1hVmVyc2lvblN1bW1hcnkSMQoNY3VycmVudF9sYXllchgEIAEoCzIaLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXISNQoRYXBwcm92ZWRfYmFzZWxpbmUYBSABKAsyGi5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyIkkKGURyYWZ0U2VtYW50aWNMYXllclJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhkKEXNjaGVtYV92ZXJzaW9uX2lkGAIgASgJInQKGkRyYWZ0U2VtYW50aWNMYXllclJlc3BvbnNlEikKBWxheWVyGAEgASgLMhouc2VtYW50aWMudjEuU2VtYW50aWNMYXllchIrCgV1c2FnZRgCIAEoCzIcLnNlbWFudGljLnYxLkNvbXBsZXRpb25Vc2FnZSJvChpVcGRhdGVTZW1hbnRpY0xheWVyUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSCgoCaWQYAiABKAkSMgoHY29udGVudBgDIAEoCzIhLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXJDb250ZW50IkgKG1VwZGF0ZVNlbWFudGljTGF5ZXJSZXNwb25zZRIpCgVsYXllchgBIAEoCzIaLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXIiPAobQXBwcm92ZVNlbWFudGljTGF5ZXJSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIKCgJpZBgCIAEoCSJJChxBcHByb3ZlU2VtYW50aWNMYXllclJlc3BvbnNlEikKBWxheWVyGAEgASgLMhouc2VtYW50aWMudjEuU2VtYW50aWNMYXllciLCAgobU2VtYW50aWNMYXllclZlcnNpb25TdW1tYXJ5EgoKAmlkGAEgASgJEhEKCXRlbmFudF9pZBgCIAEoCRIZChFzY2hlbWFfdmVyc2lvbl9pZBgDIAEoCRIwCgZzdGF0dXMYBCABKA4yIC5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyU3RhdHVzEi4KCmNyZWF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEi8KC2FwcHJvdmVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIbChNhcHByb3ZlZF9ieV91c2VyX2lkGAcgASgJEjkKDnNjaGVtYV92ZXJzaW9uGAggASgLMiEuc2VtYW50aWMudjEuU2NoZW1hVmVyc2lvblN1bW1hcnkiNQogTGlzdFNlbWFudGljTGF5ZXJWZXJzaW9uc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJIl8KIUxpc3RTZW1hbnRpY0xheWVyVmVyc2lvbnNSZXNwb25zZRI6Cgh2ZXJzaW9ucxgBIAMoCzIoLnNlbWFudGljLnYxLlNlbWFudGljTGF5ZXJWZXJzaW9uU3VtbWFyeSKpAQoVU2VtYW50aWNMYXllckRpZmZJdGVtEjAKBGtpbmQYASABKA4yIi5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyRGlmZktpbmQSMgoFc2NvcGUYAiABKA4yIy5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyRGlmZlNjb3BlEgsKA2tleRgDIAEoCRIOCgZiZWZvcmUYBCABKAkSDQoFYWZ0ZXIYBSABKAkiUAoYRGlmZlNlbWFudGljTGF5ZXJSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIPCgdsZWZ0X2lkGAIgASgJEhAKCHJpZ2h0X2lkGAMgASgJIr8BChlEaWZmU2VtYW50aWNMYXllclJlc3BvbnNlEjYKBGxlZnQYASABKAsyKC5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyVmVyc2lvblN1bW1hcnkSNwoFcmlnaHQYAiABKAsyKC5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyVmVyc2lvblN1bW1hcnkSMQoFaXRlbXMYAyADKAsyIi5zZW1hbnRpYy52MS5TZW1hbnRpY0xheWVyRGlmZkl0ZW0qpQEKE1NlbWFudGljTGF5ZXJTdGF0dXMSJQohU0VNQU5USUNfTEFZRVJfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHwobU0VNQU5USUNfTEFZRVJfU1RBVFVTX0RSQUZUEAESIgoeU0VNQU5USUNfTEFZRVJfU1RBVFVTX0FQUFJPVkVEEAISIgoeU0VNQU5USUNfTEFZRVJfU1RBVFVTX0FSQ0hJVkVEEAMqsQEKFVNlbWFudGljTGF5ZXJEaWZmS2luZBIoCiRTRU1BTlRJQ19MQVlFUl9ESUZGX0tJTkRfVU5TUEVDSUZJRUQQABIiCh5TRU1BTlRJQ19MQVlFUl9ESUZGX0tJTkRfQURERUQQARIkCiBTRU1BTlRJQ19MQVlFUl9ESUZGX0tJTkRfUkVNT1ZFRBACEiQKIFNFTUFOVElDX0xBWUVSX0RJRkZfS0lORF9DSEFOR0VEEAMq2gEKFlNlbWFudGljTGF5ZXJEaWZmU2NvcGUSKQolU0VNQU5USUNfTEFZRVJfRElGRl9TQ09QRV9VTlNQRUNJRklFRBAAEiMKH1NFTUFOVElDX0xBWUVSX0RJRkZfU0NPUEVfVEFCTEUQARIkCiBTRU1BTlRJQ19MQVlFUl9ESUZGX1NDT1BFX0NPTFVNThACEiQKIFNFTUFOVElDX0xBWUVSX0RJRkZfU0NPUEVfRU5USVRZEAMSJAogU0VNQU5USUNfTEFZRVJfRElGRl9TQ09QRV9NRVRSSUMQBDKVBQoUU2VtYW50aWNMYXllclNlcnZpY2USXwoQR2V0U2VtYW50aWNMYXllchIkLnNlbWFudGljLnYxLkdldFNlbWFudGljTGF5ZXJSZXF1ZXN0GiUuc2VtYW50aWMudjEuR2V0U2VtYW50aWNMYXllclJlc3BvbnNlEmUKEkRyYWZ0U2VtYW50aWNMYXllchImLnNlbWFudGljLnYxLkRyYWZ0U2VtYW50aWNMYXllclJlcXVlc3QaJy5zZW1hbnRpYy52MS5EcmFmdFNlbWFudGljTGF5ZXJSZXNwb25zZRJoChNVcGRhdGVTZW1hbnRpY0xheWVyEicuc2VtYW50aWMudjEuVXBkYXRlU2VtYW50aWNMYXllclJlcXVlc3QaKC5zZW1hbnRpYy52MS5VcGRhdGVTZW1hbnRpY0xheWVyUmVzcG9uc2USawoUQXBwcm92ZVNlbWFudGljTGF5ZXISKC5zZW1hbnRpYy52MS5BcHByb3ZlU2VtYW50aWNMYXllclJlcXVlc3QaKS5zZW1hbnRpYy52MS5BcHByb3ZlU2VtYW50aWNMYXllclJlc3BvbnNlEnoKGUxpc3RTZW1hbnRpY0xheWVyVmVyc2lvbnMSLS5zZW1hbnRpYy52MS5MaXN0U2VtYW50aWNMYXllclZlcnNpb25zUmVxdWVzdBouLnNlbWFudGljLnYxLkxpc3RTZW1hbnRpY0xheWVyVmVyc2lvbnNSZXNwb25zZRJiChFEaWZmU2VtYW50aWNMYXllchIlLnNlbWFudGljLnYxLkRpZmZTZW1hbnRpY0xheWVyUmVxdWVzdBomLnNlbWFudGljLnYxLkRpZmZTZW1hbnRpY0xheWVyUmVzcG9uc2VCqQEKD2NvbS5zZW1hbnRpYy52MUINU2VtYW50aWNQcm90b1ABWjpnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9zZW1hbnRpYy92MTtzZW1hbnRpY3YxogIDU1hYqgILU2VtYW50aWMuVjHKAgtTZW1hbnRpY1xWMeICF1NlbWFudGljXFYxXEdQQk1ldGFkYXRh6gIMU2VtYW50aWM6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message semantic.v1.SchemaVersionSummary
@@ -502,6 +502,183 @@ export const ApproveSemanticLayerResponseSchema: GenMessage<ApproveSemanticLayer
   messageDesc(file_semantic_v1_semantic, 15);
 
 /**
+ * @generated from message semantic.v1.SemanticLayerVersionSummary
+ */
+export type SemanticLayerVersionSummary = Message<"semantic.v1.SemanticLayerVersionSummary"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string tenant_id = 2;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string schema_version_id = 3;
+   */
+  schemaVersionId: string;
+
+  /**
+   * @generated from field: semantic.v1.SemanticLayerStatus status = 4;
+   */
+  status: SemanticLayerStatus;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 5;
+   */
+  createdAt?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp approved_at = 6;
+   */
+  approvedAt?: Timestamp;
+
+  /**
+   * @generated from field: string approved_by_user_id = 7;
+   */
+  approvedByUserId: string;
+
+  /**
+   * @generated from field: semantic.v1.SchemaVersionSummary schema_version = 8;
+   */
+  schemaVersion?: SchemaVersionSummary;
+};
+
+/**
+ * Describes the message semantic.v1.SemanticLayerVersionSummary.
+ * Use `create(SemanticLayerVersionSummarySchema)` to create a new message.
+ */
+export const SemanticLayerVersionSummarySchema: GenMessage<SemanticLayerVersionSummary> = /*@__PURE__*/
+  messageDesc(file_semantic_v1_semantic, 16);
+
+/**
+ * @generated from message semantic.v1.ListSemanticLayerVersionsRequest
+ */
+export type ListSemanticLayerVersionsRequest = Message<"semantic.v1.ListSemanticLayerVersionsRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+};
+
+/**
+ * Describes the message semantic.v1.ListSemanticLayerVersionsRequest.
+ * Use `create(ListSemanticLayerVersionsRequestSchema)` to create a new message.
+ */
+export const ListSemanticLayerVersionsRequestSchema: GenMessage<ListSemanticLayerVersionsRequest> = /*@__PURE__*/
+  messageDesc(file_semantic_v1_semantic, 17);
+
+/**
+ * @generated from message semantic.v1.ListSemanticLayerVersionsResponse
+ */
+export type ListSemanticLayerVersionsResponse = Message<"semantic.v1.ListSemanticLayerVersionsResponse"> & {
+  /**
+   * @generated from field: repeated semantic.v1.SemanticLayerVersionSummary versions = 1;
+   */
+  versions: SemanticLayerVersionSummary[];
+};
+
+/**
+ * Describes the message semantic.v1.ListSemanticLayerVersionsResponse.
+ * Use `create(ListSemanticLayerVersionsResponseSchema)` to create a new message.
+ */
+export const ListSemanticLayerVersionsResponseSchema: GenMessage<ListSemanticLayerVersionsResponse> = /*@__PURE__*/
+  messageDesc(file_semantic_v1_semantic, 18);
+
+/**
+ * @generated from message semantic.v1.SemanticLayerDiffItem
+ */
+export type SemanticLayerDiffItem = Message<"semantic.v1.SemanticLayerDiffItem"> & {
+  /**
+   * @generated from field: semantic.v1.SemanticLayerDiffKind kind = 1;
+   */
+  kind: SemanticLayerDiffKind;
+
+  /**
+   * @generated from field: semantic.v1.SemanticLayerDiffScope scope = 2;
+   */
+  scope: SemanticLayerDiffScope;
+
+  /**
+   * @generated from field: string key = 3;
+   */
+  key: string;
+
+  /**
+   * @generated from field: string before = 4;
+   */
+  before: string;
+
+  /**
+   * @generated from field: string after = 5;
+   */
+  after: string;
+};
+
+/**
+ * Describes the message semantic.v1.SemanticLayerDiffItem.
+ * Use `create(SemanticLayerDiffItemSchema)` to create a new message.
+ */
+export const SemanticLayerDiffItemSchema: GenMessage<SemanticLayerDiffItem> = /*@__PURE__*/
+  messageDesc(file_semantic_v1_semantic, 19);
+
+/**
+ * @generated from message semantic.v1.DiffSemanticLayerRequest
+ */
+export type DiffSemanticLayerRequest = Message<"semantic.v1.DiffSemanticLayerRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string left_id = 2;
+   */
+  leftId: string;
+
+  /**
+   * @generated from field: string right_id = 3;
+   */
+  rightId: string;
+};
+
+/**
+ * Describes the message semantic.v1.DiffSemanticLayerRequest.
+ * Use `create(DiffSemanticLayerRequestSchema)` to create a new message.
+ */
+export const DiffSemanticLayerRequestSchema: GenMessage<DiffSemanticLayerRequest> = /*@__PURE__*/
+  messageDesc(file_semantic_v1_semantic, 20);
+
+/**
+ * @generated from message semantic.v1.DiffSemanticLayerResponse
+ */
+export type DiffSemanticLayerResponse = Message<"semantic.v1.DiffSemanticLayerResponse"> & {
+  /**
+   * @generated from field: semantic.v1.SemanticLayerVersionSummary left = 1;
+   */
+  left?: SemanticLayerVersionSummary;
+
+  /**
+   * @generated from field: semantic.v1.SemanticLayerVersionSummary right = 2;
+   */
+  right?: SemanticLayerVersionSummary;
+
+  /**
+   * @generated from field: repeated semantic.v1.SemanticLayerDiffItem items = 3;
+   */
+  items: SemanticLayerDiffItem[];
+};
+
+/**
+ * Describes the message semantic.v1.DiffSemanticLayerResponse.
+ * Use `create(DiffSemanticLayerResponseSchema)` to create a new message.
+ */
+export const DiffSemanticLayerResponseSchema: GenMessage<DiffSemanticLayerResponse> = /*@__PURE__*/
+  messageDesc(file_semantic_v1_semantic, 21);
+
+/**
  * @generated from enum semantic.v1.SemanticLayerStatus
  */
 export enum SemanticLayerStatus {
@@ -531,6 +708,73 @@ export enum SemanticLayerStatus {
  */
 export const SemanticLayerStatusSchema: GenEnum<SemanticLayerStatus> = /*@__PURE__*/
   enumDesc(file_semantic_v1_semantic, 0);
+
+/**
+ * @generated from enum semantic.v1.SemanticLayerDiffKind
+ */
+export enum SemanticLayerDiffKind {
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_KIND_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_KIND_ADDED = 1;
+   */
+  ADDED = 1,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_KIND_REMOVED = 2;
+   */
+  REMOVED = 2,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_KIND_CHANGED = 3;
+   */
+  CHANGED = 3,
+}
+
+/**
+ * Describes the enum semantic.v1.SemanticLayerDiffKind.
+ */
+export const SemanticLayerDiffKindSchema: GenEnum<SemanticLayerDiffKind> = /*@__PURE__*/
+  enumDesc(file_semantic_v1_semantic, 1);
+
+/**
+ * @generated from enum semantic.v1.SemanticLayerDiffScope
+ */
+export enum SemanticLayerDiffScope {
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_SCOPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_SCOPE_TABLE = 1;
+   */
+  TABLE = 1,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_SCOPE_COLUMN = 2;
+   */
+  COLUMN = 2,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_SCOPE_ENTITY = 3;
+   */
+  ENTITY = 3,
+
+  /**
+   * @generated from enum value: SEMANTIC_LAYER_DIFF_SCOPE_METRIC = 4;
+   */
+  METRIC = 4,
+}
+
+/**
+ * Describes the enum semantic.v1.SemanticLayerDiffScope.
+ */
+export const SemanticLayerDiffScopeSchema: GenEnum<SemanticLayerDiffScope> = /*@__PURE__*/
+  enumDesc(file_semantic_v1_semantic, 2);
 
 /**
  * @generated from service semantic.v1.SemanticLayerService
@@ -567,6 +811,22 @@ export const SemanticLayerService: GenService<{
     methodKind: "unary";
     input: typeof ApproveSemanticLayerRequestSchema;
     output: typeof ApproveSemanticLayerResponseSchema;
+  },
+  /**
+   * @generated from rpc semantic.v1.SemanticLayerService.ListSemanticLayerVersions
+   */
+  listSemanticLayerVersions: {
+    methodKind: "unary";
+    input: typeof ListSemanticLayerVersionsRequestSchema;
+    output: typeof ListSemanticLayerVersionsResponseSchema;
+  },
+  /**
+   * @generated from rpc semantic.v1.SemanticLayerService.DiffSemanticLayer
+   */
+  diffSemanticLayer: {
+    methodKind: "unary";
+    input: typeof DiffSemanticLayerRequestSchema;
+    output: typeof DiffSemanticLayerResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_semantic_v1_semantic, 0);
