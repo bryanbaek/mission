@@ -16,6 +16,7 @@ type Config struct {
 	OpenAIAPIKey       string
 	DefaultLLMProvider string
 	SemanticLayerModel string
+	QueryModel         string
 }
 
 func Load() (Config, error) {
@@ -33,6 +34,7 @@ func Load() (Config, error) {
 		OpenAIAPIKey:       os.Getenv("OPENAI_API_KEY"),
 		DefaultLLMProvider: getenv("DEFAULT_LLM_PROVIDER", "anthropic"),
 		SemanticLayerModel: getenv("SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6"),
+		QueryModel:         getenv("QUERY_MODEL", "claude-sonnet-4-6"),
 	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")

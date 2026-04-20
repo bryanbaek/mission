@@ -18,6 +18,11 @@ import {
   SemanticClientContext,
   type SemanticClient,
 } from "./semanticClient";
+import {
+  createQueryClientFromTransport,
+  QueryClientContext,
+  type QueryClient,
+} from "./queryClient";
 
 type Props = {
   children: React.ReactNode;
@@ -69,10 +74,16 @@ function AuthedClientProvider({ children }: Props) {
     () => createSemanticClientFromTransport(transport),
     [transport],
   );
+  const queryClient: QueryClient = useMemo(
+    () => createQueryClientFromTransport(transport),
+    [transport],
+  );
   return (
     <TenantClientContext.Provider value={client}>
       <SemanticClientContext.Provider value={semanticClient}>
-        {children}
+        <QueryClientContext.Provider value={queryClient}>
+          {children}
+        </QueryClientContext.Provider>
       </SemanticClientContext.Provider>
     </TenantClientContext.Provider>
   );

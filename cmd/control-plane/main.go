@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
+	"github.com/bryanbaek/mission/gen/go/query/v1/queryv1connect"
 	"github.com/bryanbaek/mission/gen/go/semantic/v1/semanticv1connect"
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
@@ -114,6 +115,16 @@ func run() error {
 			Model: cfg.SemanticLayerModel,
 		},
 	)
+	queryCtrl := controller.NewQueryController(
+		tenantCtrl,
+		schemaRepo,
+		semanticLayerRepo,
+		agentSessions,
+		llmRouter,
+		controller.QueryControllerConfig{
+			Model: cfg.QueryModel,
+		},
+	)
 
 	// Auth
 	var verifier auth.Verifier
@@ -136,10 +147,12 @@ func run() error {
 	queryDebugHandler := handler.NewQueryDebugHandler(tenantCtrl, agentSessions)
 	schemaDebugHandler := handler.NewSchemaDebugHandler(tenantCtrl, schemaCtrl)
 	semanticLayerHandler := handler.NewSemanticLayerHandler(semanticLayerCtrl)
+	queryHandler := handler.NewQueryHandler(queryCtrl)
 	tenantPath, tenantSvc := tenantv1connect.NewTenantServiceHandler(tenantHandler)
 	semanticPath, semanticSvc := semanticv1connect.NewSemanticLayerServiceHandler(
 		semanticLayerHandler,
 	)
+	queryPath, querySvc := queryv1connect.NewQueryServiceHandler(queryHandler)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
 
 	r := chi.NewRouter()
@@ -157,6 +170,14 @@ func run() error {
 		r.Use(auth.RequireAuth(verifier))
 		r.Mount(tenantPath, tenantSvc)
 		r.Mount(semanticPath, semanticSvc)
+	})
+
+	// Query service gets a longer timeout because the pipeline may make two
+	// LLM calls (generation + summarization) plus an edge-agent round trip.
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Timeout(90 * time.Second))
+		r.Use(auth.RequireAuth(verifier))
+		r.Mount(queryPath, querySvc)
 	})
 
 	r.Group(func(r chi.Router) {

@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package query.v1;
+
+option go_package = "github.com/bryanbaek/mission/gen/go/query/v1;queryv1";
+
+// AskQuestionRequest carries a natural-language question from a tenant member.
+// The control plane is responsible for resolving the tenant's approved
+// semantic layer (falling back to draft or raw schema) and generating SQL.
+message AskQuestionRequest {
+  string tenant_id = 1;
+  string question = 2;
+}
+
+// Row is one result row, mapped as column_name -> stringified value. Values
+// are stringified on the server to keep the proto flat; the UI renders them
+// verbatim. Null is represented as the absent key (reader must use
+// `columns` as the authoritative order/membership).
+message Row {
+  map<string, string> values = 1;
+}
+
+// AttemptDebug surfaces every SQL attempt the pipeline made (up to two).
+// `stage` is one of "generation", "validation", "execution".
+message AttemptDebug {
+  string sql = 1;
+  string error = 2;
+  string stage = 3;
+}
+
+message AskQuestionResponse {
+  // SQL the LLM produced on the attempt that ultimately succeeded. Shown to
+  // the user as-is for transparency.
+  string sql_original = 1;
+  // Post-sqlguard rewrite (LIMIT may be injected, comments stripped, etc).
+  string sql_executed = 2;
+  bool limit_injected = 3;
+  repeated string columns = 4;
+  repeated Row rows = 5;
+  int64 row_count = 6;
+  int64 elapsed_ms = 7;
+  // Korean natural-language summary of the result set.
+  string summary_ko = 8;
+  // Non-fatal notices: "used draft semantic layer", "fell back to raw schema",
+  // "results truncated to 1000 rows", etc.
+  repeated string warnings = 9;
+  // Attempts history, size 1 or 2. Included even on success so callers can
+  // see the retry trace.
+  repeated AttemptDebug attempts = 10;
+}
+
+service QueryService {
+  rpc AskQuestion(AskQuestionRequest) returns (AskQuestionResponse);
+}

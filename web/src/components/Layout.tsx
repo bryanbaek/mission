@@ -2,10 +2,10 @@ import { NavLink, Outlet } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 
 const nav = [
-  { to: "/", label: "Tenants" },
-  { to: "/agents", label: "Agents" },
-  { to: "/queries", label: "Queries" },
+  { to: "/", label: "테넌트" },
+  { to: "/queries", label: "질문하기" },
   { to: "/semantic-layer", label: "시맨틱 레이어" },
+  { to: "/agents", label: "에이전트" },
 ];
 
 export default function Layout() {
