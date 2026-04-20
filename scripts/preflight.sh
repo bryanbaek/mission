@@ -140,17 +140,14 @@ printf '%s' "${TAGS_JSON}" | jq -e --arg tag "${EDGE_AGENT_VERSION}" '.tags[]? |
 [[ -n "${CLERK_PUBLISHABLE_KEY_EFFECTIVE}" ]] || fail "set VITE_CLERK_PUBLISHABLE_KEY or CLERK_PUBLISHABLE_KEY"
 [[ "${CLERK_PUBLISHABLE_KEY_EFFECTIVE}" == pk_live_* ]] || fail "Clerk publishable key must be a live production key, not a test key"
 
-curl -fsS https://api.anthropic.com/v1/messages \
-  -H "x-api-key: ${ANTHROPIC_API_KEY}" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "content-type: application/json" \
-  -d "$(jq -nc --arg model "${ANTHROPIC_PREFLIGHT_MODEL}" '{model:$model,max_tokens:1,messages:[{role:"user",content:"ping"}]}')" >/dev/null \
+go run ./cmd/preflight-helper anthropic-ping \
+  --api-key "${ANTHROPIC_API_KEY}" \
+  --model "${ANTHROPIC_PREFLIGHT_MODEL}" >/dev/null \
   || fail "Anthropic live preflight request failed for model ${ANTHROPIC_PREFLIGHT_MODEL}; verify key and account credit"
 
-curl -fsS https://api.openai.com/v1/responses \
-  -H "Authorization: Bearer ${OPENAI_API_KEY}" \
-  -H "content-type: application/json" \
-  -d "$(jq -nc --arg model "${OPENAI_PREFLIGHT_MODEL}" '{model:$model,input:"ping",max_output_tokens:1}')" >/dev/null \
+go run ./cmd/preflight-helper openai-ping \
+  --api-key "${OPENAI_API_KEY}" \
+  --model "${OPENAI_PREFLIGHT_MODEL}" >/dev/null \
   || fail "OpenAI live preflight request failed for model ${OPENAI_PREFLIGHT_MODEL}; verify key and account credit"
 
 cd "${ROOT_DIR}"

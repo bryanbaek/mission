@@ -1,20 +1,19 @@
 package openai
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
+	openai "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/shared"
 )
 
-const defaultBaseURL = "https://api.openai.com/v1/chat/completions"
+const chatCompletionsEndpointPath = "/chat/completions"
 
 type Config struct {
 	APIKey     string
@@ -23,24 +22,28 @@ type Config struct {
 }
 
 type Provider struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey string
+	client openai.Client
 }
 
 func New(cfg Config) *Provider {
-	baseURL := strings.TrimSpace(cfg.BaseURL)
-	if baseURL == "" {
-		baseURL = defaultBaseURL
+	httpClient := cfg.HTTPClient
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 90 * time.Second}
 	}
-	client := cfg.HTTPClient
-	if client == nil {
-		client = &http.Client{Timeout: 90 * time.Second}
+
+	apiKey := strings.TrimSpace(cfg.APIKey)
+	opts := []option.RequestOption{option.WithHTTPClient(httpClient)}
+	if apiKey != "" {
+		opts = append(opts, option.WithAPIKey(apiKey))
 	}
+	if baseURL := llm.NormalizeBaseURL(cfg.BaseURL, chatCompletionsEndpointPath); baseURL != "" {
+		opts = append(opts, option.WithBaseURL(baseURL))
+	}
+
 	return &Provider{
-		apiKey:  strings.TrimSpace(cfg.APIKey),
-		baseURL: baseURL,
-		client:  client,
+		apiKey: apiKey,
+		client: openai.NewClient(opts...),
 	}
 }
 
@@ -56,154 +59,71 @@ func (p *Provider) Complete(
 		return llm.CompletionResponse{}, fmt.Errorf("openai api key is not configured")
 	}
 
-	payload := chatCompletionsRequest{
-		Model:     req.Model,
-		MaxTokens: req.MaxTokens,
-		Messages:  make([]chatMessage, 0, len(req.Messages)+1),
-	}
-	if strings.TrimSpace(req.System) != "" {
-		payload.Messages = append(payload.Messages, chatMessage{
-			Role:    "system",
-			Content: req.System,
-		})
-	}
-	for _, msg := range req.Messages {
-		payload.Messages = append(payload.Messages, chatMessage{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
-	if req.OutputFormat != nil {
-		payload.ResponseFormat = &responseFormat{
-			Type: "json_schema",
-			JSONSchema: jsonSchemaFormat{
-				Name:   req.OutputFormat.Name,
-				Strict: true,
-				Schema: req.OutputFormat.Schema,
-			},
-		}
-	}
-
-	body, err := json.Marshal(payload)
+	params, err := buildChatCompletionParams(req)
 	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("marshal openai request: %w", err)
+		return llm.CompletionResponse{}, err
 	}
 
-	httpReq, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		p.baseURL,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("build openai request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
-
-	httpResp, err := p.client.Do(httpReq)
+	resp, err := p.client.Chat.Completions.New(ctx, params)
 	if err != nil {
 		return llm.CompletionResponse{}, fmt.Errorf("send openai request: %w", err)
 	}
-
-	respBody, readErr := io.ReadAll(httpResp.Body)
-	closeErr := httpResp.Body.Close()
-	if readErr != nil {
-		err = fmt.Errorf("read openai response: %w", readErr)
-		if closeErr != nil {
-			return llm.CompletionResponse{}, errors.Join(
-				err,
-				fmt.Errorf("close openai response body: %w", closeErr),
-			)
-		}
-		return llm.CompletionResponse{}, err
-	}
-	if httpResp.StatusCode >= http.StatusBadRequest {
-		err = decodeError(
-			httpResp.StatusCode,
-			respBody,
-		)
-		if closeErr != nil {
-			return llm.CompletionResponse{}, errors.Join(
-				err,
-				fmt.Errorf("close openai response body: %w", closeErr),
-			)
-		}
-		return llm.CompletionResponse{}, err
-	}
-	if closeErr != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("close openai response body: %w", closeErr)
-	}
-
-	var parsed chatCompletionsResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("decode openai response: %w", err)
-	}
-	if len(parsed.Choices) == 0 {
+	if len(resp.Choices) == 0 {
 		return llm.CompletionResponse{}, fmt.Errorf("openai response contained no choices")
 	}
 
 	return llm.CompletionResponse{
-		Content:  parsed.Choices[0].Message.Content,
+		Content:  resp.Choices[0].Message.Content,
 		Provider: p.Name(),
-		Model:    parsed.Model,
+		Model:    resp.Model,
 		Usage: llm.Usage{
 			Provider:     p.Name(),
-			Model:        parsed.Model,
-			InputTokens:  parsed.Usage.PromptTokens,
-			OutputTokens: parsed.Usage.CompletionTokens,
+			Model:        resp.Model,
+			InputTokens:  int(resp.Usage.PromptTokens),
+			OutputTokens: int(resp.Usage.CompletionTokens),
 		},
 	}, nil
 }
 
-type chatCompletionsRequest struct {
-	Model          string          `json:"model"`
-	Messages       []chatMessage   `json:"messages"`
-	MaxTokens      int             `json:"max_completion_tokens,omitempty"`
-	ResponseFormat *responseFormat `json:"response_format,omitempty"`
-}
-
-type chatMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type responseFormat struct {
-	Type       string           `json:"type"`
-	JSONSchema jsonSchemaFormat `json:"json_schema"`
-}
-
-type jsonSchemaFormat struct {
-	Name   string         `json:"name"`
-	Strict bool           `json:"strict"`
-	Schema map[string]any `json:"schema"`
-}
-
-type chatCompletionsResponse struct {
-	Model   string               `json:"model"`
-	Choices []chatChoice         `json:"choices"`
-	Usage   chatCompletionsUsage `json:"usage"`
-}
-
-type chatChoice struct {
-	Message chatMessage `json:"message"`
-}
-
-type chatCompletionsUsage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-}
-
-type errorEnvelope struct {
-	Error struct {
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-func decodeError(statusCode int, body []byte) error {
-	var parsed errorEnvelope
-	if err := json.Unmarshal(body, &parsed); err == nil && parsed.Error.Message != "" {
-		return fmt.Errorf("openai api error (%d): %s", statusCode, parsed.Error.Message)
+func buildChatCompletionParams(
+	req llm.CompletionRequest,
+) (openai.ChatCompletionNewParams, error) {
+	messages := make([]openai.ChatCompletionMessageParamUnion, 0, len(req.Messages)+1)
+	if system := strings.TrimSpace(req.System); system != "" {
+		messages = append(messages, openai.SystemMessage(system))
 	}
-	return fmt.Errorf("openai api error (%d): %s", statusCode, strings.TrimSpace(string(body)))
+	for _, msg := range req.Messages {
+		switch msg.Role {
+		case "user":
+			messages = append(messages, openai.UserMessage(msg.Content))
+		case "assistant":
+			messages = append(messages, openai.AssistantMessage(msg.Content))
+		default:
+			return openai.ChatCompletionNewParams{}, fmt.Errorf(
+				"unsupported openai message role %q",
+				msg.Role,
+			)
+		}
+	}
+
+	params := openai.ChatCompletionNewParams{
+		Model:    openai.ChatModel(req.Model),
+		Messages: messages,
+	}
+	if req.MaxTokens > 0 {
+		params.MaxCompletionTokens = openai.Int(int64(req.MaxTokens))
+	}
+	if req.OutputFormat != nil {
+		params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
+				JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
+					Name:   req.OutputFormat.Name,
+					Strict: openai.Bool(true),
+					Schema: req.OutputFormat.Schema,
+				},
+			},
+		}
+	}
+
+	return params, nil
 }

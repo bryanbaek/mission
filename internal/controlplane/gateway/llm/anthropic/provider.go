@@ -1,20 +1,18 @@
 package anthropic
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 
+	anthropic "github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 )
 
-const defaultBaseURL = "https://api.anthropic.com/v1/messages"
+const messagesEndpointPath = "/v1/messages"
 
 type Config struct {
 	APIKey     string
@@ -23,24 +21,28 @@ type Config struct {
 }
 
 type Provider struct {
-	apiKey  string
-	baseURL string
-	client  *http.Client
+	apiKey string
+	client anthropic.Client
 }
 
 func New(cfg Config) *Provider {
-	baseURL := strings.TrimSpace(cfg.BaseURL)
-	if baseURL == "" {
-		baseURL = defaultBaseURL
+	httpClient := cfg.HTTPClient
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 90 * time.Second}
 	}
-	client := cfg.HTTPClient
-	if client == nil {
-		client = &http.Client{Timeout: 90 * time.Second}
+
+	apiKey := strings.TrimSpace(cfg.APIKey)
+	opts := []option.RequestOption{option.WithHTTPClient(httpClient)}
+	if apiKey != "" {
+		opts = append(opts, option.WithAPIKey(apiKey))
 	}
+	if baseURL := llm.NormalizeBaseURL(cfg.BaseURL, messagesEndpointPath); baseURL != "" {
+		opts = append(opts, option.WithBaseURL(baseURL))
+	}
+
 	return &Provider{
-		apiKey:  strings.TrimSpace(cfg.APIKey),
-		baseURL: baseURL,
-		client:  client,
+		apiKey: apiKey,
+		client: anthropic.NewClient(opts...),
 	}
 }
 
@@ -56,93 +58,18 @@ func (p *Provider) Complete(
 		return llm.CompletionResponse{}, fmt.Errorf("anthropic api key is not configured")
 	}
 
-	payload := messagesRequest{
-		Model:     req.Model,
-		MaxTokens: req.MaxTokens,
-		System:    req.System,
-		Messages:  make([]message, 0, len(req.Messages)),
-	}
-	for _, msg := range req.Messages {
-		payload.Messages = append(payload.Messages, message{
-			Role:    msg.Role,
-			Content: msg.Content,
-		})
-	}
-	if req.CacheControl != nil {
-		payload.CacheControl = &cacheControl{
-			Type: req.CacheControl.Type,
-			TTL:  req.CacheControl.TTL,
-		}
-	}
-	if req.OutputFormat != nil {
-		payload.OutputConfig = &outputConfig{
-			Format: outputFormat{
-				Type:   "json_schema",
-				Schema: req.OutputFormat.Schema,
-			},
-		}
-	}
-
-	body, err := json.Marshal(payload)
+	params, err := buildMessageParams(req)
 	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("marshal anthropic request: %w", err)
+		return llm.CompletionResponse{}, err
 	}
 
-	httpReq, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		p.baseURL,
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("build anthropic request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-API-Key", p.apiKey)
-	httpReq.Header.Set("anthropic-version", "2023-06-01")
-
-	httpResp, err := p.client.Do(httpReq)
+	resp, err := p.client.Messages.New(ctx, params)
 	if err != nil {
 		return llm.CompletionResponse{}, fmt.Errorf("send anthropic request: %w", err)
 	}
 
-	respBody, readErr := io.ReadAll(httpResp.Body)
-	closeErr := httpResp.Body.Close()
-	if readErr != nil {
-		err = fmt.Errorf("read anthropic response: %w", readErr)
-		if closeErr != nil {
-			return llm.CompletionResponse{}, errors.Join(
-				err,
-				fmt.Errorf("close anthropic response body: %w", closeErr),
-			)
-		}
-		return llm.CompletionResponse{}, err
-	}
-	if httpResp.StatusCode >= http.StatusBadRequest {
-		err = decodeError(
-			"anthropic",
-			httpResp.StatusCode,
-			respBody,
-		)
-		if closeErr != nil {
-			return llm.CompletionResponse{}, errors.Join(
-				err,
-				fmt.Errorf("close anthropic response body: %w", closeErr),
-			)
-		}
-		return llm.CompletionResponse{}, err
-	}
-	if closeErr != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("close anthropic response body: %w", closeErr)
-	}
-
-	var parsed messagesResponse
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("decode anthropic response: %w", err)
-	}
-
 	var parts []string
-	for _, block := range parsed.Content {
+	for _, block := range resp.Content {
 		if block.Type == "text" {
 			parts = append(parts, block.Text)
 		}
@@ -151,74 +78,90 @@ func (p *Provider) Complete(
 	return llm.CompletionResponse{
 		Content:  strings.Join(parts, ""),
 		Provider: p.Name(),
-		Model:    parsed.Model,
+		Model:    string(resp.Model),
 		Usage: llm.Usage{
 			Provider:                 p.Name(),
-			Model:                    parsed.Model,
-			InputTokens:              parsed.Usage.InputTokens,
-			OutputTokens:             parsed.Usage.OutputTokens,
-			CacheCreationInputTokens: parsed.Usage.CacheCreationInputTokens,
-			CacheReadInputTokens:     parsed.Usage.CacheReadInputTokens,
+			Model:                    string(resp.Model),
+			InputTokens:              int(resp.Usage.InputTokens),
+			OutputTokens:             int(resp.Usage.OutputTokens),
+			CacheCreationInputTokens: int(resp.Usage.CacheCreationInputTokens),
+			CacheReadInputTokens:     int(resp.Usage.CacheReadInputTokens),
 		},
 	}, nil
 }
 
-type messagesRequest struct {
-	Model        string        `json:"model"`
-	MaxTokens    int           `json:"max_tokens"`
-	System       string        `json:"system,omitempty"`
-	Messages     []message     `json:"messages"`
-	OutputConfig *outputConfig `json:"output_config,omitempty"`
-	CacheControl *cacheControl `json:"cache_control,omitempty"`
-}
-
-type message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type outputConfig struct {
-	Format outputFormat `json:"format"`
-}
-
-type outputFormat struct {
-	Type   string         `json:"type"`
-	Schema map[string]any `json:"schema"`
-}
-
-type cacheControl struct {
-	Type string `json:"type"`
-	TTL  string `json:"ttl,omitempty"`
-}
-
-type messagesResponse struct {
-	Model   string         `json:"model"`
-	Content []contentBlock `json:"content"`
-	Usage   usage          `json:"usage"`
-}
-
-type contentBlock struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-type usage struct {
-	InputTokens              int `json:"input_tokens"`
-	OutputTokens             int `json:"output_tokens"`
-	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
-	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
-}
-
-type errorEnvelope struct {
-	Error struct {
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-func decodeError(provider string, statusCode int, body []byte) error {
-	var parsed errorEnvelope
-	if err := json.Unmarshal(body, &parsed); err == nil && parsed.Error.Message != "" {
-		return fmt.Errorf("%s api error (%d): %s", provider, statusCode, parsed.Error.Message)
+func buildMessageParams(
+	req llm.CompletionRequest,
+) (anthropic.MessageNewParams, error) {
+	params := anthropic.MessageNewParams{
+		Model:     anthropic.Model(req.Model),
+		MaxTokens: int64(req.MaxTokens),
+		Messages:  make([]anthropic.MessageParam, 0, len(req.Messages)),
 	}
-	return fmt.Errorf("%s api error (%d): %s", provider, statusCode, strings.TrimSpace(string(body)))
+	if system := strings.TrimSpace(req.System); system != "" {
+		params.System = []anthropic.TextBlockParam{{Text: system}}
+	}
+	for _, msg := range req.Messages {
+		switch msg.Role {
+		case "user":
+			params.Messages = append(
+				params.Messages,
+				anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content)),
+			)
+		case "assistant":
+			params.Messages = append(
+				params.Messages,
+				anthropic.NewAssistantMessage(anthropic.NewTextBlock(msg.Content)),
+			)
+		default:
+			return anthropic.MessageNewParams{}, fmt.Errorf(
+				"unsupported anthropic message role %q",
+				msg.Role,
+			)
+		}
+	}
+	if req.CacheControl != nil {
+		cacheControl, err := buildCacheControl(req.CacheControl)
+		if err != nil {
+			return anthropic.MessageNewParams{}, err
+		}
+		params.CacheControl = cacheControl
+	}
+	if req.OutputFormat != nil {
+		params.OutputConfig = anthropic.OutputConfigParam{
+			Format: anthropic.JSONOutputFormatParam{
+				Schema: req.OutputFormat.Schema,
+			},
+		}
+	}
+	return params, nil
+}
+
+func buildCacheControl(
+	cfg *llm.CacheControl,
+) (anthropic.CacheControlEphemeralParam, error) {
+	if cfg == nil {
+		return anthropic.CacheControlEphemeralParam{}, nil
+	}
+	if cacheType := strings.TrimSpace(cfg.Type); cacheType != "" && cacheType != "ephemeral" {
+		return anthropic.CacheControlEphemeralParam{}, fmt.Errorf(
+			"unsupported anthropic cache control type %q",
+			cfg.Type,
+		)
+	}
+
+	cacheControl := anthropic.NewCacheControlEphemeralParam()
+	switch strings.TrimSpace(cfg.TTL) {
+	case "", "5m":
+		cacheControl.TTL = anthropic.CacheControlEphemeralTTLTTL5m
+	case "1h":
+		cacheControl.TTL = anthropic.CacheControlEphemeralTTLTTL1h
+	default:
+		return anthropic.CacheControlEphemeralParam{}, fmt.Errorf(
+			"unsupported anthropic cache control ttl %q",
+			cfg.TTL,
+		)
+	}
+
+	return cacheControl, nil
 }
