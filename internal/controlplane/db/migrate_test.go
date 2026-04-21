@@ -12,20 +12,37 @@ import (
 
 type fakeMigrationRunner struct {
 	upErr       error
+	upErrs      []error
 	version     uint
 	dirty       bool
 	versionErr  error
+	forceErr    error
 	upCalled    bool
+	upCalls     int
+	forceCalled bool
+	forceValue  int
 	closeCalled bool
 }
 
 func (f *fakeMigrationRunner) Up() error {
 	f.upCalled = true
+	f.upCalls++
+	if len(f.upErrs) > 0 {
+		err := f.upErrs[0]
+		f.upErrs = f.upErrs[1:]
+		return err
+	}
 	return f.upErr
 }
 
 func (f *fakeMigrationRunner) Version() (uint, bool, error) {
 	return f.version, f.dirty, f.versionErr
+}
+
+func (f *fakeMigrationRunner) Force(version int) error {
+	f.forceCalled = true
+	f.forceValue = version
+	return f.forceErr
 }
 
 func (f *fakeMigrationRunner) Close() (error, error) {
@@ -192,6 +209,59 @@ func TestMigrateUpError(t *testing.T) {
 	}
 }
 
+func TestMigrateResetsHistoryOnMissingVersion(t *testing.T) {
+	restoreMigrateSeams(t)
+
+	runner := &fakeMigrationRunner{
+		upErrs: []error{
+			errors.New("no migration found for version 7: read down for version 7 migrations: file does not exist"),
+			migrate.ErrNoChange,
+		},
+	}
+	newMigrationSource = func() (source.Driver, error) {
+		return fakeSourceDriver{}, nil
+	}
+	newMigrationRunner = func(source.Driver, string) (migrationRunner, error) {
+		return runner, nil
+	}
+
+	if err := Migrate("postgres://mission"); err != nil {
+		t.Fatalf("Migrate returned error: %v", err)
+	}
+	if !runner.forceCalled {
+		t.Fatal("Force was not called")
+	}
+	if runner.forceValue != 1 {
+		t.Fatalf("Force version = %d, want 1", runner.forceValue)
+	}
+	if runner.upCalls != 2 {
+		t.Fatalf("Up calls = %d, want 2", runner.upCalls)
+	}
+}
+
+func TestMigrateReturnsForceError(t *testing.T) {
+	restoreMigrateSeams(t)
+
+	runner := &fakeMigrationRunner{
+		upErr:    errors.New("no migration found for version 7: read down for version 7 migrations: file does not exist"),
+		forceErr: errors.New("force failed"),
+	}
+	newMigrationSource = func() (source.Driver, error) {
+		return fakeSourceDriver{}, nil
+	}
+	newMigrationRunner = func(source.Driver, string) (migrationRunner, error) {
+		return runner, nil
+	}
+
+	err := Migrate("postgres://mission")
+	if err == nil {
+		t.Fatal("Migrate returned nil error")
+	}
+	if !strings.Contains(err.Error(), "reset migration history to head version 1") {
+		t.Fatalf("error = %v, want wrapped force error", err)
+	}
+}
+
 func TestMigrationStateAtHead(t *testing.T) {
 	restoreMigrateSeams(t)
 
@@ -312,5 +382,16 @@ func TestMigrationVersionFromFilename(t *testing.T) {
 	}
 	if ok {
 		t.Fatal("ok = true, want false for down migration")
+	}
+}
+
+func TestIsMissingMigrationVersionError(t *testing.T) {
+	t.Parallel()
+
+	if !isMissingMigrationVersionError(errors.New("no migration found for version 7")) {
+		t.Fatal("expected missing migration version error to match")
+	}
+	if isMissingMigrationVersionError(errors.New("apply failed")) {
+		t.Fatal("unexpected match for generic error")
 	}
 }

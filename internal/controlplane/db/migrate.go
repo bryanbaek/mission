@@ -21,6 +21,7 @@ var migrationsFS embed.FS
 type migrationRunner interface {
 	Up() error
 	Version() (uint, bool, error)
+	Force(version int) error
 	Close() (error, error)
 }
 
@@ -45,6 +46,11 @@ type MigrationStatus struct {
 // Migrate brings the database schema to the latest version using the embedded
 // SQL files. Safe to call on every boot — no-op if already at head.
 func Migrate(databaseURL string) error {
+	headVersion, err := latestEmbeddedMigrationVersion()
+	if err != nil {
+		return fmt.Errorf("discover migration head: %w", err)
+	}
+
 	src, err := newMigrationSource()
 	if err != nil {
 		return fmt.Errorf("load migration source: %w", err)
@@ -56,10 +62,29 @@ func Migrate(databaseURL string) error {
 	}
 	defer func() { _, _ = m.Close() }()
 
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+	if err := applyMigrations(m, headVersion); err != nil {
 		return fmt.Errorf("apply migrations: %w", err)
 	}
 	return nil
+}
+
+func applyMigrations(m migrationRunner, headVersion uint) error {
+	err := m.Up()
+	if err == nil || errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
+	if !isMissingMigrationVersionError(err) {
+		return err
+	}
+	if forceErr := m.Force(int(headVersion)); forceErr != nil {
+		return fmt.Errorf("reset migration history to head version %d: %w", headVersion, forceErr)
+	}
+
+	err = m.Up()
+	if err == nil || errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
+	return err
 }
 
 func MigrationState(databaseURL string) (MigrationStatus, error) {
@@ -143,4 +168,8 @@ func migrationVersionFromFilename(name string) (uint, bool, error) {
 		return 0, false, fmt.Errorf("parse migration version from %q: %w", name, err)
 	}
 	return uint(version), true, nil
+}
+
+func isMissingMigrationVersionError(err error) bool {
+	return strings.Contains(err.Error(), "no migration found for version")
 }
