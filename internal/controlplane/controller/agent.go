@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
@@ -190,6 +191,15 @@ func (m *AgentSessionManager) RegisterSession(
 	defer m.mu.Unlock()
 
 	if existing, ok := m.byToken[token.ID]; ok {
+		slog.Warn(
+			"replacing existing agent session",
+			"token_id",
+			token.ID,
+			"old_session_id",
+			existing.snapshot.SessionID,
+			"new_session_id",
+			sessionID,
+		)
 		m.closeSessionLocked(existing, now)
 		if existing.snapshot.SessionID != sessionID {
 			delete(m.byID, existing.snapshot.SessionID)
@@ -219,6 +229,17 @@ func (m *AgentSessionManager) RegisterSession(
 
 	m.byToken[token.ID] = session
 	m.byID[sessionID] = session
+	slog.Info(
+		"registered agent session",
+		"session_id",
+		sessionID,
+		"tenant_id",
+		token.TenantID,
+		"token_id",
+		token.ID,
+		"hostname",
+		hostname,
+	)
 
 	return AgentSessionStream{
 		Commands: session.commands,
@@ -243,6 +264,15 @@ func (m *AgentSessionManager) MarkHeartbeat(
 	}
 
 	session.snapshot.LastHeartbeatAt = at.UTC()
+	slog.Info(
+		"recorded agent heartbeat",
+		"session_id",
+		sessionID,
+		"token_id",
+		tokenID,
+		"sent_at",
+		at.UTC(),
+	)
 	return nil
 }
 
@@ -624,6 +654,13 @@ func (m *AgentSessionManager) disconnectRegisteredSession(
 	if !ok || session != target {
 		return
 	}
+	slog.Warn(
+		"disconnecting registered agent session",
+		"session_id",
+		sessionID,
+		"token_id",
+		session.snapshot.TokenID,
+	)
 	m.closeSessionLocked(session, m.now().UTC())
 }
 
@@ -719,6 +756,19 @@ func (m *AgentSessionManager) closeSessionLocked(
 	session *agentSession,
 	disconnectedAt time.Time,
 ) {
+	slog.Warn(
+		"closing agent session",
+		"session_id",
+		session.snapshot.SessionID,
+		"token_id",
+		session.snapshot.TokenID,
+		"tenant_id",
+		session.snapshot.TenantID,
+		"active",
+		session.active,
+		"disconnected_at",
+		disconnectedAt.UTC(),
+	)
 	if session.active {
 		session.active = false
 		if session.snapshot.DisconnectedAt == nil {

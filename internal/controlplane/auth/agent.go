@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -44,6 +45,7 @@ func RequireAgentToken(store AgentTokenStore) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, ok := bearerTokenFromHeader(r.Header.Get("Authorization"))
 			if !ok {
+				slog.Warn("agent auth: missing bearer token", "path", r.URL.Path)
 				writeJSONError(w, http.StatusUnauthorized, "missing bearer token")
 				return
 			}
@@ -52,9 +54,11 @@ func RequireAgentToken(store AgentTokenStore) func(http.Handler) http.Handler {
 			rec, err := store.LookupActiveByHash(r.Context(), sum[:])
 			switch {
 			case errors.Is(err, repository.ErrNotFound):
+				slog.Warn("agent auth: token not found", "path", r.URL.Path)
 				writeJSONError(w, http.StatusUnauthorized, "invalid token")
 				return
 			case err != nil:
+				slog.Error("agent auth: token lookup failed", "path", r.URL.Path, "err", err)
 				writeJSONError(w, http.StatusInternalServerError, "token lookup failed")
 				return
 			}
@@ -62,13 +66,16 @@ func RequireAgentToken(store AgentTokenStore) func(http.Handler) http.Handler {
 			if err := store.TouchLastUsed(r.Context(), rec.ID); err != nil {
 				switch {
 				case errors.Is(err, repository.ErrNotFound):
+					slog.Warn("agent auth: token revoked during touch", "path", r.URL.Path)
 					writeJSONError(w, http.StatusUnauthorized, "invalid token")
 				default:
+					slog.Error("agent auth: touch failed", "path", r.URL.Path, "err", err)
 					writeJSONError(w, http.StatusInternalServerError, "token touch failed")
 				}
 				return
 			}
 
+			slog.Info("agent auth: ok", "path", r.URL.Path, "token_id", rec.ID, "tenant_id", rec.TenantID)
 			ctx := WithAgent(r.Context(), Agent{
 				TokenID:  rec.ID,
 				TenantID: rec.TenantID,

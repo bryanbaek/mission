@@ -16,6 +16,7 @@ export default defineConfig({
       "/healthz": "http://localhost:8080",
       "/api": "http://localhost:8080",
       "/tenant.v1.TenantService": "http://localhost:8080",
+      "/onboarding.v1.OnboardingService": "http://localhost:8080",
     },
   },
   test: {

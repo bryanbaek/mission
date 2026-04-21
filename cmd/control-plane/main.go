@@ -371,3 +371,9 @@ func (r *statusRecorder) Write(body []byte) (int, error) {
 	}
 	return r.ResponseWriter.Write(body)
 }
+
+func (r *statusRecorder) Flush() {
+	if f, ok := r.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}

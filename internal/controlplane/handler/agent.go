@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -54,7 +55,29 @@ func (h *AgentHandler) OpenCommandStream(
 	if err != nil {
 		return connectErrorForSession(err)
 	}
+	slog.Info(
+		"agent stream registered",
+		"session_id",
+		req.Msg.GetSessionId(),
+		"tenant_id",
+		agent.TenantID,
+		"token_id",
+		agent.TokenID,
+		"label",
+		agent.Label,
+		"hostname",
+		req.Msg.GetHostname(),
+		"agent_version",
+		req.Msg.GetAgentVersion(),
+	)
 	defer session.Disconnect()
+	defer slog.Info(
+		"agent stream closing",
+		"session_id",
+		req.Msg.GetSessionId(),
+		"ctx_err",
+		ctx.Err(),
+	)
 
 	// Connect's server-streaming client call doesn't complete until the server
 	// emits the first frame. Send an immediate payloadless ack so the agent can
@@ -62,20 +85,54 @@ func (h *AgentHandler) OpenCommandStream(
 	if err := stream.Send(&agentv1.ControlMessage{
 		SessionId: req.Msg.GetSessionId(),
 	}); err != nil {
+		slog.Warn(
+			"agent stream ack failed",
+			"session_id",
+			req.Msg.GetSessionId(),
+			"err",
+			err,
+		)
 		return err
 	}
+	slog.Info("agent stream ack sent", "session_id", req.Msg.GetSessionId())
 
 	for {
 		select {
 		case <-ctx.Done():
+			slog.Warn(
+				"agent stream context done",
+				"session_id",
+				req.Msg.GetSessionId(),
+				"err",
+				ctx.Err(),
+			)
 			if errors.Is(ctx.Err(), context.Canceled) {
 				return nil
 			}
 			return ctx.Err()
 		case <-session.Done:
+			slog.Warn("agent stream session done", "session_id", req.Msg.GetSessionId())
 			return nil
 		case command := <-session.Commands:
+			slog.Info(
+				"agent stream sending command",
+				"session_id",
+				command.SessionID,
+				"command_id",
+				command.CommandID,
+				"kind",
+				command.Kind,
+			)
 			if err := stream.Send(commandToProto(command)); err != nil {
+				slog.Warn(
+					"agent stream send failed",
+					"session_id",
+					command.SessionID,
+					"command_id",
+					command.CommandID,
+					"err",
+					err,
+				)
 				return err
 			}
 		}
@@ -104,8 +161,24 @@ func (h *AgentHandler) Heartbeat(
 		req.Msg.GetSessionId(),
 		sentAt,
 	); err != nil {
+		slog.Warn(
+			"agent heartbeat rejected",
+			"session_id",
+			req.Msg.GetSessionId(),
+			"token_id",
+			agent.TokenID,
+			"err",
+			err,
+		)
 		return nil, connectErrorForSession(err)
 	}
+	slog.Info(
+		"agent heartbeat accepted",
+		"session_id",
+		req.Msg.GetSessionId(),
+		"token_id",
+		agent.TokenID,
+	)
 	return connect.NewResponse(&agentv1.HeartbeatResponse{}), nil
 }
 

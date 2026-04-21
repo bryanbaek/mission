@@ -367,11 +367,11 @@ func (s *AgentService) runSession(ctx context.Context) (bool, error) {
 
 	cancel()
 	heartbeatErr := <-heartbeatErrCh
-	if heartbeatErr != nil {
-		return true, heartbeatErr
-	}
 	if err := stream.Err(); err != nil {
 		return true, err
+	}
+	if heartbeatErr != nil && !isContextErr(heartbeatErr) {
+		return true, heartbeatErr
 	}
 	if ctx.Err() != nil {
 		return true, ctx.Err()
@@ -669,6 +669,10 @@ func (s *AgentService) jitter(base time.Duration) time.Duration {
 		return base
 	}
 	return base + time.Duration(s.rand.Int63n(int64(jitterWindow)))
+}
+
+func isContextErr(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 func sleepContext(ctx context.Context, delay time.Duration) error {
