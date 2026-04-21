@@ -1,0 +1,628 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/bryanbaek/mission/internal/controlplane/model"
+)
+
+type queryMemoryDB interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+type queryRunCompletion struct {
+	Status              model.QueryRunStatus
+	SQLOriginal         string
+	SQLExecuted         string
+	Attempts            []model.QueryRunAttempt
+	Warnings            []string
+	RowCount            int64
+	ElapsedMS           int64
+	RetrievedExampleIDs []uuid.UUID
+	ErrorStage          string
+	ErrorMessage        string
+	CompletedAt         time.Time
+}
+
+type TenantQueryRunRepository struct {
+	db queryMemoryDB
+}
+
+func NewTenantQueryRunRepository(pool *pgxpool.Pool) *TenantQueryRunRepository {
+	return &TenantQueryRunRepository{db: pool}
+}
+
+func (r *TenantQueryRunRepository) Create(
+	ctx context.Context,
+	tenantID, schemaVersionID uuid.UUID,
+	semanticLayerID *uuid.UUID,
+	source model.QueryPromptContextSource,
+	clerkUserID, question string,
+) (model.TenantQueryRun, error) {
+	var rec model.TenantQueryRun
+	var (
+		sqlOriginal  sql.NullString
+		sqlExecuted  sql.NullString
+		errorStage   sql.NullString
+		errorMessage sql.NullString
+	)
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO tenant_query_runs (
+			tenant_id,
+			schema_version_id,
+			semantic_layer_id,
+			prompt_context_source,
+			clerk_user_id,
+			question,
+			status
+		) VALUES ($1, $2, $3, $4::query_prompt_context_source, $5, $6, 'running')
+		RETURNING
+			id,
+			tenant_id,
+			schema_version_id,
+			semantic_layer_id,
+			prompt_context_source::text,
+			clerk_user_id,
+			question,
+			status::text,
+			sql_original,
+			sql_executed,
+			row_count,
+			elapsed_ms,
+			error_stage,
+			error_message,
+			created_at,
+			completed_at
+	`, tenantID, schemaVersionID, semanticLayerID, string(source), clerkUserID, question).Scan(
+		&rec.ID,
+		&rec.TenantID,
+		&rec.SchemaVersionID,
+		&rec.SemanticLayerID,
+		&rec.PromptContextSource,
+		&rec.ClerkUserID,
+		&rec.Question,
+		&rec.Status,
+		&sqlOriginal,
+		&sqlExecuted,
+		&rec.RowCount,
+		&rec.ElapsedMS,
+		&errorStage,
+		&errorMessage,
+		&rec.CreatedAt,
+		&rec.CompletedAt,
+	)
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("insert tenant query run: %w", err)
+	}
+	rec.SQLOriginal = sqlOriginal.String
+	rec.SQLExecuted = sqlExecuted.String
+	rec.ErrorStage = errorStage.String
+	rec.ErrorMessage = errorMessage.String
+	return rec, nil
+}
+
+func (r *TenantQueryRunRepository) GetByTenantAndID(
+	ctx context.Context,
+	tenantID, id uuid.UUID,
+) (model.TenantQueryRun, error) {
+	return r.selectOne(ctx, `
+		SELECT
+			id,
+			tenant_id,
+			schema_version_id,
+			semantic_layer_id,
+			prompt_context_source::text,
+			clerk_user_id,
+			question,
+			status::text,
+			sql_original,
+			sql_executed,
+			row_count,
+			elapsed_ms,
+			error_stage,
+			error_message,
+			created_at,
+			completed_at
+		FROM tenant_query_runs
+		WHERE tenant_id = $1
+		  AND id = $2
+	`, tenantID, id)
+}
+
+func (r *TenantQueryRunRepository) CompleteSucceeded(
+	ctx context.Context,
+	id uuid.UUID,
+	sqlOriginal, sqlExecuted string,
+	attempts []model.QueryRunAttempt,
+	warnings []string,
+	rowCount, elapsedMS int64,
+	retrievedExampleIDs []uuid.UUID,
+	completedAt time.Time,
+) (model.TenantQueryRun, error) {
+	return r.complete(ctx, id, queryRunCompletion{
+		Status:              model.QueryRunStatusSucceeded,
+		SQLOriginal:         sqlOriginal,
+		SQLExecuted:         sqlExecuted,
+		Attempts:            attempts,
+		Warnings:            warnings,
+		RowCount:            rowCount,
+		ElapsedMS:           elapsedMS,
+		RetrievedExampleIDs: retrievedExampleIDs,
+		CompletedAt:         completedAt,
+	})
+}
+
+func (r *TenantQueryRunRepository) CompleteFailed(
+	ctx context.Context,
+	id uuid.UUID,
+	attempts []model.QueryRunAttempt,
+	warnings []string,
+	retrievedExampleIDs []uuid.UUID,
+	errorStage, errorMessage string,
+	completedAt time.Time,
+) (model.TenantQueryRun, error) {
+	return r.complete(ctx, id, queryRunCompletion{
+		Status:              model.QueryRunStatusFailed,
+		Attempts:            attempts,
+		Warnings:            warnings,
+		RetrievedExampleIDs: retrievedExampleIDs,
+		ErrorStage:          strings.TrimSpace(errorStage),
+		ErrorMessage:        strings.TrimSpace(errorMessage),
+		CompletedAt:         completedAt,
+	})
+}
+
+func (r *TenantQueryRunRepository) complete(
+	ctx context.Context,
+	id uuid.UUID,
+	params queryRunCompletion,
+) (model.TenantQueryRun, error) {
+	attemptsJSON, err := json.Marshal(params.Attempts)
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("marshal query attempts: %w", err)
+	}
+	warningsJSON, err := json.Marshal(params.Warnings)
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("marshal query warnings: %w", err)
+	}
+	retrievedExampleIDsJSON, err := marshalUUIDs(params.RetrievedExampleIDs)
+	if err != nil {
+		return model.TenantQueryRun{}, err
+	}
+	var rec model.TenantQueryRun
+	var (
+		sqlOriginal  sql.NullString
+		sqlExecuted  sql.NullString
+		errorStage   sql.NullString
+		errorMessage sql.NullString
+	)
+	err = r.db.QueryRow(ctx, `
+		UPDATE tenant_query_runs
+		SET
+			status = $2::query_run_status,
+			sql_original = $3,
+			sql_executed = $4,
+			attempts_json = $5::jsonb,
+			warnings_json = $6::jsonb,
+			row_count = $7,
+			elapsed_ms = $8,
+			retrieved_example_ids_json = $9::jsonb,
+			error_stage = $10,
+			error_message = $11,
+			completed_at = $12
+		WHERE id = $1
+		RETURNING
+			id,
+			tenant_id,
+			schema_version_id,
+			semantic_layer_id,
+			prompt_context_source::text,
+			clerk_user_id,
+			question,
+			status::text,
+			sql_original,
+			sql_executed,
+			row_count,
+			elapsed_ms,
+			error_stage,
+			error_message,
+			created_at,
+			completed_at
+	`, id,
+		string(params.Status),
+		nullableString(params.SQLOriginal),
+		nullableString(params.SQLExecuted),
+		attemptsJSON,
+		warningsJSON,
+		params.RowCount,
+		params.ElapsedMS,
+		retrievedExampleIDsJSON,
+		nullableString(params.ErrorStage),
+		nullableString(params.ErrorMessage),
+		params.CompletedAt.UTC(),
+	).Scan(
+		&rec.ID,
+		&rec.TenantID,
+		&rec.SchemaVersionID,
+		&rec.SemanticLayerID,
+		&rec.PromptContextSource,
+		&rec.ClerkUserID,
+		&rec.Question,
+		&rec.Status,
+		&sqlOriginal,
+		&sqlExecuted,
+		&rec.RowCount,
+		&rec.ElapsedMS,
+		&errorStage,
+		&errorMessage,
+		&rec.CreatedAt,
+		&rec.CompletedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.TenantQueryRun{}, ErrNotFound
+	}
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("update tenant query run: %w", err)
+	}
+	rec.SQLOriginal = sqlOriginal.String
+	rec.SQLExecuted = sqlExecuted.String
+	rec.ErrorStage = errorStage.String
+	rec.ErrorMessage = errorMessage.String
+	return rec, nil
+}
+
+func (r *TenantQueryRunRepository) selectOne(
+	ctx context.Context,
+	query string,
+	args ...any,
+) (model.TenantQueryRun, error) {
+	var rec model.TenantQueryRun
+	var (
+		sqlOriginal  sql.NullString
+		sqlExecuted  sql.NullString
+		errorStage   sql.NullString
+		errorMessage sql.NullString
+	)
+	err := r.db.QueryRow(ctx, query, args...).Scan(
+		&rec.ID,
+		&rec.TenantID,
+		&rec.SchemaVersionID,
+		&rec.SemanticLayerID,
+		&rec.PromptContextSource,
+		&rec.ClerkUserID,
+		&rec.Question,
+		&rec.Status,
+		&sqlOriginal,
+		&sqlExecuted,
+		&rec.RowCount,
+		&rec.ElapsedMS,
+		&errorStage,
+		&errorMessage,
+		&rec.CreatedAt,
+		&rec.CompletedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.TenantQueryRun{}, ErrNotFound
+	}
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("select tenant query run: %w", err)
+	}
+	rec.SQLOriginal = sqlOriginal.String
+	rec.SQLExecuted = sqlExecuted.String
+	rec.ErrorStage = errorStage.String
+	rec.ErrorMessage = errorMessage.String
+	return rec, nil
+}
+
+type TenantQueryFeedbackRepository struct {
+	db queryMemoryDB
+}
+
+func NewTenantQueryFeedbackRepository(
+	pool *pgxpool.Pool,
+) *TenantQueryFeedbackRepository {
+	return &TenantQueryFeedbackRepository{db: pool}
+}
+
+func (r *TenantQueryFeedbackRepository) Upsert(
+	ctx context.Context,
+	queryRunID uuid.UUID,
+	clerkUserID string,
+	rating model.QueryFeedbackRating,
+	comment, correctedSQL string,
+	now time.Time,
+) (model.TenantQueryFeedback, error) {
+	var rec model.TenantQueryFeedback
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO tenant_query_feedback (
+			query_run_id,
+			clerk_user_id,
+			rating,
+			comment,
+			corrected_sql,
+			created_at,
+			updated_at
+		) VALUES ($1, $2, $3::query_feedback_rating, $4, $5, $6, $6)
+		ON CONFLICT (query_run_id, clerk_user_id) DO UPDATE
+		SET
+			rating = EXCLUDED.rating,
+			comment = EXCLUDED.comment,
+			corrected_sql = EXCLUDED.corrected_sql,
+			updated_at = EXCLUDED.updated_at
+		RETURNING
+			query_run_id,
+			clerk_user_id,
+			rating::text,
+			comment,
+			corrected_sql,
+			created_at,
+			updated_at
+	`, queryRunID, clerkUserID, string(rating), strings.TrimSpace(comment), strings.TrimSpace(correctedSQL), now.UTC()).Scan(
+		&rec.QueryRunID,
+		&rec.ClerkUserID,
+		&rec.Rating,
+		&rec.Comment,
+		&rec.CorrectedSQL,
+		&rec.CreatedAt,
+		&rec.UpdatedAt,
+	)
+	if err != nil {
+		return model.TenantQueryFeedback{}, fmt.Errorf("upsert tenant query feedback: %w", err)
+	}
+	return rec, nil
+}
+
+type TenantCanonicalQueryExampleRepository struct {
+	db queryMemoryDB
+}
+
+func NewTenantCanonicalQueryExampleRepository(
+	pool *pgxpool.Pool,
+) *TenantCanonicalQueryExampleRepository {
+	return &TenantCanonicalQueryExampleRepository{db: pool}
+}
+
+func (r *TenantCanonicalQueryExampleRepository) Create(
+	ctx context.Context,
+	tenantID, schemaVersionID, sourceQueryRunID uuid.UUID,
+	createdByUserID, question, sql, notes string,
+) (model.TenantCanonicalQueryExample, error) {
+	var rec model.TenantCanonicalQueryExample
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO tenant_canonical_query_examples (
+			tenant_id,
+			schema_version_id,
+			source_query_run_id,
+			created_by_user_id,
+			question,
+			sql,
+			notes
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING
+			id,
+			tenant_id,
+			schema_version_id,
+			source_query_run_id,
+			created_by_user_id,
+			question,
+			sql,
+			notes,
+			archived_at,
+			created_at
+	`, tenantID, schemaVersionID, sourceQueryRunID, createdByUserID, strings.TrimSpace(question), strings.TrimSpace(sql), strings.TrimSpace(notes)).Scan(
+		&rec.ID,
+		&rec.TenantID,
+		&rec.SchemaVersionID,
+		&rec.SourceQueryRunID,
+		&rec.CreatedByUserID,
+		&rec.Question,
+		&rec.SQL,
+		&rec.Notes,
+		&rec.ArchivedAt,
+		&rec.CreatedAt,
+	)
+	if err != nil {
+		return model.TenantCanonicalQueryExample{}, fmt.Errorf("insert canonical query example: %w", err)
+	}
+	return rec, nil
+}
+
+func (r *TenantCanonicalQueryExampleRepository) ListActiveByTenant(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	limit int,
+) ([]model.TenantCanonicalQueryExample, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+			id,
+			tenant_id,
+			schema_version_id,
+			source_query_run_id,
+			created_by_user_id,
+			question,
+			sql,
+			notes,
+			archived_at,
+			created_at
+		FROM tenant_canonical_query_examples
+		WHERE tenant_id = $1
+		  AND archived_at IS NULL
+		ORDER BY created_at DESC
+		LIMIT $2
+	`, tenantID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list canonical query examples: %w", err)
+	}
+	defer rows.Close()
+
+	var out []model.TenantCanonicalQueryExample
+	for rows.Next() {
+		var rec model.TenantCanonicalQueryExample
+		if err := rows.Scan(
+			&rec.ID,
+			&rec.TenantID,
+			&rec.SchemaVersionID,
+			&rec.SourceQueryRunID,
+			&rec.CreatedByUserID,
+			&rec.Question,
+			&rec.SQL,
+			&rec.Notes,
+			&rec.ArchivedAt,
+			&rec.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan canonical query example: %w", err)
+		}
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate canonical query examples: %w", err)
+	}
+	return out, nil
+}
+
+func (r *TenantCanonicalQueryExampleRepository) SearchActiveByQuestion(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	question string,
+	limit int,
+	schemaVersionID *uuid.UUID,
+) ([]model.TenantCanonicalQueryExample, error) {
+	var (
+		rows pgx.Rows
+		err  error
+	)
+	if schemaVersionID != nil {
+		rows, err = r.db.Query(ctx, `
+			SELECT
+				id,
+				tenant_id,
+				schema_version_id,
+				source_query_run_id,
+				created_by_user_id,
+				question,
+				sql,
+				notes,
+				archived_at,
+				created_at
+			FROM tenant_canonical_query_examples
+			WHERE tenant_id = $1
+			  AND schema_version_id = $2
+			  AND archived_at IS NULL
+			ORDER BY
+				GREATEST(
+					similarity(question, $3),
+					similarity(notes, $3)
+				) DESC,
+				created_at DESC
+			LIMIT $4
+		`, tenantID, *schemaVersionID, question, limit)
+	} else {
+		rows, err = r.db.Query(ctx, `
+			SELECT
+				id,
+				tenant_id,
+				schema_version_id,
+				source_query_run_id,
+				created_by_user_id,
+				question,
+				sql,
+				notes,
+				archived_at,
+				created_at
+			FROM tenant_canonical_query_examples
+			WHERE tenant_id = $1
+			  AND archived_at IS NULL
+			ORDER BY
+				GREATEST(
+					similarity(question, $2),
+					similarity(notes, $2)
+				) DESC,
+				created_at DESC
+			LIMIT $3
+		`, tenantID, question, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("search canonical query examples: %w", err)
+	}
+	defer rows.Close()
+
+	var out []model.TenantCanonicalQueryExample
+	for rows.Next() {
+		var rec model.TenantCanonicalQueryExample
+		if err := rows.Scan(
+			&rec.ID,
+			&rec.TenantID,
+			&rec.SchemaVersionID,
+			&rec.SourceQueryRunID,
+			&rec.CreatedByUserID,
+			&rec.Question,
+			&rec.SQL,
+			&rec.Notes,
+			&rec.ArchivedAt,
+			&rec.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan canonical query example search result: %w", err)
+		}
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate canonical query example search result: %w", err)
+	}
+	return out, nil
+}
+
+func (r *TenantCanonicalQueryExampleRepository) Archive(
+	ctx context.Context,
+	tenantID, id uuid.UUID,
+	archivedAt time.Time,
+) error {
+	tag, err := r.db.Exec(ctx, `
+		UPDATE tenant_canonical_query_examples
+		SET archived_at = $3
+		WHERE tenant_id = $1
+		  AND id = $2
+		  AND archived_at IS NULL
+	`, tenantID, id, archivedAt.UTC())
+	if err != nil {
+		return fmt.Errorf("archive canonical query example: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func marshalUUIDs(ids []uuid.UUID) ([]byte, error) {
+	values := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if id == uuid.Nil {
+			continue
+		}
+		values = append(values, id.String())
+	}
+	payload, err := json.Marshal(values)
+	if err != nil {
+		return nil, fmt.Errorf("marshal retrieved example ids: %w", err)
+	}
+	return payload, nil
+}
+
+func nullableString(value string) any {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	return value
+}

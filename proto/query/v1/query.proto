@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package query.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/bryanbaek/mission/gen/go/query/v1;queryv1";
 
 // AskQuestionRequest carries a natural-language question from a tenant member.
@@ -47,8 +49,82 @@ message AskQuestionResponse {
   // Attempts history, size 1 or 2. Included even on success so callers can
   // see the retry trace.
   repeated AttemptDebug attempts = 10;
+  string query_run_id = 11;
 }
+
+enum QueryFeedbackRating {
+  QUERY_FEEDBACK_RATING_UNSPECIFIED = 0;
+  QUERY_FEEDBACK_RATING_UP = 1;
+  QUERY_FEEDBACK_RATING_DOWN = 2;
+}
+
+message QueryFeedback {
+  string query_run_id = 1;
+  QueryFeedbackRating rating = 2;
+  string comment = 3;
+  string corrected_sql = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message SubmitQueryFeedbackRequest {
+  string tenant_id = 1;
+  string query_run_id = 2;
+  QueryFeedbackRating rating = 3;
+  string comment = 4;
+  string corrected_sql = 5;
+}
+
+message SubmitQueryFeedbackResponse {
+  QueryFeedback feedback = 1;
+}
+
+message CanonicalQueryExample {
+  string id = 1;
+  string source_query_run_id = 2;
+  string schema_version_id = 3;
+  string question = 4;
+  string sql = 5;
+  string notes = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message CreateCanonicalQueryExampleRequest {
+  string tenant_id = 1;
+  string query_run_id = 2;
+  string question = 3;
+  string sql = 4;
+  string notes = 5;
+}
+
+message CreateCanonicalQueryExampleResponse {
+  CanonicalQueryExample example = 1;
+}
+
+message ListCanonicalQueryExamplesRequest {
+  string tenant_id = 1;
+}
+
+message ListCanonicalQueryExamplesResponse {
+  repeated CanonicalQueryExample examples = 1;
+  bool viewer_can_manage = 2;
+}
+
+message ArchiveCanonicalQueryExampleRequest {
+  string tenant_id = 1;
+  string example_id = 2;
+}
+
+message ArchiveCanonicalQueryExampleResponse {}
 
 service QueryService {
   rpc AskQuestion(AskQuestionRequest) returns (AskQuestionResponse);
+  rpc SubmitQueryFeedback(SubmitQueryFeedbackRequest)
+      returns (SubmitQueryFeedbackResponse);
+  rpc CreateCanonicalQueryExample(CreateCanonicalQueryExampleRequest)
+      returns (CreateCanonicalQueryExampleResponse);
+  rpc ListCanonicalQueryExamples(ListCanonicalQueryExamplesRequest)
+      returns (ListCanonicalQueryExamplesResponse);
+  rpc ArchiveCanonicalQueryExample(ArchiveCanonicalQueryExampleRequest)
+      returns (ArchiveCanonicalQueryExampleResponse);
 }

@@ -2,15 +2,17 @@
 // @generated from file query/v1/query.proto (package query.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file query/v1/query.proto.
  */
 export const file_query_v1_query: GenFile = /*@__PURE__*/
-  fileDesc("ChRxdWVyeS92MS9xdWVyeS5wcm90bxIIcXVlcnkudjEiOQoSQXNrUXVlc3Rpb25SZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIQCghxdWVzdGlvbhgCIAEoCSJfCgNSb3cSKQoGdmFsdWVzGAEgAygLMhkucXVlcnkudjEuUm93LlZhbHVlc0VudHJ5Gi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOQoMQXR0ZW1wdERlYnVnEgsKA3NxbBgBIAEoCRINCgVlcnJvchgCIAEoCRINCgVzdGFnZRgDIAEoCSL+AQoTQXNrUXVlc3Rpb25SZXNwb25zZRIUCgxzcWxfb3JpZ2luYWwYASABKAkSFAoMc3FsX2V4ZWN1dGVkGAIgASgJEhYKDmxpbWl0X2luamVjdGVkGAMgASgIEg8KB2NvbHVtbnMYBCADKAkSGwoEcm93cxgFIAMoCzINLnF1ZXJ5LnYxLlJvdxIRCglyb3dfY291bnQYBiABKAMSEgoKZWxhcHNlZF9tcxgHIAEoAxISCgpzdW1tYXJ5X2tvGAggASgJEhAKCHdhcm5pbmdzGAkgAygJEigKCGF0dGVtcHRzGAogAygLMhYucXVlcnkudjEuQXR0ZW1wdERlYnVnMloKDFF1ZXJ5U2VydmljZRJKCgtBc2tRdWVzdGlvbhIcLnF1ZXJ5LnYxLkFza1F1ZXN0aW9uUmVxdWVzdBodLnF1ZXJ5LnYxLkFza1F1ZXN0aW9uUmVzcG9uc2VCkQEKDGNvbS5xdWVyeS52MUIKUXVlcnlQcm90b1ABWjRnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9xdWVyeS92MTtxdWVyeXYxogIDUVhYqgIIUXVlcnkuVjHKAghRdWVyeVxWMeICFFF1ZXJ5XFYxXEdQQk1ldGFkYXRh6gIJUXVlcnk6OlYxYgZwcm90bzM");
+  fileDesc("ChRxdWVyeS92MS9xdWVyeS5wcm90bxIIcXVlcnkudjEiOQoSQXNrUXVlc3Rpb25SZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIQCghxdWVzdGlvbhgCIAEoCSJfCgNSb3cSKQoGdmFsdWVzGAEgAygLMhkucXVlcnkudjEuUm93LlZhbHVlc0VudHJ5Gi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOQoMQXR0ZW1wdERlYnVnEgsKA3NxbBgBIAEoCRINCgVlcnJvchgCIAEoCRINCgVzdGFnZRgDIAEoCSKUAgoTQXNrUXVlc3Rpb25SZXNwb25zZRIUCgxzcWxfb3JpZ2luYWwYASABKAkSFAoMc3FsX2V4ZWN1dGVkGAIgASgJEhYKDmxpbWl0X2luamVjdGVkGAMgASgIEg8KB2NvbHVtbnMYBCADKAkSGwoEcm93cxgFIAMoCzINLnF1ZXJ5LnYxLlJvdxIRCglyb3dfY291bnQYBiABKAMSEgoKZWxhcHNlZF9tcxgHIAEoAxISCgpzdW1tYXJ5X2tvGAggASgJEhAKCHdhcm5pbmdzGAkgAygJEigKCGF0dGVtcHRzGAogAygLMhYucXVlcnkudjEuQXR0ZW1wdERlYnVnEhQKDHF1ZXJ5X3J1bl9pZBgLIAEoCSLcAQoNUXVlcnlGZWVkYmFjaxIUCgxxdWVyeV9ydW5faWQYASABKAkSLQoGcmF0aW5nGAIgASgOMh0ucXVlcnkudjEuUXVlcnlGZWVkYmFja1JhdGluZxIPCgdjb21tZW50GAMgASgJEhUKDWNvcnJlY3RlZF9zcWwYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAinAEKGlN1Ym1pdFF1ZXJ5RmVlZGJhY2tSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIUCgxxdWVyeV9ydW5faWQYAiABKAkSLQoGcmF0aW5nGAMgASgOMh0ucXVlcnkudjEuUXVlcnlGZWVkYmFja1JhdGluZxIPCgdjb21tZW50GAQgASgJEhUKDWNvcnJlY3RlZF9zcWwYBSABKAkiSAobU3VibWl0UXVlcnlGZWVkYmFja1Jlc3BvbnNlEikKCGZlZWRiYWNrGAEgASgLMhcucXVlcnkudjEuUXVlcnlGZWVkYmFjayK5AQoVQ2Fub25pY2FsUXVlcnlFeGFtcGxlEgoKAmlkGAEgASgJEhsKE3NvdXJjZV9xdWVyeV9ydW5faWQYAiABKAkSGQoRc2NoZW1hX3ZlcnNpb25faWQYAyABKAkSEAoIcXVlc3Rpb24YBCABKAkSCwoDc3FsGAUgASgJEg0KBW5vdGVzGAYgASgJEi4KCmNyZWF0ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInsKIkNyZWF0ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhQKDHF1ZXJ5X3J1bl9pZBgCIAEoCRIQCghxdWVzdGlvbhgDIAEoCRILCgNzcWwYBCABKAkSDQoFbm90ZXMYBSABKAkiVwojQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVzcG9uc2USMAoHZXhhbXBsZRgBIAEoCzIfLnF1ZXJ5LnYxLkNhbm9uaWNhbFF1ZXJ5RXhhbXBsZSI2CiFMaXN0Q2Fub25pY2FsUXVlcnlFeGFtcGxlc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJInIKIkxpc3RDYW5vbmljYWxRdWVyeUV4YW1wbGVzUmVzcG9uc2USMQoIZXhhbXBsZXMYASADKAsyHy5xdWVyeS52MS5DYW5vbmljYWxRdWVyeUV4YW1wbGUSGQoRdmlld2VyX2Nhbl9tYW5hZ2UYAiABKAgiTAojQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhIKCmV4YW1wbGVfaWQYAiABKAkiJgokQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlc3BvbnNlKnoKE1F1ZXJ5RmVlZGJhY2tSYXRpbmcSJQohUVVFUllfRkVFREJBQ0tfUkFUSU5HX1VOU1BFQ0lGSUVEEAASHAoYUVVFUllfRkVFREJBQ0tfUkFUSU5HX1VQEAESHgoaUVVFUllfRkVFREJBQ0tfUkFUSU5HX0RPV04QAjKyBAoMUXVlcnlTZXJ2aWNlEkoKC0Fza1F1ZXN0aW9uEhwucXVlcnkudjEuQXNrUXVlc3Rpb25SZXF1ZXN0Gh0ucXVlcnkudjEuQXNrUXVlc3Rpb25SZXNwb25zZRJiChNTdWJtaXRRdWVyeUZlZWRiYWNrEiQucXVlcnkudjEuU3VibWl0UXVlcnlGZWVkYmFja1JlcXVlc3QaJS5xdWVyeS52MS5TdWJtaXRRdWVyeUZlZWRiYWNrUmVzcG9uc2USegobQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlEiwucXVlcnkudjEuQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVxdWVzdBotLnF1ZXJ5LnYxLkNyZWF0ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlc3BvbnNlEncKGkxpc3RDYW5vbmljYWxRdWVyeUV4YW1wbGVzEisucXVlcnkudjEuTGlzdENhbm9uaWNhbFF1ZXJ5RXhhbXBsZXNSZXF1ZXN0GiwucXVlcnkudjEuTGlzdENhbm9uaWNhbFF1ZXJ5RXhhbXBsZXNSZXNwb25zZRJ9ChxBcmNoaXZlQ2Fub25pY2FsUXVlcnlFeGFtcGxlEi0ucXVlcnkudjEuQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QaLi5xdWVyeS52MS5BcmNoaXZlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVzcG9uc2VCkQEKDGNvbS5xdWVyeS52MUIKUXVlcnlQcm90b1ABWjRnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9xdWVyeS92MTtxdWVyeXYxogIDUVhYqgIIUXVlcnkuVjHKAghRdWVyeVxWMeICFFF1ZXJ5XFYxXEdQQk1ldGFkYXRh6gIJUXVlcnk6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * AskQuestionRequest carries a natural-language question from a tenant member.
@@ -156,6 +158,11 @@ export type AskQuestionResponse = Message<"query.v1.AskQuestionResponse"> & {
    * @generated from field: repeated query.v1.AttemptDebug attempts = 10;
    */
   attempts: AttemptDebug[];
+
+  /**
+   * @generated from field: string query_run_id = 11;
+   */
+  queryRunId: string;
 };
 
 /**
@@ -164,6 +171,303 @@ export type AskQuestionResponse = Message<"query.v1.AskQuestionResponse"> & {
  */
 export const AskQuestionResponseSchema: GenMessage<AskQuestionResponse> = /*@__PURE__*/
   messageDesc(file_query_v1_query, 3);
+
+/**
+ * @generated from message query.v1.QueryFeedback
+ */
+export type QueryFeedback = Message<"query.v1.QueryFeedback"> & {
+  /**
+   * @generated from field: string query_run_id = 1;
+   */
+  queryRunId: string;
+
+  /**
+   * @generated from field: query.v1.QueryFeedbackRating rating = 2;
+   */
+  rating: QueryFeedbackRating;
+
+  /**
+   * @generated from field: string comment = 3;
+   */
+  comment: string;
+
+  /**
+   * @generated from field: string corrected_sql = 4;
+   */
+  correctedSql: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 5;
+   */
+  createdAt?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 6;
+   */
+  updatedAt?: Timestamp;
+};
+
+/**
+ * Describes the message query.v1.QueryFeedback.
+ * Use `create(QueryFeedbackSchema)` to create a new message.
+ */
+export const QueryFeedbackSchema: GenMessage<QueryFeedback> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 4);
+
+/**
+ * @generated from message query.v1.SubmitQueryFeedbackRequest
+ */
+export type SubmitQueryFeedbackRequest = Message<"query.v1.SubmitQueryFeedbackRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string query_run_id = 2;
+   */
+  queryRunId: string;
+
+  /**
+   * @generated from field: query.v1.QueryFeedbackRating rating = 3;
+   */
+  rating: QueryFeedbackRating;
+
+  /**
+   * @generated from field: string comment = 4;
+   */
+  comment: string;
+
+  /**
+   * @generated from field: string corrected_sql = 5;
+   */
+  correctedSql: string;
+};
+
+/**
+ * Describes the message query.v1.SubmitQueryFeedbackRequest.
+ * Use `create(SubmitQueryFeedbackRequestSchema)` to create a new message.
+ */
+export const SubmitQueryFeedbackRequestSchema: GenMessage<SubmitQueryFeedbackRequest> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 5);
+
+/**
+ * @generated from message query.v1.SubmitQueryFeedbackResponse
+ */
+export type SubmitQueryFeedbackResponse = Message<"query.v1.SubmitQueryFeedbackResponse"> & {
+  /**
+   * @generated from field: query.v1.QueryFeedback feedback = 1;
+   */
+  feedback?: QueryFeedback;
+};
+
+/**
+ * Describes the message query.v1.SubmitQueryFeedbackResponse.
+ * Use `create(SubmitQueryFeedbackResponseSchema)` to create a new message.
+ */
+export const SubmitQueryFeedbackResponseSchema: GenMessage<SubmitQueryFeedbackResponse> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 6);
+
+/**
+ * @generated from message query.v1.CanonicalQueryExample
+ */
+export type CanonicalQueryExample = Message<"query.v1.CanonicalQueryExample"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string source_query_run_id = 2;
+   */
+  sourceQueryRunId: string;
+
+  /**
+   * @generated from field: string schema_version_id = 3;
+   */
+  schemaVersionId: string;
+
+  /**
+   * @generated from field: string question = 4;
+   */
+  question: string;
+
+  /**
+   * @generated from field: string sql = 5;
+   */
+  sql: string;
+
+  /**
+   * @generated from field: string notes = 6;
+   */
+  notes: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 7;
+   */
+  createdAt?: Timestamp;
+};
+
+/**
+ * Describes the message query.v1.CanonicalQueryExample.
+ * Use `create(CanonicalQueryExampleSchema)` to create a new message.
+ */
+export const CanonicalQueryExampleSchema: GenMessage<CanonicalQueryExample> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 7);
+
+/**
+ * @generated from message query.v1.CreateCanonicalQueryExampleRequest
+ */
+export type CreateCanonicalQueryExampleRequest = Message<"query.v1.CreateCanonicalQueryExampleRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string query_run_id = 2;
+   */
+  queryRunId: string;
+
+  /**
+   * @generated from field: string question = 3;
+   */
+  question: string;
+
+  /**
+   * @generated from field: string sql = 4;
+   */
+  sql: string;
+
+  /**
+   * @generated from field: string notes = 5;
+   */
+  notes: string;
+};
+
+/**
+ * Describes the message query.v1.CreateCanonicalQueryExampleRequest.
+ * Use `create(CreateCanonicalQueryExampleRequestSchema)` to create a new message.
+ */
+export const CreateCanonicalQueryExampleRequestSchema: GenMessage<CreateCanonicalQueryExampleRequest> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 8);
+
+/**
+ * @generated from message query.v1.CreateCanonicalQueryExampleResponse
+ */
+export type CreateCanonicalQueryExampleResponse = Message<"query.v1.CreateCanonicalQueryExampleResponse"> & {
+  /**
+   * @generated from field: query.v1.CanonicalQueryExample example = 1;
+   */
+  example?: CanonicalQueryExample;
+};
+
+/**
+ * Describes the message query.v1.CreateCanonicalQueryExampleResponse.
+ * Use `create(CreateCanonicalQueryExampleResponseSchema)` to create a new message.
+ */
+export const CreateCanonicalQueryExampleResponseSchema: GenMessage<CreateCanonicalQueryExampleResponse> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 9);
+
+/**
+ * @generated from message query.v1.ListCanonicalQueryExamplesRequest
+ */
+export type ListCanonicalQueryExamplesRequest = Message<"query.v1.ListCanonicalQueryExamplesRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+};
+
+/**
+ * Describes the message query.v1.ListCanonicalQueryExamplesRequest.
+ * Use `create(ListCanonicalQueryExamplesRequestSchema)` to create a new message.
+ */
+export const ListCanonicalQueryExamplesRequestSchema: GenMessage<ListCanonicalQueryExamplesRequest> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 10);
+
+/**
+ * @generated from message query.v1.ListCanonicalQueryExamplesResponse
+ */
+export type ListCanonicalQueryExamplesResponse = Message<"query.v1.ListCanonicalQueryExamplesResponse"> & {
+  /**
+   * @generated from field: repeated query.v1.CanonicalQueryExample examples = 1;
+   */
+  examples: CanonicalQueryExample[];
+
+  /**
+   * @generated from field: bool viewer_can_manage = 2;
+   */
+  viewerCanManage: boolean;
+};
+
+/**
+ * Describes the message query.v1.ListCanonicalQueryExamplesResponse.
+ * Use `create(ListCanonicalQueryExamplesResponseSchema)` to create a new message.
+ */
+export const ListCanonicalQueryExamplesResponseSchema: GenMessage<ListCanonicalQueryExamplesResponse> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 11);
+
+/**
+ * @generated from message query.v1.ArchiveCanonicalQueryExampleRequest
+ */
+export type ArchiveCanonicalQueryExampleRequest = Message<"query.v1.ArchiveCanonicalQueryExampleRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: string example_id = 2;
+   */
+  exampleId: string;
+};
+
+/**
+ * Describes the message query.v1.ArchiveCanonicalQueryExampleRequest.
+ * Use `create(ArchiveCanonicalQueryExampleRequestSchema)` to create a new message.
+ */
+export const ArchiveCanonicalQueryExampleRequestSchema: GenMessage<ArchiveCanonicalQueryExampleRequest> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 12);
+
+/**
+ * @generated from message query.v1.ArchiveCanonicalQueryExampleResponse
+ */
+export type ArchiveCanonicalQueryExampleResponse = Message<"query.v1.ArchiveCanonicalQueryExampleResponse"> & {
+};
+
+/**
+ * Describes the message query.v1.ArchiveCanonicalQueryExampleResponse.
+ * Use `create(ArchiveCanonicalQueryExampleResponseSchema)` to create a new message.
+ */
+export const ArchiveCanonicalQueryExampleResponseSchema: GenMessage<ArchiveCanonicalQueryExampleResponse> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 13);
+
+/**
+ * @generated from enum query.v1.QueryFeedbackRating
+ */
+export enum QueryFeedbackRating {
+  /**
+   * @generated from enum value: QUERY_FEEDBACK_RATING_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: QUERY_FEEDBACK_RATING_UP = 1;
+   */
+  UP = 1,
+
+  /**
+   * @generated from enum value: QUERY_FEEDBACK_RATING_DOWN = 2;
+   */
+  DOWN = 2,
+}
+
+/**
+ * Describes the enum query.v1.QueryFeedbackRating.
+ */
+export const QueryFeedbackRatingSchema: GenEnum<QueryFeedbackRating> = /*@__PURE__*/
+  enumDesc(file_query_v1_query, 0);
 
 /**
  * @generated from service query.v1.QueryService
@@ -176,6 +480,38 @@ export const QueryService: GenService<{
     methodKind: "unary";
     input: typeof AskQuestionRequestSchema;
     output: typeof AskQuestionResponseSchema;
+  },
+  /**
+   * @generated from rpc query.v1.QueryService.SubmitQueryFeedback
+   */
+  submitQueryFeedback: {
+    methodKind: "unary";
+    input: typeof SubmitQueryFeedbackRequestSchema;
+    output: typeof SubmitQueryFeedbackResponseSchema;
+  },
+  /**
+   * @generated from rpc query.v1.QueryService.CreateCanonicalQueryExample
+   */
+  createCanonicalQueryExample: {
+    methodKind: "unary";
+    input: typeof CreateCanonicalQueryExampleRequestSchema;
+    output: typeof CreateCanonicalQueryExampleResponseSchema;
+  },
+  /**
+   * @generated from rpc query.v1.QueryService.ListCanonicalQueryExamples
+   */
+  listCanonicalQueryExamples: {
+    methodKind: "unary";
+    input: typeof ListCanonicalQueryExamplesRequestSchema;
+    output: typeof ListCanonicalQueryExamplesResponseSchema;
+  },
+  /**
+   * @generated from rpc query.v1.QueryService.ArchiveCanonicalQueryExample
+   */
+  archiveCanonicalQueryExample: {
+    methodKind: "unary";
+    input: typeof ArchiveCanonicalQueryExampleRequestSchema;
+    output: typeof ArchiveCanonicalQueryExampleResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_query_v1_query, 0);

@@ -83,6 +83,9 @@ func run() error {
 	tokenRepo := repository.NewTenantTokenRepository(pool)
 	schemaRepo := repository.NewTenantSchemaRepository(pool)
 	semanticLayerRepo := repository.NewTenantSemanticLayerRepository(pool)
+	queryRunRepo := repository.NewTenantQueryRunRepository(pool)
+	queryFeedbackRepo := repository.NewTenantQueryFeedbackRepository(pool)
+	canonicalQueryExampleRepo := repository.NewTenantCanonicalQueryExampleRepository(pool)
 	starterQuestionsRepo := repository.NewStarterQuestionsRepository(pool)
 	onboardingRepo := repository.NewOnboardingRepository(pool)
 	inviteRepo := repository.NewInviteRepository(pool)
@@ -131,6 +134,9 @@ func run() error {
 		tenantCtrl,
 		schemaRepo,
 		semanticLayerRepo,
+		queryRunRepo,
+		queryFeedbackRepo,
+		canonicalQueryExampleRepo,
 		agentSessions,
 		llmRouter,
 		controller.QueryControllerConfig{

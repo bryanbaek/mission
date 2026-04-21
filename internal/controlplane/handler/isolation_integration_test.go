@@ -83,6 +83,9 @@ INSERT INTO employees (department_id, position_id, manager_id, full_name, employ
 	tokenRepo := repository.NewTenantTokenRepository(pool)
 	schemaRepo := repository.NewTenantSchemaRepository(pool)
 	semanticRepo := repository.NewTenantSemanticLayerRepository(pool)
+	queryRunRepo := repository.NewTenantQueryRunRepository(pool)
+	queryFeedbackRepo := repository.NewTenantQueryFeedbackRepository(pool)
+	canonicalExampleRepo := repository.NewTenantCanonicalQueryExampleRepository(pool)
 	tenantCtrl := cpcontroller.NewTenantController(tenantRepo, tokenRepo)
 	agentSessions := cpcontroller.NewAgentSessionManager(cpcontroller.AgentSessionManagerConfig{})
 	schemaCtrl := cpcontroller.NewSchemaController(
@@ -94,6 +97,9 @@ INSERT INTO employees (department_id, position_id, manager_id, full_name, employ
 		tenantCtrl,
 		schemaRepo,
 		semanticRepo,
+		queryRunRepo,
+		queryFeedbackRepo,
+		canonicalExampleRepo,
 		agentSessions,
 		isolationFakeCompleter{},
 		cpcontroller.QueryControllerConfig{

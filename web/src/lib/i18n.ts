@@ -171,6 +171,40 @@ const chatEn = {
   "chat.stage.generation": "generation",
   "chat.stage.validation": "validation",
   "chat.stage.execution": "execution",
+  "chat.feedback.title": "Teach this result",
+  "chat.feedback.subtitle":
+    "Save a quick review so future answers in this tenant get better.",
+  "chat.feedback.ratingHelpful": "Helpful",
+  "chat.feedback.ratingNeedsWork": "Needs work",
+  "chat.feedback.commentLabel": "Comment",
+  "chat.feedback.commentPlaceholder":
+    "What was useful or what should change next time?",
+  "chat.feedback.correctedSqlLabel": "Corrected SQL (optional)",
+  "chat.feedback.correctedSqlPlaceholder":
+    "Paste the SQL you wish the system had produced.",
+  "chat.feedback.submit": "Submit review",
+  "chat.feedback.submitting": "Saving review...",
+  "chat.feedback.success": "Saved your review for this query run.",
+  "chat.examples.title": "Approved examples",
+  "chat.examples.subtitle":
+    "Owner-approved query examples that can be reused for similar future questions.",
+  "chat.examples.loading": "Loading approved examples...",
+  "chat.examples.empty": "No approved examples yet.",
+  "chat.examples.sqlPreview": "Preview SQL",
+  "chat.examples.archive": "Archive",
+  "chat.examples.archiving": "Archiving...",
+  "chat.examples.createTitle": "Save as approved example",
+  "chat.examples.createSubtitle":
+    "Owners can turn this run into reusable tenant memory.",
+  "chat.examples.questionLabel": "Canonical question",
+  "chat.examples.sqlLabel": "Canonical SQL",
+  "chat.examples.sqlPlaceholder": "SELECT ...",
+  "chat.examples.notesLabel": "Notes",
+  "chat.examples.notesPlaceholder":
+    "Explain when this example is safe to reuse.",
+  "chat.examples.create": "Save example",
+  "chat.examples.creating": "Saving example...",
+  "chat.examples.createSuccess": "Saved a new approved example.",
 } as const;
 
 const starterQuestionsEn = {
@@ -622,6 +656,40 @@ const chatKo: Record<keyof typeof chatEn, string> = {
   "chat.stage.generation": "생성",
   "chat.stage.validation": "검증",
   "chat.stage.execution": "실행",
+  "chat.feedback.title": "이 결과를 학습시키기",
+  "chat.feedback.subtitle":
+    "짧은 리뷰를 남기면 같은 테넌트의 다음 답변 품질을 높일 수 있습니다.",
+  "chat.feedback.ratingHelpful": "도움 됨",
+  "chat.feedback.ratingNeedsWork": "개선 필요",
+  "chat.feedback.commentLabel": "코멘트",
+  "chat.feedback.commentPlaceholder":
+    "무엇이 좋았고 다음에는 무엇이 달라져야 하는지 적어 주세요.",
+  "chat.feedback.correctedSqlLabel": "수정된 SQL (선택)",
+  "chat.feedback.correctedSqlPlaceholder":
+    "시스템이 원래 생성했어야 하는 SQL을 붙여 넣으세요.",
+  "chat.feedback.submit": "리뷰 저장",
+  "chat.feedback.submitting": "리뷰 저장 중...",
+  "chat.feedback.success": "이 쿼리 실행에 대한 리뷰를 저장했습니다.",
+  "chat.examples.title": "승인된 예시",
+  "chat.examples.subtitle":
+    "비슷한 질문에 재사용할 수 있도록 소유자가 승인한 테넌트 전용 예시입니다.",
+  "chat.examples.loading": "승인된 예시를 불러오는 중...",
+  "chat.examples.empty": "승인된 예시가 아직 없습니다.",
+  "chat.examples.sqlPreview": "SQL 보기",
+  "chat.examples.archive": "보관",
+  "chat.examples.archiving": "보관 중...",
+  "chat.examples.createTitle": "승인된 예시로 저장",
+  "chat.examples.createSubtitle":
+    "소유자는 이 실행 결과를 재사용 가능한 테넌트 메모리로 저장할 수 있습니다.",
+  "chat.examples.questionLabel": "표준 질문",
+  "chat.examples.sqlLabel": "표준 SQL",
+  "chat.examples.sqlPlaceholder": "SELECT ...",
+  "chat.examples.notesLabel": "노트",
+  "chat.examples.notesPlaceholder":
+    "언제 이 예시를 안전하게 재사용할 수 있는지 적어 주세요.",
+  "chat.examples.create": "예시 저장",
+  "chat.examples.creating": "예시 저장 중...",
+  "chat.examples.createSuccess": "새 승인 예시를 저장했습니다.",
 };
 
 const starterQuestionsKo: Record<keyof typeof starterQuestionsEn, string> = {

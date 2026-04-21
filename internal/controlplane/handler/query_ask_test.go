@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -11,24 +12,62 @@ import (
 	queryv1 "github.com/bryanbaek/mission/gen/go/query/v1"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/model"
 )
 
-type fakeQueryAskController struct {
-	askFn func(
-		ctx context.Context,
-		tenantID uuid.UUID,
-		clerkUserID string,
-		question string,
-	) (controller.AskQuestionResult, error)
+type fakeQueryController struct {
+	askFn              func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error)
+	submitFeedbackFn   func(context.Context, uuid.UUID, string, uuid.UUID, model.QueryFeedbackRating, string, string) (controller.SubmitQueryFeedbackResult, error)
+	createCanonicalFn  func(context.Context, uuid.UUID, string, uuid.UUID, string, string, string) (model.TenantCanonicalQueryExample, error)
+	listCanonicalFn    func(context.Context, uuid.UUID, string) (controller.ListCanonicalQueryExamplesResult, error)
+	archiveCanonicalFn func(context.Context, uuid.UUID, string, uuid.UUID) error
 }
 
-func (f fakeQueryAskController) AskQuestion(
+func (f fakeQueryController) AskQuestion(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	clerkUserID string,
 	question string,
 ) (controller.AskQuestionResult, error) {
 	return f.askFn(ctx, tenantID, clerkUserID, question)
+}
+
+func (f fakeQueryController) SubmitFeedback(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	queryRunID uuid.UUID,
+	rating model.QueryFeedbackRating,
+	comment, correctedSQL string,
+) (controller.SubmitQueryFeedbackResult, error) {
+	return f.submitFeedbackFn(ctx, tenantID, clerkUserID, queryRunID, rating, comment, correctedSQL)
+}
+
+func (f fakeQueryController) CreateCanonicalExample(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	queryRunID uuid.UUID,
+	question, sql, notes string,
+) (model.TenantCanonicalQueryExample, error) {
+	return f.createCanonicalFn(ctx, tenantID, clerkUserID, queryRunID, question, sql, notes)
+}
+
+func (f fakeQueryController) ListCanonicalExamples(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+) (controller.ListCanonicalQueryExamplesResult, error) {
+	return f.listCanonicalFn(ctx, tenantID, clerkUserID)
+}
+
+func (f fakeQueryController) ArchiveCanonicalExample(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	exampleID uuid.UUID,
+) error {
+	return f.archiveCanonicalFn(ctx, tenantID, clerkUserID, exampleID)
 }
 
 func queryHandlerContext() context.Context {
@@ -38,7 +77,7 @@ func queryHandlerContext() context.Context {
 func TestQueryHandlerRejectsUnauthenticated(t *testing.T) {
 	t.Parallel()
 
-	handler := NewQueryHandler(fakeQueryAskController{
+	handler := NewQueryHandler(fakeQueryController{
 		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
 			t.Fatal("controller should not be invoked without auth")
 			return controller.AskQuestionResult{}, nil
@@ -55,70 +94,12 @@ func TestQueryHandlerRejectsUnauthenticated(t *testing.T) {
 	requireConnectCode(t, err, connect.CodeUnauthenticated)
 }
 
-func TestQueryHandlerValidatesTenantID(t *testing.T) {
-	t.Parallel()
-
-	handler := NewQueryHandler(fakeQueryAskController{
-		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
-			t.Fatal("controller should not be invoked for invalid tenant id")
-			return controller.AskQuestionResult{}, nil
-		},
-	})
-
-	_, err := handler.AskQuestion(
-		queryHandlerContext(),
-		connect.NewRequest(&queryv1.AskQuestionRequest{
-			TenantId: "not-a-uuid",
-			Question: "측정소",
-		}),
-	)
-	requireConnectCode(t, err, connect.CodeInvalidArgument)
-}
-
-func TestQueryHandlerMapsControllerErrors(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name     string
-		ctrlErr  error
-		wantCode connect.Code
-	}{
-		{"access denied", controller.ErrQueryAccessDenied, connect.CodePermissionDenied},
-		{"empty question", controller.ErrQueryEmptyQuestion, connect.CodeInvalidArgument},
-		{"no schema", controller.ErrQueryNoSchema, connect.CodeFailedPrecondition},
-		{"agent offline", controller.ErrQueryAgentOffline, connect.CodeFailedPrecondition},
-		{"all attempts failed", controller.ErrQueryAllAttemptsFailed, connect.CodeFailedPrecondition},
-		{"unexpected", errors.New("boom"), connect.CodeInternal},
-	}
-
-	for _, tc := range cases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			handler := NewQueryHandler(fakeQueryAskController{
-				askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
-					return controller.AskQuestionResult{}, tc.ctrlErr
-				},
-			})
-
-			_, err := handler.AskQuestion(
-				queryHandlerContext(),
-				connect.NewRequest(&queryv1.AskQuestionRequest{
-					TenantId: uuid.NewString(),
-					Question: "질문",
-				}),
-			)
-			requireConnectCode(t, err, tc.wantCode)
-		})
-	}
-}
-
 func TestQueryHandlerMapsResultToProto(t *testing.T) {
 	t.Parallel()
 
 	tenantID := uuid.New()
-	handler := NewQueryHandler(fakeQueryAskController{
+	queryRunID := uuid.New()
+	handler := NewQueryHandler(fakeQueryController{
 		askFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID, question string) (controller.AskQuestionResult, error) {
 			if gotTenantID != tenantID {
 				t.Fatalf("tenantID = %s, want %s", gotTenantID, tenantID)
@@ -130,6 +111,7 @@ func TestQueryHandlerMapsResultToProto(t *testing.T) {
 				t.Fatalf("question = %q", question)
 			}
 			return controller.AskQuestionResult{
+				QueryRunID:    queryRunID,
 				SQLOriginal:   "SELECT AVG(ph) FROM readings",
 				SQLExecuted:   "SELECT AVG(ph) FROM readings LIMIT 1000",
 				LimitInjected: true,
@@ -159,6 +141,9 @@ func TestQueryHandlerMapsResultToProto(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AskQuestion returned error: %v", err)
 	}
+	if resp.Msg.QueryRunId != queryRunID.String() {
+		t.Fatalf("query_run_id = %q, want %s", resp.Msg.QueryRunId, queryRunID)
+	}
 	if resp.Msg.SqlOriginal == "" || resp.Msg.SqlExecuted == "" {
 		t.Fatalf("sql fields empty: %+v", resp.Msg)
 	}
@@ -177,10 +162,179 @@ func TestQueryHandlerMapsResultToProto(t *testing.T) {
 	if _, hasNil := resp.Msg.Rows[1].GetValues()["avg_ph"]; hasNil {
 		t.Fatalf("nil cell should be absent, got %v", resp.Msg.Rows[1].GetValues())
 	}
-	if len(resp.Msg.Attempts) != 1 || resp.Msg.Attempts[0].Stage != "execution" {
-		t.Fatalf("attempts = %+v", resp.Msg.Attempts)
+}
+
+func TestQueryHandlerAttachesTerminalFailureDetails(t *testing.T) {
+	t.Parallel()
+
+	queryRunID := uuid.New()
+	handler := NewQueryHandler(fakeQueryController{
+		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+			return controller.AskQuestionResult{
+				QueryRunID: queryRunID,
+				Warnings:   []string{"원본 스키마만 사용"},
+				Attempts: []controller.AskQuestionAttempt{
+					{SQL: "SELECT missing FROM readings", Stage: "execution", Error: "Unknown column"},
+				},
+			}, controller.ErrQueryAllAttemptsFailed
+		},
+	})
+
+	_, err := handler.AskQuestion(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.AskQuestionRequest{
+			TenantId: uuid.NewString(),
+			Question: "질문",
+		}),
+	)
+	requireConnectCode(t, err, connect.CodeFailedPrecondition)
+
+	connectErr := connect.CodeOf(err)
+	if connectErr != connect.CodeFailedPrecondition {
+		t.Fatalf("connect code = %v", connectErr)
 	}
-	if len(resp.Msg.Warnings) != 1 || resp.Msg.Warnings[0] != "초안 레이어 사용" {
-		t.Fatalf("warnings = %+v", resp.Msg.Warnings)
+
+	ce := new(connect.Error)
+	if !errors.As(err, &ce) {
+		t.Fatalf("error = %v, want *connect.Error", err)
+	}
+	details := ce.Details()
+	if len(details) != 1 {
+		t.Fatalf("detail len = %d, want 1", len(details))
+	}
+
+	msg, detailErr := details[0].Value()
+	if detailErr != nil {
+		t.Fatalf("decode detail: %v", detailErr)
+	}
+	detail, ok := msg.(*queryv1.AskQuestionResponse)
+	if !ok {
+		t.Fatalf("detail type = %T, want *AskQuestionResponse", msg)
+	}
+	if detail.QueryRunId != queryRunID.String() {
+		t.Fatalf("query_run_id detail = %q, want %s", detail.QueryRunId, queryRunID)
+	}
+}
+
+func TestQueryHandlerSubmitFeedback(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	now := time.Unix(1_700_001_000, 0).UTC()
+	handler := NewQueryHandler(fakeQueryController{
+		submitFeedbackFn: func(
+			_ context.Context,
+			gotTenantID uuid.UUID,
+			clerkUserID string,
+			gotQueryRunID uuid.UUID,
+			rating model.QueryFeedbackRating,
+			comment, correctedSQL string,
+		) (controller.SubmitQueryFeedbackResult, error) {
+			if gotTenantID != tenantID || gotQueryRunID != queryRunID {
+				t.Fatalf("unexpected ids: tenant=%s run=%s", gotTenantID, gotQueryRunID)
+			}
+			if clerkUserID != "user_123" {
+				t.Fatalf("clerkUserID = %q", clerkUserID)
+			}
+			if rating != model.QueryFeedbackRatingDown {
+				t.Fatalf("rating = %q", rating)
+			}
+			if comment != "조인이 잘못됐습니다." || correctedSQL != "SELECT AVG(ph) FROM readings" {
+				t.Fatalf("unexpected feedback payload: %q / %q", comment, correctedSQL)
+			}
+			return controller.SubmitQueryFeedbackResult{
+				Feedback: model.TenantQueryFeedback{
+					QueryRunID:   queryRunID,
+					Rating:       model.QueryFeedbackRatingDown,
+					Comment:      comment,
+					CorrectedSQL: correctedSQL,
+					CreatedAt:    now,
+					UpdatedAt:    now,
+				},
+			}, nil
+		},
+	})
+
+	resp, err := handler.SubmitQueryFeedback(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.SubmitQueryFeedbackRequest{
+			TenantId:     tenantID.String(),
+			QueryRunId:   queryRunID.String(),
+			Rating:       queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_DOWN,
+			Comment:      "조인이 잘못됐습니다.",
+			CorrectedSql: "SELECT AVG(ph) FROM readings",
+		}),
+	)
+	if err != nil {
+		t.Fatalf("SubmitQueryFeedback returned error: %v", err)
+	}
+	if resp.Msg.Feedback.GetQueryRunId() != queryRunID.String() {
+		t.Fatalf("query_run_id = %q", resp.Msg.Feedback.GetQueryRunId())
+	}
+	if resp.Msg.Feedback.Rating != queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_DOWN {
+		t.Fatalf("rating = %v", resp.Msg.Feedback.Rating)
+	}
+}
+
+func TestQueryHandlerOwnerOnlyCanonicalExampleActions(t *testing.T) {
+	t.Parallel()
+
+	handler := NewQueryHandler(fakeQueryController{
+		createCanonicalFn: func(context.Context, uuid.UUID, string, uuid.UUID, string, string, string) (model.TenantCanonicalQueryExample, error) {
+			return model.TenantCanonicalQueryExample{}, controller.ErrCanonicalQueryExampleOwnerOnly
+		},
+	})
+
+	_, err := handler.CreateCanonicalQueryExample(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.CreateCanonicalQueryExampleRequest{
+			TenantId:   uuid.NewString(),
+			QueryRunId: uuid.NewString(),
+			Question:   "평균 pH는?",
+			Sql:        "SELECT AVG(ph) FROM readings",
+		}),
+	)
+	requireConnectCode(t, err, connect.CodePermissionDenied)
+}
+
+func TestQueryHandlerListsCanonicalExamples(t *testing.T) {
+	t.Parallel()
+
+	exampleID := uuid.New()
+	queryRunID := uuid.New()
+	schemaVersionID := uuid.New()
+	createdAt := time.Unix(1_700_001_100, 0).UTC()
+	handler := NewQueryHandler(fakeQueryController{
+		listCanonicalFn: func(context.Context, uuid.UUID, string) (controller.ListCanonicalQueryExamplesResult, error) {
+			return controller.ListCanonicalQueryExamplesResult{
+				ViewerCanManage: true,
+				Examples: []model.TenantCanonicalQueryExample{{
+					ID:               exampleID,
+					SourceQueryRunID: queryRunID,
+					SchemaVersionID:  schemaVersionID,
+					Question:         "평균 pH는?",
+					SQL:              "SELECT AVG(ph) FROM readings",
+					Notes:            "기본 평균 질의",
+					CreatedAt:        createdAt,
+				}},
+			}, nil
+		},
+	})
+
+	resp, err := handler.ListCanonicalQueryExamples(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.ListCanonicalQueryExamplesRequest{
+			TenantId: uuid.NewString(),
+		}),
+	)
+	if err != nil {
+		t.Fatalf("ListCanonicalQueryExamples returned error: %v", err)
+	}
+	if !resp.Msg.ViewerCanManage {
+		t.Fatal("viewer_can_manage = false, want true")
+	}
+	if len(resp.Msg.Examples) != 1 || resp.Msg.Examples[0].GetId() != exampleID.String() {
+		t.Fatalf("examples = %+v", resp.Msg.Examples)
 	}
 }

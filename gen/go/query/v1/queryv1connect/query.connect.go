@@ -36,11 +36,27 @@ const (
 	// QueryServiceAskQuestionProcedure is the fully-qualified name of the QueryService's AskQuestion
 	// RPC.
 	QueryServiceAskQuestionProcedure = "/query.v1.QueryService/AskQuestion"
+	// QueryServiceSubmitQueryFeedbackProcedure is the fully-qualified name of the QueryService's
+	// SubmitQueryFeedback RPC.
+	QueryServiceSubmitQueryFeedbackProcedure = "/query.v1.QueryService/SubmitQueryFeedback"
+	// QueryServiceCreateCanonicalQueryExampleProcedure is the fully-qualified name of the
+	// QueryService's CreateCanonicalQueryExample RPC.
+	QueryServiceCreateCanonicalQueryExampleProcedure = "/query.v1.QueryService/CreateCanonicalQueryExample"
+	// QueryServiceListCanonicalQueryExamplesProcedure is the fully-qualified name of the QueryService's
+	// ListCanonicalQueryExamples RPC.
+	QueryServiceListCanonicalQueryExamplesProcedure = "/query.v1.QueryService/ListCanonicalQueryExamples"
+	// QueryServiceArchiveCanonicalQueryExampleProcedure is the fully-qualified name of the
+	// QueryService's ArchiveCanonicalQueryExample RPC.
+	QueryServiceArchiveCanonicalQueryExampleProcedure = "/query.v1.QueryService/ArchiveCanonicalQueryExample"
 )
 
 // QueryServiceClient is a client for the query.v1.QueryService service.
 type QueryServiceClient interface {
 	AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error)
+	SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error)
+	CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error)
+	ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error)
+	ArchiveCanonicalQueryExample(context.Context, *connect.Request[v1.ArchiveCanonicalQueryExampleRequest]) (*connect.Response[v1.ArchiveCanonicalQueryExampleResponse], error)
 }
 
 // NewQueryServiceClient constructs a client for the query.v1.QueryService service. By default, it
@@ -60,12 +76,40 @@ func NewQueryServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(queryServiceMethods.ByName("AskQuestion")),
 			connect.WithClientOptions(opts...),
 		),
+		submitQueryFeedback: connect.NewClient[v1.SubmitQueryFeedbackRequest, v1.SubmitQueryFeedbackResponse](
+			httpClient,
+			baseURL+QueryServiceSubmitQueryFeedbackProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("SubmitQueryFeedback")),
+			connect.WithClientOptions(opts...),
+		),
+		createCanonicalQueryExample: connect.NewClient[v1.CreateCanonicalQueryExampleRequest, v1.CreateCanonicalQueryExampleResponse](
+			httpClient,
+			baseURL+QueryServiceCreateCanonicalQueryExampleProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("CreateCanonicalQueryExample")),
+			connect.WithClientOptions(opts...),
+		),
+		listCanonicalQueryExamples: connect.NewClient[v1.ListCanonicalQueryExamplesRequest, v1.ListCanonicalQueryExamplesResponse](
+			httpClient,
+			baseURL+QueryServiceListCanonicalQueryExamplesProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("ListCanonicalQueryExamples")),
+			connect.WithClientOptions(opts...),
+		),
+		archiveCanonicalQueryExample: connect.NewClient[v1.ArchiveCanonicalQueryExampleRequest, v1.ArchiveCanonicalQueryExampleResponse](
+			httpClient,
+			baseURL+QueryServiceArchiveCanonicalQueryExampleProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("ArchiveCanonicalQueryExample")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // queryServiceClient implements QueryServiceClient.
 type queryServiceClient struct {
-	askQuestion *connect.Client[v1.AskQuestionRequest, v1.AskQuestionResponse]
+	askQuestion                  *connect.Client[v1.AskQuestionRequest, v1.AskQuestionResponse]
+	submitQueryFeedback          *connect.Client[v1.SubmitQueryFeedbackRequest, v1.SubmitQueryFeedbackResponse]
+	createCanonicalQueryExample  *connect.Client[v1.CreateCanonicalQueryExampleRequest, v1.CreateCanonicalQueryExampleResponse]
+	listCanonicalQueryExamples   *connect.Client[v1.ListCanonicalQueryExamplesRequest, v1.ListCanonicalQueryExamplesResponse]
+	archiveCanonicalQueryExample *connect.Client[v1.ArchiveCanonicalQueryExampleRequest, v1.ArchiveCanonicalQueryExampleResponse]
 }
 
 // AskQuestion calls query.v1.QueryService.AskQuestion.
@@ -73,9 +117,33 @@ func (c *queryServiceClient) AskQuestion(ctx context.Context, req *connect.Reque
 	return c.askQuestion.CallUnary(ctx, req)
 }
 
+// SubmitQueryFeedback calls query.v1.QueryService.SubmitQueryFeedback.
+func (c *queryServiceClient) SubmitQueryFeedback(ctx context.Context, req *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error) {
+	return c.submitQueryFeedback.CallUnary(ctx, req)
+}
+
+// CreateCanonicalQueryExample calls query.v1.QueryService.CreateCanonicalQueryExample.
+func (c *queryServiceClient) CreateCanonicalQueryExample(ctx context.Context, req *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error) {
+	return c.createCanonicalQueryExample.CallUnary(ctx, req)
+}
+
+// ListCanonicalQueryExamples calls query.v1.QueryService.ListCanonicalQueryExamples.
+func (c *queryServiceClient) ListCanonicalQueryExamples(ctx context.Context, req *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error) {
+	return c.listCanonicalQueryExamples.CallUnary(ctx, req)
+}
+
+// ArchiveCanonicalQueryExample calls query.v1.QueryService.ArchiveCanonicalQueryExample.
+func (c *queryServiceClient) ArchiveCanonicalQueryExample(ctx context.Context, req *connect.Request[v1.ArchiveCanonicalQueryExampleRequest]) (*connect.Response[v1.ArchiveCanonicalQueryExampleResponse], error) {
+	return c.archiveCanonicalQueryExample.CallUnary(ctx, req)
+}
+
 // QueryServiceHandler is an implementation of the query.v1.QueryService service.
 type QueryServiceHandler interface {
 	AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error)
+	SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error)
+	CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error)
+	ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error)
+	ArchiveCanonicalQueryExample(context.Context, *connect.Request[v1.ArchiveCanonicalQueryExampleRequest]) (*connect.Response[v1.ArchiveCanonicalQueryExampleResponse], error)
 }
 
 // NewQueryServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -91,10 +159,42 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(queryServiceMethods.ByName("AskQuestion")),
 		connect.WithHandlerOptions(opts...),
 	)
+	queryServiceSubmitQueryFeedbackHandler := connect.NewUnaryHandler(
+		QueryServiceSubmitQueryFeedbackProcedure,
+		svc.SubmitQueryFeedback,
+		connect.WithSchema(queryServiceMethods.ByName("SubmitQueryFeedback")),
+		connect.WithHandlerOptions(opts...),
+	)
+	queryServiceCreateCanonicalQueryExampleHandler := connect.NewUnaryHandler(
+		QueryServiceCreateCanonicalQueryExampleProcedure,
+		svc.CreateCanonicalQueryExample,
+		connect.WithSchema(queryServiceMethods.ByName("CreateCanonicalQueryExample")),
+		connect.WithHandlerOptions(opts...),
+	)
+	queryServiceListCanonicalQueryExamplesHandler := connect.NewUnaryHandler(
+		QueryServiceListCanonicalQueryExamplesProcedure,
+		svc.ListCanonicalQueryExamples,
+		connect.WithSchema(queryServiceMethods.ByName("ListCanonicalQueryExamples")),
+		connect.WithHandlerOptions(opts...),
+	)
+	queryServiceArchiveCanonicalQueryExampleHandler := connect.NewUnaryHandler(
+		QueryServiceArchiveCanonicalQueryExampleProcedure,
+		svc.ArchiveCanonicalQueryExample,
+		connect.WithSchema(queryServiceMethods.ByName("ArchiveCanonicalQueryExample")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/query.v1.QueryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case QueryServiceAskQuestionProcedure:
 			queryServiceAskQuestionHandler.ServeHTTP(w, r)
+		case QueryServiceSubmitQueryFeedbackProcedure:
+			queryServiceSubmitQueryFeedbackHandler.ServeHTTP(w, r)
+		case QueryServiceCreateCanonicalQueryExampleProcedure:
+			queryServiceCreateCanonicalQueryExampleHandler.ServeHTTP(w, r)
+		case QueryServiceListCanonicalQueryExamplesProcedure:
+			queryServiceListCanonicalQueryExamplesHandler.ServeHTTP(w, r)
+		case QueryServiceArchiveCanonicalQueryExampleProcedure:
+			queryServiceArchiveCanonicalQueryExampleHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -106,4 +206,20 @@ type UnimplementedQueryServiceHandler struct{}
 
 func (UnimplementedQueryServiceHandler) AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.AskQuestion is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.SubmitQueryFeedback is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.CreateCanonicalQueryExample is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.ListCanonicalQueryExamples is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) ArchiveCanonicalQueryExample(context.Context, *connect.Request[v1.ArchiveCanonicalQueryExampleRequest]) (*connect.Response[v1.ArchiveCanonicalQueryExampleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.ArchiveCanonicalQueryExample is not implemented"))
 }

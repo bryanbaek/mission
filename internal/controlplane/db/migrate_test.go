@@ -195,7 +195,12 @@ func TestMigrateUpError(t *testing.T) {
 func TestMigrationStateAtHead(t *testing.T) {
 	restoreMigrateSeams(t)
 
-	runner := &fakeMigrationRunner{version: 6}
+	headVersion, err := latestEmbeddedMigrationVersion()
+	if err != nil {
+		t.Fatalf("latestEmbeddedMigrationVersion returned error: %v", err)
+	}
+
+	runner := &fakeMigrationRunner{version: headVersion}
 	newMigrationSource = func() (source.Driver, error) {
 		return fakeSourceDriver{}, nil
 	}
@@ -207,11 +212,11 @@ func TestMigrationStateAtHead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MigrationState returned error: %v", err)
 	}
-	if status.CurrentVersion != 6 {
-		t.Fatalf("CurrentVersion = %d, want 6", status.CurrentVersion)
+	if status.CurrentVersion != headVersion {
+		t.Fatalf("CurrentVersion = %d, want %d", status.CurrentVersion, headVersion)
 	}
-	if status.HeadVersion != 6 {
-		t.Fatalf("HeadVersion = %d, want 6", status.HeadVersion)
+	if status.HeadVersion != headVersion {
+		t.Fatalf("HeadVersion = %d, want %d", status.HeadVersion, headVersion)
 	}
 	if status.Dirty {
 		t.Fatal("Dirty = true, want false")
@@ -290,18 +295,18 @@ func TestMigrationStateVersionError(t *testing.T) {
 func TestMigrationVersionFromFilename(t *testing.T) {
 	t.Parallel()
 
-	version, ok, err := migrationVersionFromFilename("0006_tenant_starter_questions.up.sql")
+	version, ok, err := migrationVersionFromFilename("0001_schema.up.sql")
 	if err != nil {
 		t.Fatalf("migrationVersionFromFilename returned error: %v", err)
 	}
 	if !ok {
 		t.Fatal("ok = false, want true")
 	}
-	if version != 6 {
-		t.Fatalf("version = %d, want 6", version)
+	if version != 1 {
+		t.Fatalf("version = %d, want 1", version)
 	}
 
-	_, ok, err = migrationVersionFromFilename("0006_tenant_starter_questions.down.sql")
+	_, ok, err = migrationVersionFromFilename("0001_schema.down.sql")
 	if err != nil {
 		t.Fatalf("migrationVersionFromFilename down file returned error: %v", err)
 	}

@@ -6,13 +6,16 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { ConnectError } from "@connectrpc/connect";
 import { useSearchParams } from "react-router-dom";
 
 import {
   AskQuestionResponseSchema,
+  QueryFeedbackRating,
   type AskQuestionResponse,
   type AttemptDebug,
+  type CanonicalQueryExample,
 } from "../gen/query/v1/query_pb";
 import StarterQuestions from "../components/StarterQuestions";
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
@@ -22,6 +25,7 @@ import { useTenantClient } from "../lib/tenantClient";
 
 type QueryHistoryItem = {
   id: string;
+  tenantId: string;
   tenantName: string;
   question: string;
   createdAt: number;
@@ -40,7 +44,7 @@ const styles = {
     "text-xs font-semibold uppercase tracking-[0.24em]",
     "text-slate-500",
   ].join(" "),
-  grid: "grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]",
+  grid: "grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]",
   sectionCard: "rounded-3xl border border-slate-200 bg-white p-6 shadow-sm",
   sectionHeader:
     "flex items-center justify-between gap-4 border-b border-slate-200 pb-4",
@@ -53,10 +57,29 @@ const styles = {
     "text-sm leading-6 text-slate-900",
     "focus:border-slate-950 focus:outline-none",
   ].join(" "),
+  input: [
+    "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900",
+    "focus:border-slate-950 focus:outline-none",
+  ].join(" "),
   primaryButton: [
     "inline-flex items-center justify-center rounded-xl bg-slate-950",
     "px-4 py-2 text-sm font-medium text-white transition",
     "hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300",
+  ].join(" "),
+  secondaryButton: [
+    "inline-flex items-center justify-center rounded-xl border border-slate-300",
+    "bg-white px-4 py-2 text-sm font-medium text-slate-700 transition",
+    "hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-300",
+  ].join(" "),
+  subtleButton: [
+    "inline-flex items-center justify-center rounded-xl px-3 py-2",
+    "text-xs font-medium text-slate-600 transition hover:bg-slate-100",
+    "disabled:cursor-not-allowed disabled:text-slate-300",
+  ].join(" "),
+  dangerButton: [
+    "inline-flex items-center justify-center rounded-xl px-3 py-2",
+    "text-xs font-medium text-rose-700 transition hover:bg-rose-50",
+    "disabled:cursor-not-allowed disabled:text-slate-300",
   ].join(" "),
   bannerError: [
     "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3",
@@ -65,6 +88,10 @@ const styles = {
   bannerInfo: [
     "rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3",
     "text-sm text-sky-800",
+  ].join(" "),
+  bannerSuccess: [
+    "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3",
+    "text-sm text-emerald-800",
   ].join(" "),
   chipRow: "flex flex-wrap gap-2",
   chip: [
@@ -79,6 +106,12 @@ const styles = {
     "rounded-full bg-emerald-100 px-3 py-1",
     "text-xs font-medium text-emerald-800",
   ].join(" "),
+  ratingButton: [
+    "inline-flex items-center justify-center rounded-full border px-3 py-2",
+    "text-xs font-medium transition",
+  ].join(" "),
+  ratingActive: "border-slate-950 bg-slate-950 text-white",
+  ratingIdle: "border-slate-300 bg-white text-slate-700 hover:bg-slate-50",
   historyItem: "rounded-[28px] border border-slate-200 bg-slate-50 p-5",
   promptCard: [
     "rounded-2xl border border-slate-200 bg-white px-4 py-3",
@@ -111,6 +144,7 @@ const styles = {
   detailsHeader:
     "cursor-pointer list-none px-4 py-3 text-sm font-medium text-slate-900",
   detailsBody: "border-t border-slate-200 px-4 py-4",
+  exampleItem: "rounded-2xl border border-slate-200 bg-slate-50 p-4",
 };
 
 function normalizeError(err: unknown): string {
@@ -163,6 +197,24 @@ function renderCell(
     return "NULL";
   }
   return value;
+}
+
+function timestampToMillis(ts: Timestamp | undefined): number | null {
+  if (!ts) {
+    return null;
+  }
+  const ms = Number(ts.seconds) * 1000 + Math.floor(ts.nanos / 1_000_000);
+  if (!Number.isFinite(ms) || ms <= 0) {
+    return null;
+  }
+  return ms;
+}
+
+function ratingButtonClass(active: boolean) {
+  return [
+    styles.ratingButton,
+    active ? styles.ratingActive : styles.ratingIdle,
+  ].join(" ");
 }
 
 function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
@@ -221,9 +273,132 @@ function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
   );
 }
 
-function QueryResultCard({ item }: { item: QueryHistoryItem }) {
+type QueryResultCardProps = {
+  item: QueryHistoryItem;
+  canManageExamples: boolean;
+  onSubmitFeedback: (args: {
+    tenantId: string;
+    queryRunId: string;
+    rating: QueryFeedbackRating;
+    comment: string;
+    correctedSql: string;
+  }) => Promise<void>;
+  onCreateCanonicalExample: (args: {
+    tenantId: string;
+    queryRunId: string;
+    question: string;
+    sql: string;
+    notes: string;
+  }) => Promise<void>;
+  onCanonicalExampleChanged: (tenantId: string) => Promise<void>;
+};
+
+function QueryResultCard({
+  item,
+  canManageExamples,
+  onSubmitFeedback,
+  onCreateCanonicalExample,
+  onCanonicalExampleChanged,
+}: QueryResultCardProps) {
   const { formatDateTime, formatNumber, t } = useI18n();
   const response = item.response;
+  const queryRunId = response?.queryRunId ?? "";
+  const defaultExampleSql = response?.sqlExecuted ?? "";
+
+  const [rating, setRating] = useState<QueryFeedbackRating>(
+    QueryFeedbackRating.UNSPECIFIED,
+  );
+  const [comment, setComment] = useState("");
+  const [correctedSql, setCorrectedSql] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null);
+
+  const [exampleQuestion, setExampleQuestion] = useState(item.question);
+  const [exampleQuestionDirty, setExampleQuestionDirty] = useState(false);
+  const [exampleSql, setExampleSql] = useState(defaultExampleSql);
+  const [exampleSqlDirty, setExampleSqlDirty] = useState(false);
+  const [exampleNotes, setExampleNotes] = useState("");
+  const [creatingExample, setCreatingExample] = useState(false);
+  const [exampleError, setExampleError] = useState<string | null>(null);
+  const [exampleSuccess, setExampleSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!exampleQuestionDirty) {
+      setExampleQuestion(item.question);
+    }
+  }, [exampleQuestionDirty, item.question]);
+
+  useEffect(() => {
+    if (!exampleSqlDirty) {
+      setExampleSql(correctedSql.trim() !== "" ? correctedSql : defaultExampleSql);
+    }
+  }, [correctedSql, defaultExampleSql, exampleSqlDirty]);
+
+  const effectiveExampleSql =
+    exampleSqlDirty || correctedSql.trim() === ""
+      ? exampleSql
+      : correctedSql;
+
+  const canSubmitFeedback =
+    queryRunId !== "" &&
+    rating !== QueryFeedbackRating.UNSPECIFIED &&
+    !submittingFeedback;
+  const canCreateExample =
+    canManageExamples &&
+    queryRunId !== "" &&
+    effectiveExampleSql.trim() !== "" &&
+    exampleQuestion.trim() !== "" &&
+    !creatingExample;
+
+  const handleFeedbackSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSubmitFeedback) {
+      return;
+    }
+    setSubmittingFeedback(true);
+    setFeedbackError(null);
+    setFeedbackSuccess(null);
+    try {
+      await onSubmitFeedback({
+        tenantId: item.tenantId,
+        queryRunId,
+        rating,
+        comment,
+        correctedSql,
+      });
+      setFeedbackSuccess(t("chat.feedback.success"));
+    } catch (err) {
+      setFeedbackError(normalizeError(err));
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const handleCreateExample = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canCreateExample) {
+      return;
+    }
+    setCreatingExample(true);
+    setExampleError(null);
+    setExampleSuccess(null);
+    try {
+      await onCreateCanonicalExample({
+        tenantId: item.tenantId,
+        queryRunId,
+        question: exampleQuestion,
+        sql: effectiveExampleSql,
+        notes: exampleNotes,
+      });
+      setExampleSuccess(t("chat.examples.createSuccess"));
+      await onCanonicalExampleChanged(item.tenantId);
+    } catch (err) {
+      setExampleError(normalizeError(err));
+    } finally {
+      setCreatingExample(false);
+    }
+  };
 
   return (
     <article className={styles.historyItem}>
@@ -392,7 +567,268 @@ function QueryResultCard({ item }: { item: QueryHistoryItem }) {
           </details>
         </>
       ) : null}
+
+      {queryRunId !== "" ? (
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                {t("chat.feedback.title")}
+              </h3>
+              <p className={`${styles.muted} mt-1`}>
+                {t("chat.feedback.subtitle")}
+              </p>
+            </div>
+            <code className={styles.chip}>{queryRunId}</code>
+          </div>
+
+          {feedbackError ? (
+            <div className={`${styles.bannerError} mt-4`}>{feedbackError}</div>
+          ) : null}
+          {feedbackSuccess ? (
+            <div className={`${styles.bannerSuccess} mt-4`}>
+              {feedbackSuccess}
+            </div>
+          ) : null}
+
+          <form onSubmit={handleFeedbackSubmit} className="mt-4 flex flex-col gap-4">
+            <div className={styles.chipRow}>
+              <button
+                type="button"
+                className={ratingButtonClass(rating === QueryFeedbackRating.UP)}
+                aria-pressed={rating === QueryFeedbackRating.UP}
+                onClick={() => setRating(QueryFeedbackRating.UP)}
+              >
+                {t("chat.feedback.ratingHelpful")}
+              </button>
+              <button
+                type="button"
+                className={ratingButtonClass(rating === QueryFeedbackRating.DOWN)}
+                aria-pressed={rating === QueryFeedbackRating.DOWN}
+                onClick={() => setRating(QueryFeedbackRating.DOWN)}
+              >
+                {t("chat.feedback.ratingNeedsWork")}
+              </button>
+            </div>
+
+            <label className="text-sm font-medium text-slate-900">
+              {t("chat.feedback.commentLabel")}
+              <textarea
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                className={`${styles.textarea} mt-2 min-h-[96px]`}
+                placeholder={t("chat.feedback.commentPlaceholder")}
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-900">
+              {t("chat.feedback.correctedSqlLabel")}
+              <textarea
+                value={correctedSql}
+                onChange={(event) => setCorrectedSql(event.target.value)}
+                className={`${styles.textarea} mt-2 min-h-[120px] font-mono`}
+                placeholder={t("chat.feedback.correctedSqlPlaceholder")}
+              />
+            </label>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                disabled={!canSubmitFeedback}
+              >
+                {submittingFeedback
+                  ? t("chat.feedback.submitting")
+                  : t("chat.feedback.submit")}
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
+
+      {canManageExamples && queryRunId !== "" ? (
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              {t("chat.examples.createTitle")}
+            </h3>
+            <p className={`${styles.muted} mt-1`}>
+              {t("chat.examples.createSubtitle")}
+            </p>
+          </div>
+
+          {exampleError ? (
+            <div className={`${styles.bannerError} mt-4`}>{exampleError}</div>
+          ) : null}
+          {exampleSuccess ? (
+            <div className={`${styles.bannerSuccess} mt-4`}>
+              {exampleSuccess}
+            </div>
+          ) : null}
+
+          <form onSubmit={handleCreateExample} className="mt-4 flex flex-col gap-4">
+            <label className="text-sm font-medium text-slate-900">
+              {t("chat.examples.questionLabel")}
+              <input
+                value={exampleQuestion}
+                onChange={(event) => {
+                  setExampleQuestionDirty(true);
+                  setExampleQuestion(event.target.value);
+                }}
+                className={`${styles.input} mt-2`}
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-900">
+              {t("chat.examples.sqlLabel")}
+              <textarea
+                value={effectiveExampleSql}
+                onChange={(event) => {
+                  setExampleSqlDirty(true);
+                  setExampleSql(event.target.value);
+                }}
+                className={`${styles.textarea} mt-2 min-h-[140px] font-mono`}
+                placeholder={t("chat.examples.sqlPlaceholder")}
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-900">
+              {t("chat.examples.notesLabel")}
+              <textarea
+                value={exampleNotes}
+                onChange={(event) => setExampleNotes(event.target.value)}
+                className={`${styles.textarea} mt-2 min-h-[96px]`}
+                placeholder={t("chat.examples.notesPlaceholder")}
+              />
+            </label>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className={styles.secondaryButton}
+                disabled={!canCreateExample}
+              >
+                {creatingExample
+                  ? t("chat.examples.creating")
+                  : t("chat.examples.create")}
+              </button>
+            </div>
+          </form>
+        </section>
+      ) : null}
     </article>
+  );
+}
+
+type CanonicalExamplesPanelProps = {
+  examples: CanonicalQueryExample[];
+  canManage: boolean;
+  loading: boolean;
+  error: string | null;
+  onArchive: (exampleId: string) => Promise<void>;
+};
+
+function CanonicalExamplesPanel({
+  examples,
+  canManage,
+  loading,
+  error,
+  onArchive,
+}: CanonicalExamplesPanelProps) {
+  const { formatDateTime, t } = useI18n();
+  const [archivingID, setArchivingID] = useState<string | null>(null);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+
+  const handleArchive = async (exampleId: string) => {
+    setArchivingID(exampleId);
+    setArchiveError(null);
+    try {
+      await onArchive(exampleId);
+    } catch (err) {
+      setArchiveError(normalizeError(err));
+    } finally {
+      setArchivingID(null);
+    }
+  };
+
+  return (
+    <section className={`${styles.sectionCard} mt-6`}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <h2 className="text-lg font-semibold">{t("chat.examples.title")}</h2>
+          <p className={styles.muted}>{t("chat.examples.subtitle")}</p>
+        </div>
+        {examples.length > 0 ? (
+          <span className={styles.chip}>{examples.length}</span>
+        ) : null}
+      </div>
+
+      {error ? <div className={`${styles.bannerError} mt-4`}>{error}</div> : null}
+      {archiveError ? (
+        <div className={`${styles.bannerError} mt-4`}>{archiveError}</div>
+      ) : null}
+
+      {loading ? (
+        <div className={`${styles.bannerInfo} mt-4`}>
+          {t("chat.examples.loading")}
+        </div>
+      ) : examples.length === 0 ? (
+        <div className={`${styles.bannerInfo} mt-4`}>
+          {t("chat.examples.empty")}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          {examples.map((example) => {
+            const createdAtMillis = timestampToMillis(example.createdAt);
+            return (
+              <article key={example.id} className={styles.exampleItem}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {example.question}
+                    </p>
+                    <p className={`${styles.muted} mt-1`}>
+                      {createdAtMillis === null
+                        ? t("common.na")
+                        : formatDateTime(createdAtMillis)}
+                    </p>
+                  </div>
+                  {canManage ? (
+                    <button
+                      type="button"
+                      className={styles.dangerButton}
+                      disabled={archivingID === example.id}
+                      onClick={() => void handleArchive(example.id)}
+                    >
+                      {archivingID === example.id
+                        ? t("chat.examples.archiving")
+                        : t("chat.examples.archive")}
+                    </button>
+                  ) : null}
+                </div>
+
+                {example.notes ? (
+                  <p className="mt-3 rounded-xl bg-white px-3 py-2 text-sm text-slate-700">
+                    {example.notes}
+                  </p>
+                ) : null}
+
+                <details className={`${styles.details} mt-3`}>
+                  <summary className={styles.detailsHeader}>
+                    {t("chat.examples.sqlPreview")}
+                  </summary>
+                  <div className={styles.detailsBody}>
+                    <pre className={styles.sqlBox}>
+                      <code>{example.sql}</code>
+                    </pre>
+                  </div>
+                </details>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -405,6 +841,17 @@ export default function ChatPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [selectedID, setSelectedID] = useState<string | null>(null);
   const [tenantsError, setTenantsError] = useState<string | null>(null);
+  const [canonicalExamples, setCanonicalExamples] = useState<
+    CanonicalQueryExample[]
+  >([]);
+  const [loadingExamples, setLoadingExamples] = useState(false);
+  const [canonicalExamplesError, setCanonicalExamplesError] = useState<
+    string | null
+  >(null);
+  const [viewerCanManageByTenant, setViewerCanManageByTenant] = useState<
+    Record<string, boolean>
+  >({});
+
   const defaultQuestion = t("chat.form.defaultQuestion");
   const previousDefaultQuestion = useRef(defaultQuestion);
   const [question, setQuestion] = useState(defaultQuestion);
@@ -452,6 +899,38 @@ export default function ChatPage() {
     void loadTenants();
   }, [loadTenants]);
 
+  const loadCanonicalExamples = useCallback(
+    async (tenantID: string) => {
+      setLoadingExamples(true);
+      try {
+        const response = await queryClient.listCanonicalQueryExamples({
+          tenantId: tenantID,
+        });
+        setCanonicalExamples(response.examples);
+        setCanonicalExamplesError(null);
+        setViewerCanManageByTenant((current) => ({
+          ...current,
+          [tenantID]: response.viewerCanManage,
+        }));
+      } catch (err) {
+        setCanonicalExamples([]);
+        setCanonicalExamplesError(normalizeError(err));
+      } finally {
+        setLoadingExamples(false);
+      }
+    },
+    [queryClient],
+  );
+
+  useEffect(() => {
+    if (!selectedID) {
+      setCanonicalExamples([]);
+      setCanonicalExamplesError(null);
+      return;
+    }
+    void loadCanonicalExamples(selectedID);
+  }, [loadCanonicalExamples, selectedID]);
+
   const submitQuestion = useCallback(
     async (rawQuestion?: string) => {
       const trimmedQuestion = (rawQuestion ?? question).trim();
@@ -468,6 +947,7 @@ export default function ChatPage() {
         setHistory((current) => [
           {
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tenantId: selectedTenant.id,
             tenantName: selectedTenant.name,
             question: trimmedQuestion,
             createdAt: Date.now(),
@@ -482,6 +962,7 @@ export default function ChatPage() {
         setHistory((current) => [
           {
             id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            tenantId: selectedTenant.id,
             tenantName: selectedTenant.name,
             question: trimmedQuestion,
             createdAt: Date.now(),
@@ -534,6 +1015,58 @@ export default function ChatPage() {
     });
   }, [searchParams, selectedTenant, setSearchParams, submitQuestion]);
 
+  const submitFeedback = useCallback(
+    async (args: {
+      tenantId: string;
+      queryRunId: string;
+      rating: QueryFeedbackRating;
+      comment: string;
+      correctedSql: string;
+    }) => {
+      await queryClient.submitQueryFeedback({
+        tenantId: args.tenantId,
+        queryRunId: args.queryRunId,
+        rating: args.rating,
+        comment: args.comment,
+        correctedSql: args.correctedSql,
+      });
+    },
+    [queryClient],
+  );
+
+  const createCanonicalExample = useCallback(
+    async (args: {
+      tenantId: string;
+      queryRunId: string;
+      question: string;
+      sql: string;
+      notes: string;
+    }) => {
+      await queryClient.createCanonicalQueryExample({
+        tenantId: args.tenantId,
+        queryRunId: args.queryRunId,
+        question: args.question,
+        sql: args.sql,
+        notes: args.notes,
+      });
+    },
+    [queryClient],
+  );
+
+  const archiveCanonicalExample = useCallback(
+    async (exampleId: string) => {
+      if (!selectedID) {
+        return;
+      }
+      await queryClient.archiveCanonicalQueryExample({
+        tenantId: selectedID,
+        exampleId,
+      });
+      await loadCanonicalExamples(selectedID);
+    },
+    [loadCanonicalExamples, queryClient, selectedID],
+  );
+
   const canSubmit =
     selectedTenant !== null &&
     question.trim() !== "" &&
@@ -552,60 +1085,72 @@ export default function ChatPage() {
       </section>
 
       <div className={styles.grid}>
-        <aside className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h2 className="text-lg font-semibold">
-                {t("chat.tenants.title")}
-              </h2>
-              <p className={styles.muted}>{t("chat.tenants.subtitle")}</p>
+        <aside>
+          <section className={styles.sectionCard}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {t("chat.tenants.title")}
+                </h2>
+                <p className={styles.muted}>{t("chat.tenants.subtitle")}</p>
+              </div>
             </div>
-          </div>
 
-          {tenantsError ? (
-            <div className={`${styles.bannerError} mt-4`}>{tenantsError}</div>
-          ) : null}
+            {tenantsError ? (
+              <div className={`${styles.bannerError} mt-4`}>{tenantsError}</div>
+            ) : null}
 
-          <ul className="mt-4 flex flex-col gap-1">
-            {tenants.length === 0 ? (
-              <li className="px-3 py-6 text-center text-sm text-slate-500">
-                {t("chat.tenants.empty")}
-              </li>
-            ) : (
-              tenants.map((tenant) => {
-                const active = tenant.id === selectedID;
-                return (
-                  <li key={tenant.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedID(tenant.id)}
-                      className={[
-                        styles.row,
-                        "w-full text-left",
-                        active ? styles.rowActive : styles.rowIdle,
-                      ].join(" ")}
-                    >
-                      <span>
-                        <span className="block font-medium">{tenant.name}</span>
-                        <span
-                          className={[
-                            "block text-xs",
-                            active ? "text-slate-300" : "text-slate-400",
-                          ].join(" ")}
-                        >
-                          {tenant.slug}
+            <ul className="mt-4 flex flex-col gap-1">
+              {tenants.length === 0 ? (
+                <li className="px-3 py-6 text-center text-sm text-slate-500">
+                  {t("chat.tenants.empty")}
+                </li>
+              ) : (
+                tenants.map((tenant) => {
+                  const active = tenant.id === selectedID;
+                  return (
+                    <li key={tenant.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedID(tenant.id)}
+                        className={[
+                          styles.row,
+                          "w-full text-left",
+                          active ? styles.rowActive : styles.rowIdle,
+                        ].join(" ")}
+                      >
+                        <span>
+                          <span className="block font-medium">{tenant.name}</span>
+                          <span
+                            className={[
+                              "block text-xs",
+                              active ? "text-slate-300" : "text-slate-400",
+                            ].join(" ")}
+                          >
+                            {tenant.slug}
+                          </span>
                         </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })
-            )}
-          </ul>
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
 
-          <div className={`${styles.bannerInfo} mt-4`}>
-            {t("chat.tenants.guardrail")}
-          </div>
+            <div className={`${styles.bannerInfo} mt-4`}>
+              {t("chat.tenants.guardrail")}
+            </div>
+          </section>
+
+          {selectedID ? (
+            <CanonicalExamplesPanel
+              examples={canonicalExamples}
+              canManage={viewerCanManageByTenant[selectedID] ?? false}
+              loading={loadingExamples}
+              error={canonicalExamplesError}
+              onArchive={archiveCanonicalExample}
+            />
+          ) : null}
         </aside>
 
         <div className="flex flex-col gap-6">
@@ -695,7 +1240,16 @@ export default function ChatPage() {
             ) : (
               <div className="mt-4 flex flex-col gap-4">
                 {history.map((item) => (
-                  <QueryResultCard key={item.id} item={item} />
+                  <QueryResultCard
+                    key={item.id}
+                    item={item}
+                    canManageExamples={
+                      viewerCanManageByTenant[item.tenantId] ?? false
+                    }
+                    onSubmitFeedback={submitFeedback}
+                    onCreateCanonicalExample={createCanonicalExample}
+                    onCanonicalExampleChanged={loadCanonicalExamples}
+                  />
                 ))}
               </div>
             )}

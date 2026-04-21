@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AskQuestionRequest, AskQuestionResponse } from "./query_pb.js";
+import { ArchiveCanonicalQueryExampleRequest, ArchiveCanonicalQueryExampleResponse, AskQuestionRequest, AskQuestionResponse, CreateCanonicalQueryExampleRequest, CreateCanonicalQueryExampleResponse, ListCanonicalQueryExamplesRequest, ListCanonicalQueryExamplesResponse, SubmitQueryFeedbackRequest, SubmitQueryFeedbackResponse } from "./query_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -19,6 +19,42 @@ export const QueryService = {
       name: "AskQuestion",
       I: AskQuestionRequest,
       O: AskQuestionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.SubmitQueryFeedback
+     */
+    submitQueryFeedback: {
+      name: "SubmitQueryFeedback",
+      I: SubmitQueryFeedbackRequest,
+      O: SubmitQueryFeedbackResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.CreateCanonicalQueryExample
+     */
+    createCanonicalQueryExample: {
+      name: "CreateCanonicalQueryExample",
+      I: CreateCanonicalQueryExampleRequest,
+      O: CreateCanonicalQueryExampleResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.ListCanonicalQueryExamples
+     */
+    listCanonicalQueryExamples: {
+      name: "ListCanonicalQueryExamples",
+      I: ListCanonicalQueryExamplesRequest,
+      O: ListCanonicalQueryExamplesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.ArchiveCanonicalQueryExample
+     */
+    archiveCanonicalQueryExample: {
+      name: "ArchiveCanonicalQueryExample",
+      I: ArchiveCanonicalQueryExampleRequest,
+      O: ArchiveCanonicalQueryExampleResponse,
       kind: MethodKind.Unary,
     },
   }
