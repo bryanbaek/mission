@@ -3,9 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   ThemeProvider,
-  themeStorageKey,
-  useTheme,
 } from "./theme";
+import { themeStorageKey, useTheme } from "./theme-context";
 
 function installMatchMedia(initialMatches = false) {
   const listeners = new Set<(event: MediaQueryListEvent) => void>();

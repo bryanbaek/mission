@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 
 import Layout from "./Layout";
 import { localeStorageKey, useI18n } from "../lib/i18n";
-import { themeStorageKey } from "../lib/theme";
+import { themeStorageKey } from "../lib/theme-context";
 import { renderWithI18n } from "../test/renderWithI18n";
 
 vi.mock("@clerk/clerk-react", () => ({

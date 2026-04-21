@@ -2,7 +2,8 @@ import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement } from "react";
 
 import { I18nProvider, type Locale } from "../lib/i18n";
-import { ThemeProvider, type ThemeMode } from "../lib/theme";
+import { ThemeProvider } from "../lib/theme";
+import { type ThemeMode } from "../lib/theme-context";
 
 type Options = Omit<RenderOptions, "wrapper"> & {
   locale?: Locale;

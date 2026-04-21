@@ -1,29 +1,21 @@
 import {
-  createContext,
   createElement,
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
   useState,
   type PropsWithChildren,
 } from "react";
-
-export type ThemeMode = "system" | "light" | "dark";
-export type ResolvedTheme = "light" | "dark";
-
-export const defaultThemeMode: ThemeMode = "system";
-export const themeStorageKey = "mission.frontend.theme";
-
-type ThemeContextValue = {
-  resolvedTheme: ResolvedTheme;
-  themeMode: ThemeMode;
-  setThemeMode: (next: ThemeMode) => void;
-};
+import {
+  ThemeContext,
+  defaultThemeMode,
+  themeStorageKey,
+  type ResolvedTheme,
+  type ThemeContextValue,
+  type ThemeMode,
+} from "./theme-context";
 
 const systemThemeQuery = "(prefers-color-scheme: dark)";
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readStoredThemeMode(initialMode?: ThemeMode): ThemeMode {
   if (initialMode) {
@@ -126,12 +118,4 @@ export function ThemeProvider({
   );
 
   return createElement(ThemeContext.Provider, { value }, children);
-}
-
-export function useTheme(): ThemeContextValue {
-  const value = useContext(ThemeContext);
-  if (!value) {
-    throw new Error("useTheme must be used inside a ThemeProvider");
-  }
-  return value;
 }

@@ -334,6 +334,17 @@ func openSemanticMySQLOrSkip(t *testing.T, dsn string) *sql.DB {
 func loadSemanticSchemaFixture(t *testing.T, db *sql.DB) {
 	t.Helper()
 
+	resetStatements := []string{
+		"DROP DATABASE IF EXISTS mission_app",
+		"CREATE DATABASE mission_app",
+		"USE mission_app",
+	}
+	for _, stmt := range resetStatements {
+		if _, err := db.Exec(stmt); err != nil {
+			t.Fatalf("Exec reset statement %q returned error: %v", stmt, err)
+		}
+	}
+
 	path := filepath.Join("..", "..", "..", "tests", "fixtures", "schema_introspection.sql")
 	body, err := os.ReadFile(path)
 	if err != nil {

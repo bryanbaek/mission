@@ -2,7 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 
 import { useI18n } from "../lib/i18n";
-import { type ThemeMode, useTheme } from "../lib/theme";
+import { useTheme, type ThemeMode } from "../lib/theme-context";
 
 export default function Layout() {
   const { locale, setLocale, t } = useI18n();
