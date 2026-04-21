@@ -391,8 +391,14 @@ const onboardingEn = {
   "onboarding.step3.whyReplica":
     "If a read replica is available, using it avoids putting reporting load on the primary database.",
   "onboarding.step3.connectionString": "Connection string to send to the agent",
+  "onboarding.step3.suggestedConnectionString": "Suggested connection string",
+  "onboarding.step3.suggestedConnectionBody":
+    "Mission generated this DSN from the read-only user, password, host, port, and database above.",
   "onboarding.step3.connectionPlaceholder":
     "username:password@tcp(host:3306)/database?parseTime=true",
+  "onboarding.step3.useSuggestedConnection": "Use this connection string",
+  "onboarding.step3.connectionRequired":
+    "Generate or paste a connection string before verifying the database.",
   "onboarding.step3.verifiedAt": "Verified at {time}",
   "onboarding.step3.verify": "Verify and continue",
   "onboarding.step3.transport":
@@ -882,8 +888,14 @@ const onboardingKo: Record<keyof typeof onboardingEn, string> = {
   "onboarding.step3.whyReplica":
     "읽기 복제본이 있다면 우선 사용하세요. 운영 원본 DB에 분석 부하가 실리지 않게 할 수 있습니다.",
   "onboarding.step3.connectionString": "에이전트로 보낼 연결 문자열",
+  "onboarding.step3.suggestedConnectionString": "추천 연결 문자열",
+  "onboarding.step3.suggestedConnectionBody":
+    "위에서 만든 읽기 전용 사용자, 비밀번호, 호스트, 포트, 데이터베이스를 합쳐 Mission이 이 DSN을 만들었습니다.",
   "onboarding.step3.connectionPlaceholder":
     "username:password@tcp(host:3306)/database?parseTime=true",
+  "onboarding.step3.useSuggestedConnection": "이 연결 문자열 사용",
+  "onboarding.step3.connectionRequired":
+    "데이터베이스 검증 전에 연결 문자열을 생성하거나 붙여 넣어 주세요.",
   "onboarding.step3.verifiedAt": "{time}에 검증 완료",
   "onboarding.step3.verify": "검증 후 계속",
   "onboarding.step3.transport":

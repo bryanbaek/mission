@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -67,11 +67,17 @@ registry.digitalocean.com/mission/edge-agent:v0.1.0`,
   };
 }
 
-function renderPage(clientOverrides?: Partial<OnboardingClient>) {
+function renderPage(options?: {
+  clientOverrides?: Partial<OnboardingClient>;
+  initialState?: Record<string, unknown>;
+  routeStep?: number;
+}) {
+  const routeStep = options?.routeStep ?? 1;
   const getState = vi.fn().mockResolvedValue({
     state: makeState({
-      currentStep: 1,
+      currentStep: routeStep,
       name: "에코텍 워크스페이스",
+      ...options?.initialState,
     }),
   });
   const saveWelcome = vi.fn().mockResolvedValue({
@@ -80,25 +86,37 @@ function renderPage(clientOverrides?: Partial<OnboardingClient>) {
       name: "에코텍 워크스페이스",
     }),
   });
+  const configureDatabase = vi.fn().mockResolvedValue({
+    state: makeState({
+      currentStep: 4,
+      name: "에코텍 워크스페이스",
+      ...options?.initialState,
+    }),
+  });
 
   const onboardingClient = {
     getState,
     saveWelcome,
-    ...clientOverrides,
+    configureDatabase,
+    ...options?.clientOverrides,
   } as unknown as OnboardingClient;
 
   return {
     getState,
     saveWelcome,
+    configureDatabase,
     onboardingClient,
     ...renderWithI18n(
       <OnboardingClientContext.Provider value={onboardingClient}>
-        <MemoryRouter initialEntries={["/onboarding/tenant-1/step-1"]}>
+        <MemoryRouter
+          initialEntries={[`/onboarding/tenant-1/step-${routeStep}`]}
+        >
           <Routes>
             <Route
-              path="/onboarding/:tenantId/step-1"
-              element={<OnboardingStepPage step={1} />}
+              path={`/onboarding/:tenantId/step-${routeStep}`}
+              element={<OnboardingStepPage step={routeStep} />}
             />
+            <Route path="/onboarding/:tenantId/step-4" element={<div>step 4</div>} />
           </Routes>
         </MemoryRouter>
       </OnboardingClientContext.Provider>,
@@ -130,6 +148,40 @@ describe("OnboardingStepPage", () => {
 
     await waitFor(() => {
       expect(getState).toHaveBeenCalledWith({ tenantId: "tenant-1" });
+    });
+  });
+
+  it("builds and reuses the suggested DSN on step 3", async () => {
+    const { configureDatabase } = renderPage({
+      routeStep: 3,
+      initialState: {
+        dbHost: "db.internal",
+        dbPort: 3306,
+        dbName: "mysql-1",
+        dbUsername: "okta_ai_ro",
+        generatedPassword: "X1bXqFdQjYGVEBCvlPgnPRXN",
+        dbSetupSql:
+          "CREATE USER 'okta_ai_ro'@'%' IDENTIFIED BY 'X1bXqFdQjYGVEBCvlPgnPRXN';",
+      },
+    });
+
+    expect(
+      await screen.findByText(
+        "okta_ai_ro:X1bXqFdQjYGVEBCvlPgnPRXN@tcp(db.internal:3306)/mysql-1",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "검증 후 계속" }));
+
+    await waitFor(() => {
+      expect(configureDatabase).toHaveBeenCalledWith({
+        tenantId: "tenant-1",
+        host: "db.internal",
+        port: 3306,
+        databaseName: "mysql-1",
+        connectionString:
+          "okta_ai_ro:X1bXqFdQjYGVEBCvlPgnPRXN@tcp(db.internal:3306)/mysql-1",
+      });
     });
   });
 });

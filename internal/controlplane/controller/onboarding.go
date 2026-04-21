@@ -914,16 +914,22 @@ func parseOptionalUUID(raw string) (uuid.UUID, error) {
 }
 
 func buildDatabaseSetupSQL(databaseName, password string) string {
-	if strings.TrimSpace(databaseName) == "" || strings.TrimSpace(password) == "" {
+	databaseName = strings.TrimSpace(databaseName)
+	password = strings.TrimSpace(password)
+	if databaseName == "" || password == "" {
 		return ""
 	}
 	return fmt.Sprintf(
-		"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\nGRANT SELECT ON %s.* TO '%s'@'%%';\nFLUSH PRIVILEGES;",
+		"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\nGRANT SELECT, SHOW VIEW ON `%s`.* TO '%s'@'%%';\nFLUSH PRIVILEGES;",
 		defaultDatabaseUsername,
 		password,
-		databaseName,
+		escapeMySQLIdentifier(databaseName),
 		defaultDatabaseUsername,
 	)
+}
+
+func escapeMySQLIdentifier(identifier string) string {
+	return strings.ReplaceAll(strings.TrimSpace(identifier), "`", "``")
 }
 
 func databaseErrorMessageKO(code AgentConfigureDatabaseErrorCode) string {

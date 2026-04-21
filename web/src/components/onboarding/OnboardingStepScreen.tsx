@@ -129,6 +129,28 @@ function formatTimestamp(
   }).format(new Date(ms));
 }
 
+function buildMySQLConnectionString(args: {
+  username: string;
+  password: string;
+  host: string;
+  port: string;
+  databaseName: string;
+}): string {
+  const username = args.username.trim();
+  const password = args.password.trim();
+  const host = args.host.trim();
+  const databaseName = args.databaseName.trim();
+  const parsedPort = Number.parseInt(args.port, 10);
+  const port =
+    Number.isFinite(parsedPort) && parsedPort > 0 ? String(parsedPort) : "3306";
+
+  if (!username || !password || !host || !databaseName) {
+    return "";
+  }
+
+  return `${username}:${password}@tcp(${host}:${port})/${databaseName}`;
+}
+
 function StepFrame({
   step,
   title,
@@ -548,6 +570,13 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
       nextText: t(`${key}.next` as never),
     };
   }, [step, t]);
+  const suggestedConnectionString = buildMySQLConnectionString({
+    username: state?.dbUsername ?? "",
+    password: state?.generatedPassword ?? "",
+    host: dbHost,
+    port: dbPort,
+    databaseName: dbName,
+  });
 
   const handleCopy = async (key: string, text: string) => {
     try {
@@ -821,7 +850,23 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
                       databaseName: dbName,
                     })
                     .then((response) => {
-                      setState(response.state ?? null);
+                      const nextState = response.state ?? null;
+                      setState(nextState);
+                      if (!connectionString.trim()) {
+                        const nextConnectionString = buildMySQLConnectionString({
+                          username: nextState?.dbUsername ?? "",
+                          password: nextState?.generatedPassword ?? "",
+                          host: nextState?.dbHost || dbHost,
+                          port:
+                            nextState?.dbPort && nextState.dbPort > 0
+                              ? String(nextState.dbPort)
+                              : dbPort,
+                          databaseName: nextState?.dbName || dbName,
+                        });
+                        if (nextConnectionString) {
+                          setConnectionString(nextConnectionString);
+                        }
+                      }
                       setError(null);
                     })
                     .catch((err) =>
@@ -881,6 +926,46 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
           </section>
 
           <section className={styles.card}>
+            {suggestedConnectionString ? (
+              <div className="mb-6 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      {t("onboarding.step3.suggestedConnectionString")}
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {t("onboarding.step3.suggestedConnectionBody")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className={styles.buttonSecondary}
+                      onClick={() =>
+                        void handleCopy("dsn", suggestedConnectionString)
+                      }
+                    >
+                      {copiedKey === "dsn"
+                        ? t("onboarding.common.copied")
+                        : t("onboarding.common.copy")}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.buttonSecondary}
+                      onClick={() => {
+                        setConnectionString(suggestedConnectionString);
+                        setError(null);
+                      }}
+                    >
+                      {t("onboarding.step3.useSuggestedConnection")}
+                    </button>
+                  </div>
+                </div>
+                <pre className={`${styles.codeBlock} mt-4`}>
+                  <code>{suggestedConnectionString}</code>
+                </pre>
+              </div>
+            ) : null}
             <label className="grid gap-2 text-sm font-medium text-slate-800">
               <span>{t("onboarding.step3.connectionString")}</span>
               <textarea
@@ -908,6 +993,16 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
                 className={styles.buttonPrimary}
                 disabled={dbSubmitting}
                 onClick={() => {
+                  const nextConnectionString =
+                    connectionString.trim() || suggestedConnectionString;
+                  if (!nextConnectionString) {
+                    setError(t("onboarding.step3.connectionRequired"));
+                    return;
+                  }
+                  setError(null);
+                  if (nextConnectionString !== connectionString) {
+                    setConnectionString(nextConnectionString);
+                  }
                   setDbSubmitting(true);
                   void onboardingClient
                     .configureDatabase({
@@ -915,7 +1010,7 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
                       host: dbHost,
                       port: Number.parseInt(dbPort, 10) || 3306,
                       databaseName: dbName,
-                      connectionString,
+                      connectionString: nextConnectionString,
                     })
                     .then((response) => {
                       const nextState = response.state ?? null;

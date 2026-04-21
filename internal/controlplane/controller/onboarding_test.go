@@ -327,6 +327,20 @@ func TestNewOnboardingControllerAppliesDefaults(t *testing.T) {
 	}
 }
 
+func TestBuildDatabaseSetupSQLQuotesDatabaseAndIncludesShowView(t *testing.T) {
+	got := buildDatabaseSetupSQL("mysql-1", "X1bXqFdQjYGVEBCvlPgnPRXN")
+
+	for _, want := range []string{
+		"CREATE USER 'okta_ai_ro'@'%' IDENTIFIED BY 'X1bXqFdQjYGVEBCvlPgnPRXN';",
+		"GRANT SELECT, SHOW VIEW ON `mysql-1`.* TO 'okta_ai_ro'@'%';",
+		"FLUSH PRIVILEGES;",
+	} {
+		if !containsLine(got, want) {
+			t.Fatalf("database setup SQL %q missing %q", got, want)
+		}
+	}
+}
+
 func TestRefreshAgentConnectionFallsBackToTenantSession(t *testing.T) {
 	fixture := newOnboardingControllerFixture(t, OnboardingStepAgentInstall, model.OnboardingPayload{})
 	staleTokenID := uuid.New()
