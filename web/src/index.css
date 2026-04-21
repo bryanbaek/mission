@@ -1,3 +1,174 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-900 antialiased transition-colors duration-200;
+    margin: 0;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  html.dark input:not([type="checkbox"]):not([type="radio"]),
+  html.dark textarea,
+  html.dark select {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  html.dark input:not([type="checkbox"]):not([type="radio"])::placeholder,
+  html.dark textarea::placeholder {
+    color: rgb(100 116 139);
+  }
+
+  html.dark input[type="checkbox"],
+  html.dark input[type="radio"] {
+    @apply border-slate-700 bg-slate-900 text-sky-500;
+  }
+}
+
+@layer utilities {
+  .dark .bg-white {
+    background-color: rgb(2 6 23);
+  }
+
+  .dark .bg-slate-50 {
+    background-color: rgb(15 23 42);
+  }
+
+  .dark .bg-slate-100,
+  .dark .bg-slate-200 {
+    background-color: rgb(30 41 59);
+  }
+
+  .dark .border-slate-100,
+  .dark .border-slate-200 {
+    border-color: rgb(30 41 59);
+  }
+
+  .dark .border-slate-300 {
+    border-color: rgb(51 65 85);
+  }
+
+  .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgb(30 41 59);
+  }
+
+  .dark .text-slate-900,
+  .dark .text-slate-800 {
+    color: rgb(241 245 249);
+  }
+
+  .dark .text-slate-700 {
+    color: rgb(203 213 225);
+  }
+
+  .dark .text-slate-600,
+  .dark .text-slate-500 {
+    color: rgb(148 163 184);
+  }
+
+  .dark .text-slate-400 {
+    color: rgb(100 116 139);
+  }
+
+  .dark .hover\:bg-white:hover,
+  .dark .hover\:bg-slate-50:hover,
+  .dark .hover\:bg-slate-100:hover {
+    background-color: rgb(30 41 59);
+  }
+
+  .dark .hover\:border-slate-300:hover {
+    border-color: rgb(71 85 105);
+  }
+
+  .dark .focus\:border-slate-950:focus {
+    border-color: rgb(203 213 225);
+  }
+
+  .dark .disabled\:bg-slate-300:disabled {
+    background-color: rgb(30 41 59);
+  }
+
+  .dark .disabled\:text-slate-300:disabled {
+    color: rgb(71 85 105);
+  }
+
+  .dark .bg-rose-50 {
+    background-color: rgb(76 5 25 / 0.4);
+  }
+
+  .dark .border-rose-200 {
+    border-color: rgb(159 18 57);
+  }
+
+  .dark .text-rose-700 {
+    color: rgb(254 205 211);
+  }
+
+  .dark .text-rose-600 {
+    color: rgb(253 164 175);
+  }
+
+  .dark .hover\:bg-rose-50:hover {
+    background-color: rgb(76 5 25 / 0.4);
+  }
+
+  .dark .bg-emerald-50 {
+    background-color: rgb(2 44 34 / 0.4);
+  }
+
+  .dark .bg-emerald-100 {
+    background-color: rgb(2 44 34);
+  }
+
+  .dark .border-emerald-200 {
+    border-color: rgb(6 95 70);
+  }
+
+  .dark .text-emerald-950 {
+    color: rgb(209 250 229);
+  }
+
+  .dark .text-emerald-800,
+  .dark .text-emerald-700 {
+    color: rgb(167 243 208);
+  }
+
+  .dark .bg-amber-100 {
+    background-color: rgb(69 26 3);
+  }
+
+  .dark .text-amber-800,
+  .dark .text-amber-700 {
+    color: rgb(253 230 138);
+  }
+
+  .dark .bg-sky-50 {
+    background-color: rgb(8 47 73 / 0.4);
+  }
+
+  .dark .border-sky-200 {
+    border-color: rgb(7 89 133);
+  }
+
+  .dark .text-sky-800 {
+    color: rgb(186 230 253);
+  }
+}

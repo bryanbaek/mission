@@ -2,9 +2,11 @@ import { NavLink, Outlet } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 
 import { useI18n } from "../lib/i18n";
+import { type ThemeMode, useTheme } from "../lib/theme";
 
 export default function Layout() {
   const { locale, setLocale, t } = useI18n();
+  const { themeMode, setThemeMode } = useTheme();
 
   const nav = [
     { to: "/", label: t("layout.nav.tenants") },
@@ -12,6 +14,7 @@ export default function Layout() {
     { to: "/semantic-layer", label: t("layout.nav.semanticLayer") },
     { to: "/agents", label: t("layout.nav.agents") },
   ];
+  const themeOptions: ThemeMode[] = ["system", "light", "dark"];
 
   return (
     <main className="min-h-screen bg-slate-100 p-6 text-slate-900">
@@ -42,7 +45,29 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+            <div
+              role="group"
+              aria-label={t("layout.theme.label")}
+              className="inline-flex rounded-xl bg-slate-100 p-1"
+            >
+              {themeOptions.map((nextThemeMode) => (
+                <button
+                  key={nextThemeMode}
+                  type="button"
+                  aria-pressed={themeMode === nextThemeMode}
+                  onClick={() => setThemeMode(nextThemeMode)}
+                  className={[
+                    "rounded-lg px-3 py-1.5 text-xs font-semibold tracking-[0.18em]",
+                    themeMode === nextThemeMode
+                      ? "bg-slate-950 text-white"
+                      : "text-slate-600 hover:bg-white",
+                  ].join(" ")}
+                >
+                  {t(`layout.theme.${nextThemeMode}`)}
+                </button>
+              ))}
+            </div>
             <div
               role="group"
               aria-label={t("common.language")}

@@ -32,6 +32,10 @@ const layoutEn = {
   "layout.nav.questions": "Ask",
   "layout.nav.semanticLayer": "Semantic Layer",
   "layout.nav.agents": "Agents",
+  "layout.theme.label": "Theme",
+  "layout.theme.system": "System",
+  "layout.theme.light": "Light",
+  "layout.theme.dark": "Dark",
 } as const;
 
 const tenantsEn = {
@@ -517,6 +521,10 @@ const layoutKo: Record<keyof typeof layoutEn, string> = {
   "layout.nav.questions": "질문하기",
   "layout.nav.semanticLayer": "시맨틱 레이어",
   "layout.nav.agents": "에이전트",
+  "layout.theme.label": "테마",
+  "layout.theme.system": "시스템",
+  "layout.theme.light": "라이트",
+  "layout.theme.dark": "다크",
 };
 
 const tenantsKo: Record<keyof typeof tenantsEn, string> = {
