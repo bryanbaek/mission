@@ -70,6 +70,7 @@ type onboardingTenantController interface {
 }
 
 type onboardingAgentSessions interface {
+	LatestSessionForTenant(tenantID uuid.UUID) (AgentSessionSnapshot, bool)
 	LatestSessionForToken(tokenID uuid.UUID) (AgentSessionSnapshot, bool)
 	ConfigureDatabase(ctx context.Context, tokenID uuid.UUID, dsn string) (AgentConfigureDatabaseResult, error)
 }
@@ -280,7 +281,12 @@ func (c *OnboardingController) EnsureInstallBundle(
 		now := c.now().UTC()
 		payload.AgentWaitStarted = &now
 	}
-	if payload.AgentTokenPlain == "" || payload.AgentTokenID == "" {
+
+	record, payload, workspace, err = c.refreshAgentConnection(ctx, workspace, record, payload)
+	if err != nil {
+		return OnboardingStateView{}, err
+	}
+	if payload.AgentTokenID == "" {
 		token, plaintext, err := c.tenants.IssueAgentToken(
 			ctx,
 			tenantID,
@@ -712,16 +718,16 @@ func (c *OnboardingController) refreshAgentConnection(
 	record model.TenantOnboardingState,
 	payload model.OnboardingPayload,
 ) (model.TenantOnboardingState, model.OnboardingPayload, model.OnboardingWorkspace, error) {
-	tokenID, err := parseOptionalUUID(payload.AgentTokenID)
-	if err != nil {
-		return record, payload, workspace, nil
-	}
-	snapshot, ok := c.sessions.LatestSessionForToken(tokenID)
-	if !ok || snapshot.Status != "online" {
+	snapshot, ok := c.latestOnlineAgentSession(record.TenantID, payload.AgentTokenID)
+	if !ok {
 		return record, payload, workspace, nil
 	}
 	connectedAt := snapshot.ConnectedAt.UTC()
 	changed := false
+	if payload.AgentTokenID != snapshot.TokenID.String() {
+		payload.AgentTokenID = snapshot.TokenID.String()
+		changed = true
+	}
 	if payload.AgentSessionID != snapshot.SessionID {
 		payload.AgentSessionID = snapshot.SessionID
 		changed = true
@@ -744,6 +750,7 @@ func (c *OnboardingController) refreshAgentConnection(
 		return record, payload, workspace, nil
 	}
 
+	var err error
 	record, payload, err = c.persistState(
 		ctx,
 		record.TenantID,
@@ -757,6 +764,25 @@ func (c *OnboardingController) refreshAgentConnection(
 	workspace.CurrentStep = record.CurrentStep
 	workspace.UpdatedAt = record.UpdatedAt
 	return record, payload, workspace, nil
+}
+
+func (c *OnboardingController) latestOnlineAgentSession(
+	tenantID uuid.UUID,
+	rawTokenID string,
+) (AgentSessionSnapshot, bool) {
+	tokenID, err := parseOptionalUUID(rawTokenID)
+	if err == nil {
+		snapshot, ok := c.sessions.LatestSessionForToken(tokenID)
+		if ok && snapshot.Status == "online" {
+			return snapshot, true
+		}
+	}
+
+	snapshot, ok := c.sessions.LatestSessionForTenant(tenantID)
+	if !ok || snapshot.Status != "online" {
+		return AgentSessionSnapshot{}, false
+	}
+	return snapshot, true
 }
 
 func (c *OnboardingController) buildStateView(
