@@ -6,6 +6,7 @@ import { WorkspaceRole } from "../../gen/onboarding/v1/onboarding_pb";
 import { onboardingStepPath } from "../../lib/onboarding";
 import { useOnboardingClient } from "../../lib/onboardingClient";
 import { useI18n } from "../../lib/i18n";
+import LocaleToggle from "./LocaleToggle";
 
 const styles = {
   shell: "mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6",
@@ -24,7 +25,7 @@ const styles = {
 export default function OnboardingHomeScreen() {
   const onboardingClient = useOnboardingClient();
   const navigate = useNavigate();
-  const { formatDateTime, setLocale, t } = useI18n();
+  const { formatDateTime, t } = useI18n();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +38,6 @@ export default function OnboardingHomeScreen() {
       updatedLabel: string;
     }>
   >([]);
-
-  useEffect(() => {
-    setLocale("ko");
-  }, [setLocale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,9 +118,12 @@ export default function OnboardingHomeScreen() {
   return (
     <div className={styles.shell}>
       <section className={styles.hero}>
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-          {t("onboarding.common.label")}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            {t("onboarding.common.label")}
+          </p>
+          <LocaleToggle />
+        </div>
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           {heading}
         </h1>

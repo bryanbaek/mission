@@ -20,6 +20,7 @@ import { useI18n } from "../../lib/i18n";
 import { onboardingStepPath } from "../../lib/onboarding";
 import { useOnboardingClient } from "../../lib/onboardingClient";
 import { useSemanticClient } from "../../lib/semanticClient";
+import LocaleToggle from "./LocaleToggle";
 
 const styles = {
   shell: "mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6",
@@ -163,11 +164,14 @@ function StepFrame({
               {title}
             </h1>
           </div>
-          {backHref ? (
-            <Link to={backHref} className={styles.buttonSecondary}>
-              {t("onboarding.common.back")}
-            </Link>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-3">
+            {backHref ? (
+              <Link to={backHref} className={styles.buttonSecondary}>
+                {t("onboarding.common.back")}
+              </Link>
+            ) : null}
+            <LocaleToggle />
+          </div>
         </div>
         <div className={styles.progressTrack}>
           <div className={styles.progressFill} style={{ width: progress }} />
@@ -394,7 +398,7 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
   const params = useParams();
   const tenantId = params.tenantId;
   const onboardingClient = useOnboardingClient();
-  const { setLocale, t } = useI18n();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -419,10 +423,6 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [inviteEmails, setInviteEmails] = useState("");
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
-
-  useEffect(() => {
-    setLocale("ko");
-  }, [setLocale]);
 
   const loadState = useCallback(async () => {
     if (!tenantId) {
@@ -534,13 +534,10 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
     if (!tenantId || !state || state.waitingForOwner) {
       return;
     }
-    if (step === 4 && holdSchemaSummary && state.currentStep === 5) {
-      return;
-    }
-    if (state.currentStep && state.currentStep !== step) {
+    if (state.currentStep && state.currentStep < step) {
       navigate(onboardingStepPath(tenantId, state.currentStep), { replace: true });
     }
-  }, [holdSchemaSummary, navigate, state, step, tenantId]);
+  }, [navigate, state, step, tenantId]);
 
   const stepMeta = useMemo(() => {
     const key = `onboarding.step${step}` as const;
