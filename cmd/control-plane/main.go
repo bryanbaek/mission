@@ -72,7 +72,7 @@ func run() error {
 	}
 	defer sentry.Flush(2 * time.Second)
 
-	pool, err := db.NewPool(ctx, cfg.DatabaseURL)
+	pool, err := db.NewPool(ctx, cfg.DatabaseURL, cfg.DBMaxConns)
 	if err != nil {
 		return fmt.Errorf("connect db: %w", err)
 	}
@@ -292,7 +292,7 @@ func run() error {
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(
 		context.Background(),
-		15*time.Second,
+		cfg.ShutdownTimeout,
 	)
 	defer shutdownCancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
