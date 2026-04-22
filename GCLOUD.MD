@@ -154,7 +154,7 @@ For private IP connectivity, attach Cloud Run to a VPC/subnet with Direct VPC eg
 `private-ranges-only` is the recommended default here because:
 
 - Cloud SQL private IP traffic goes through the VPC
-- internet egress to Clerk, Anthropic, OpenAI, and Sentry continues to work without forcing all egress through Cloud NAT
+- internet egress to Clerk, the enabled LLM providers (Anthropic, OpenAI, Together, Mistral, Cerebras, DeepSeek, xAI, Fireworks), and Sentry continues to work without forcing all egress through Cloud NAT
 
 ## 5. Deploy Cloud Run
 
@@ -183,6 +183,8 @@ gcloud run deploy control-plane \
   --set-env-vars "ENV=production,LOG_LEVEL=info,DATABASE_URL=${DATABASE_URL},DB_MAX_CONNS=4,DB_MIN_CONNS=1,DB_HEALTH_CHECK_PERIOD_SECONDS=30,PUBLIC_CONTROL_PLANE_URL=${CONTROL_PLANE_DOMAIN},DEFAULT_LLM_PROVIDER=anthropic,SEMANTIC_LAYER_MODEL=claude-sonnet-4-6,QUERY_MODEL=claude-sonnet-4-6,ANTHROPIC_SEMANTIC_LAYER_MODEL=claude-sonnet-4-6,OPENAI_SEMANTIC_LAYER_MODEL=gpt-4.1,ANTHROPIC_QUERY_MODEL=claude-sonnet-4-6,OPENAI_QUERY_MODEL=gpt-4.1,EDGE_AGENT_IMAGE=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/edge-agent:TAG,CLERK_PUBLISHABLE_KEY=pk_live_replace_me,VITE_SENTRY_ENVIRONMENT=production,VITE_SENTRY_RELEASE=$(git rev-parse --short HEAD)" \
   --set-secrets "CLERK_SECRET_KEY=CLERK_SECRET_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,SENTRY_DSN=SENTRY_DSN:latest,VITE_SENTRY_DSN=SENTRY_DSN:latest"
 ```
+
+Replace the sample provider-specific env vars with the providers you actually enable. Supported provider names are `anthropic`, `openai`, `together`, `mistral`, `cerebras`, `deepseek`, `xai`, and `fireworks`. Provider key secrets follow the `*_API_KEY` pattern, and provider-specific model overrides follow `*_SEMANTIC_LAYER_MODEL` and `*_QUERY_MODEL`.
 
 ### Option B: replace the sample YAML
 

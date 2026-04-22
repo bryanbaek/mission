@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,9 +33,8 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/db"
 	llmgateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
-	anthropicgateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm/anthropic"
-	openaigateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm/openai"
 	"github.com/bryanbaek/mission/internal/controlplane/handler"
+	"github.com/bryanbaek/mission/internal/controlplane/llmprovider"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
 	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 )
@@ -68,6 +68,11 @@ func run() error {
 		syscall.SIGTERM,
 	)
 	defer cancel()
+
+	llmProviders, semanticProviderModels, queryProviderModels, err := buildLLMRuntime(cfg)
+	if err != nil {
+		return fmt.Errorf("build llm runtime: %w", err)
+	}
 
 	if err := db.Migrate(cfg.DatabaseURL); err != nil {
 		return fmt.Errorf("migrate db: %w", err)
@@ -112,32 +117,7 @@ func run() error {
 		agentSessions,
 		controller.SchemaControllerConfig{},
 	)
-	llmProviders := make([]llmgateway.Provider, 0, 2)
-	if cfg.AnthropicAPIKey != "" {
-		llmProviders = append(
-			llmProviders,
-			anthropicgateway.New(anthropicgateway.Config{
-				APIKey: cfg.AnthropicAPIKey,
-			}),
-		)
-	}
-	if cfg.OpenAIAPIKey != "" {
-		llmProviders = append(
-			llmProviders,
-			openaigateway.New(openaigateway.Config{
-				APIKey: cfg.OpenAIAPIKey,
-			}),
-		)
-	}
 	llmRouter := llmgateway.NewRouter(cfg.DefaultLLMProvider, llmProviders...)
-	semanticProviderModels := providerModelMap(
-		cfg.AnthropicSemanticLayerModel,
-		cfg.OpenAISemanticLayerModel,
-	)
-	queryProviderModels := providerModelMap(
-		cfg.AnthropicQueryModel,
-		cfg.OpenAIQueryModel,
-	)
 	semanticLayerCtrl := controller.NewSemanticLayerController(
 		tenantCtrl,
 		schemaRepo,
@@ -345,11 +325,55 @@ func run() error {
 	return nil
 }
 
-func providerModelMap(anthropicModel, openAIModel string) map[string]string {
-	return llmgateway.CloneProviderModels(map[string]string{
-		"anthropic": anthropicModel,
-		"openai":    openAIModel,
-	})
+func buildLLMRuntime(
+	cfg config.Config,
+) ([]llmgateway.Provider, map[string]string, map[string]string, error) {
+	defaultProvider := strings.TrimSpace(cfg.DefaultLLMProvider)
+	if _, ok := llmprovider.ByName(defaultProvider); !ok {
+		return nil, nil, nil, fmt.Errorf("unsupported DEFAULT_LLM_PROVIDER %q", defaultProvider)
+	}
+
+	providers := make([]llmgateway.Provider, 0, len(llmprovider.Specs()))
+	configured := make(map[string]struct{}, len(llmprovider.Specs()))
+	for _, spec := range llmprovider.Specs() {
+		apiKey := strings.TrimSpace(cfg.ProviderAPIKeys[spec.Name])
+		if apiKey == "" {
+			continue
+		}
+
+		provider, err := llmprovider.Build(spec.Name, apiKey, nil)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		providers = append(providers, provider)
+		configured[spec.Name] = struct{}{}
+	}
+
+	if len(providers) == 0 {
+		return nil, nil, nil, fmt.Errorf(
+			"no llm providers are configured; set at least one of %s",
+			strings.Join(apiKeyEnvNames(), ", "),
+		)
+	}
+	if _, ok := configured[defaultProvider]; !ok {
+		return nil, nil, nil, fmt.Errorf(
+			"DEFAULT_LLM_PROVIDER %q is not configured",
+			defaultProvider,
+		)
+	}
+
+	return providers,
+		llmgateway.CloneProviderModels(cfg.SemanticLayerProviderModels),
+		llmgateway.CloneProviderModels(cfg.QueryProviderModels),
+		nil
+}
+
+func apiKeyEnvNames() []string {
+	names := make([]string, 0, len(llmprovider.Specs()))
+	for _, spec := range llmprovider.Specs() {
+		names = append(names, spec.APIKeyEnv)
+	}
+	return names
 }
 
 func loadFrontendHandler(cfg config.Config) (http.Handler, error) {

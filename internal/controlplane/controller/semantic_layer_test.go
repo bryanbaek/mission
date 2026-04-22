@@ -417,11 +417,11 @@ func TestSemanticLayerControllerDraftBuildsStructuredRequestAndPersistsContent(t
 	completer := &fakeSemanticCompleter{
 		response: llm.CompletionResponse{
 			Content:  string(generatedJSON),
-			Provider: "anthropic",
-			Model:    "claude-sonnet-4-6",
+			Provider: "deepseek",
+			Model:    "deepseek-chat",
 			Usage: llm.Usage{
-				Provider:                 "anthropic",
-				Model:                    "claude-sonnet-4-6",
+				Provider:                 "deepseek",
+				Model:                    "deepseek-chat",
 				InputTokens:              321,
 				OutputTokens:             98,
 				CacheCreationInputTokens: 321,
@@ -491,7 +491,7 @@ func TestSemanticLayerControllerDraftBuildsStructuredRequestAndPersistsContent(t
 		},
 		completer,
 		SemanticLayerControllerConfig{
-			Model:     "claude-sonnet-4-6",
+			Model:     "deepseek-chat",
 			MaxTokens: 2048,
 		},
 	)
@@ -506,8 +506,11 @@ func TestSemanticLayerControllerDraftBuildsStructuredRequestAndPersistsContent(t
 	if got.Usage.CacheReadInputTokens != 64 {
 		t.Fatalf("CacheReadInputTokens = %d, want 64", got.Usage.CacheReadInputTokens)
 	}
-	if completer.gotRequest.Model != "claude-sonnet-4-6" {
-		t.Fatalf("model = %q, want claude-sonnet-4-6", completer.gotRequest.Model)
+	if got.Usage.Provider != "deepseek" || got.Usage.Model != "deepseek-chat" {
+		t.Fatalf("usage = %+v, want deepseek/deepseek-chat", got.Usage)
+	}
+	if completer.gotRequest.Model != "deepseek-chat" {
+		t.Fatalf("model = %q, want deepseek-chat", completer.gotRequest.Model)
 	}
 	if completer.gotRequest.OutputFormat == nil || completer.gotRequest.OutputFormat.Schema == nil {
 		t.Fatal("expected structured output schema")

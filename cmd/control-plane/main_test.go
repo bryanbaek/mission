@@ -10,8 +10,86 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/bryanbaek/mission/internal/controlplane/config"
 	"github.com/bryanbaek/mission/internal/controlplane/handler"
+	"github.com/bryanbaek/mission/internal/controlplane/llmprovider"
 )
+
+func TestBuildLLMRuntimeBuildsConfiguredProvidersInCatalogOrder(t *testing.T) {
+	t.Parallel()
+
+	providers, semanticModels, queryModels, err := buildLLMRuntime(config.Config{
+		DefaultLLMProvider: "deepseek",
+		ProviderAPIKeys: map[string]string{
+			"deepseek":    "deepseek-key",
+			"anthropic":   "anthropic-key",
+			"openai":      "openai-key",
+			"fireworks":   "",
+			"unsupported": "ignored",
+		},
+		SemanticLayerProviderModels: map[string]string{
+			"deepseek":  "deepseek-chat",
+			"anthropic": "claude-sonnet-4-6",
+		},
+		QueryProviderModels: map[string]string{
+			"deepseek": "deepseek-chat",
+			"openai":   "gpt-4.1-mini",
+		},
+	})
+	if err != nil {
+		t.Fatalf("buildLLMRuntime returned error: %v", err)
+	}
+
+	gotNames := make([]string, 0, len(providers))
+	for _, provider := range providers {
+		gotNames = append(gotNames, provider.Name())
+	}
+	wantNames := []string{"anthropic", "openai", "deepseek"}
+	if strings.Join(gotNames, ",") != strings.Join(wantNames, ",") {
+		t.Fatalf("provider order = %v, want %v", gotNames, wantNames)
+	}
+	if semanticModels["deepseek"] != "deepseek-chat" {
+		t.Fatalf("semanticModels[deepseek] = %q", semanticModels["deepseek"])
+	}
+	if queryModels["openai"] != "gpt-4.1-mini" {
+		t.Fatalf("queryModels[openai] = %q", queryModels["openai"])
+	}
+}
+
+func TestBuildLLMRuntimeRejectsUnsupportedDefaultProvider(t *testing.T) {
+	t.Parallel()
+
+	_, _, _, err := buildLLMRuntime(config.Config{
+		DefaultLLMProvider: "unsupported",
+		ProviderAPIKeys:    map[string]string{"anthropic": "anthropic-key"},
+	})
+	if err == nil {
+		t.Fatal("buildLLMRuntime returned nil error for unsupported default provider")
+	}
+}
+
+func TestBuildLLMRuntimeRejectsUnconfiguredDefaultProvider(t *testing.T) {
+	t.Parallel()
+
+	_, _, _, err := buildLLMRuntime(config.Config{
+		DefaultLLMProvider: "openai",
+		ProviderAPIKeys:    map[string]string{"deepseek": "deepseek-key"},
+	})
+	if err == nil {
+		t.Fatal("buildLLMRuntime returned nil error for unconfigured default provider")
+	}
+}
+
+func TestBuildLLMRuntimeRequiresAtLeastOneProvider(t *testing.T) {
+	t.Parallel()
+
+	_, _, _, err := buildLLMRuntime(config.Config{
+		DefaultLLMProvider: llmprovider.DefaultProviderName,
+	})
+	if err == nil {
+		t.Fatal("buildLLMRuntime returned nil error without configured providers")
+	}
+}
 
 func TestRegisterFrontendRoutesPreservesBackendRoutes(t *testing.T) {
 	t.Parallel()

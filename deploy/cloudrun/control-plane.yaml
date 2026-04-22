@@ -46,6 +46,10 @@ spec:
               value: claude-sonnet-4-6
             - name: QUERY_MODEL
               value: claude-sonnet-4-6
+            # Supported provider names: anthropic, openai, together, mistral,
+            # cerebras, deepseek, xai, fireworks.
+            # Provider-specific model overrides follow
+            # <PROVIDER>_SEMANTIC_LAYER_MODEL and <PROVIDER>_QUERY_MODEL.
             - name: ANTHROPIC_SEMANTIC_LAYER_MODEL
               value: claude-sonnet-4-6
             - name: OPENAI_SEMANTIC_LAYER_MODEL
@@ -66,3 +70,6 @@ spec:
               value: ANTHROPIC_API_KEY
             - name: OPENAI_API_KEY
               value: OPENAI_API_KEY
+            # Optional provider secrets use the same pattern:
+            # TOGETHER_API_KEY, MISTRAL_API_KEY, CEREBRAS_API_KEY,
+            # DEEPSEEK_API_KEY, XAI_API_KEY, FIREWORKS_API_KEY.

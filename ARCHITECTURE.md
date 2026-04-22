@@ -12,7 +12,7 @@ Multi-tenant SaaS. Each tenant = a privacy-sensitive SMB running their own on-pr
 |---|---|---|
 | Control plane | DigitalOcean App Platform (ours) | Web UI, auth, tenant config, semantic layer, agent orchestration, LLM router |
 | Edge agent | Tenant's own infra (Docker) | Read-only MySQL gateway, SQL execution, local audit log |
-| LLM | Anthropic / OpenAI (cloud) | Receives schema + NL question; returns SQL and summaries. Never sees raw rows in Tier 1. |
+| LLM | Anthropic / OpenAI / Together / Mistral / Cerebras / DeepSeek / xAI / Fireworks (cloud) | Receives schema + NL question; returns SQL and summaries. Never sees raw rows in Tier 1. |
 
 ## Stack
 
@@ -26,7 +26,7 @@ Multi-tenant SaaS. Each tenant = a privacy-sensitive SMB running their own on-pr
 | Auth | [Clerk](https://clerk.com) | SaaS-only; JWT verification via middleware; removes hand-rolled auth risk |
 | Frontend | Vite + React + TypeScript + Tailwind + shadcn/ui | Plain SPA, no SSR/edge concerns; backend-eng-friendly mental model |
 | Frontend hosting | DigitalOcean App Platform Static Sites | Same vendor as backend |
-| LLM providers | Anthropic + OpenAI, behind a `gateway/llm.Provider` interface | Switching per tenant = config change, not code change |
+| LLM providers | Anthropic, OpenAI, Together, Mistral, Cerebras, DeepSeek, xAI, and Fireworks behind a `gateway/llm.Provider` interface | Switching per tenant = config change, not code change |
 | Edge-agent transport | Connect-RPC server streams over HTTPS (SSE-shaped) for commands, unary POST for results; mTLS | Tenant is behind NAT (outbound only). Simpler ops than WebSocket; aligns with Connect stack. |
 | SQL safety | Pure-Go AST parser (`pingcap/tidb/parser`) + read-only MySQL user + read replica + `LIMIT` injection + statement timeout | Defense in depth — no single layer is trusted |
 | Container registry | DigitalOcean Container Registry | Same vendor |
@@ -47,7 +47,7 @@ internal/
     model/              domain structs (Tenant, User, SemanticLayer, Report, …)
     repository/         Postgres access — one repo per aggregate, returns model.*
     gateway/            outbound integrations
-      llm/              LLM Provider interface + Anthropic/OpenAI implementations
+      llm/              LLM Provider interface + Anthropic/OpenAI-compatible/Mistral implementations
     controller/         workflow orchestration; deterministic; no HTTP or SQL
     handler/            thin HTTP / Connect-RPC handlers — parse request, call controller, shape response
   edgeagent/            same layered shape
@@ -86,4 +86,4 @@ Single vendor: DigitalOcean. One bill, one dashboard.
 - Container Registry: edge-agent Docker images
 - Spaces (later): generated PDFs, exports
 
-External dependencies we accept: Clerk (auth SaaS), Anthropic API, OpenAI API.
+External dependencies we accept: Clerk (auth SaaS), and whichever enabled LLM APIs the deployment uses.

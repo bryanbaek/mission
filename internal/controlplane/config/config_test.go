@@ -3,10 +3,13 @@ package config
 import (
 	"testing"
 	"time"
+
+	"github.com/bryanbaek/mission/internal/controlplane/llmprovider"
 )
 
 func TestLoadDefaults(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	clearProviderEnv(t)
 	t.Setenv("ENV", "")
 	t.Setenv("PORT", "")
 	t.Setenv("HTTP_PORT", "")
@@ -22,10 +25,6 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("VITE_SENTRY_DSN", "")
 	t.Setenv("VITE_SENTRY_ENVIRONMENT", "")
 	t.Setenv("VITE_SENTRY_RELEASE", "")
-	t.Setenv("ANTHROPIC_SEMANTIC_LAYER_MODEL", "")
-	t.Setenv("OPENAI_SEMANTIC_LAYER_MODEL", "")
-	t.Setenv("ANTHROPIC_QUERY_MODEL", "")
-	t.Setenv("OPENAI_QUERY_MODEL", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -70,6 +69,18 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if cfg.FrontendSentryEnvironment != "development" {
 		t.Fatalf("FrontendSentryEnvironment = %q, want development", cfg.FrontendSentryEnvironment)
+	}
+	if cfg.DefaultLLMProvider != llmprovider.DefaultProviderName {
+		t.Fatalf("DefaultLLMProvider = %q, want %q", cfg.DefaultLLMProvider, llmprovider.DefaultProviderName)
+	}
+	if len(cfg.ProviderAPIKeys) != 0 {
+		t.Fatalf("ProviderAPIKeys = %#v, want empty", cfg.ProviderAPIKeys)
+	}
+	if len(cfg.SemanticLayerProviderModels) != 0 {
+		t.Fatalf("SemanticLayerProviderModels = %#v, want empty", cfg.SemanticLayerProviderModels)
+	}
+	if len(cfg.QueryProviderModels) != 0 {
+		t.Fatalf("QueryProviderModels = %#v, want empty", cfg.QueryProviderModels)
 	}
 }
 
@@ -184,32 +195,45 @@ func TestLoadRequiresPublicControlPlaneURLInProduction(t *testing.T) {
 
 func TestLoadUsesProviderSpecificModels(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	clearProviderEnv(t)
+	t.Setenv("ANTHROPIC_API_KEY", "anthropic-key")
+	t.Setenv("DEEPSEEK_API_KEY", "deepseek-key")
 	t.Setenv("ANTHROPIC_SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6")
-	t.Setenv("OPENAI_SEMANTIC_LAYER_MODEL", "gpt-4.1")
+	t.Setenv("DEEPSEEK_SEMANTIC_LAYER_MODEL", "deepseek-chat")
 	t.Setenv("ANTHROPIC_QUERY_MODEL", "claude-haiku-4")
-	t.Setenv("OPENAI_QUERY_MODEL", "gpt-4.1-mini")
+	t.Setenv("DEEPSEEK_QUERY_MODEL", "deepseek-chat")
+	t.Setenv("DEEPSEEK_PREFLIGHT_MODEL", "deepseek-chat")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if cfg.AnthropicSemanticLayerModel != "claude-sonnet-4-6" {
+	if cfg.ProviderAPIKeys["anthropic"] != "anthropic-key" {
+		t.Fatalf("ProviderAPIKeys[anthropic] = %q", cfg.ProviderAPIKeys["anthropic"])
+	}
+	if cfg.ProviderAPIKeys["deepseek"] != "deepseek-key" {
+		t.Fatalf("ProviderAPIKeys[deepseek] = %q", cfg.ProviderAPIKeys["deepseek"])
+	}
+	if cfg.SemanticLayerProviderModels["anthropic"] != "claude-sonnet-4-6" {
 		t.Fatalf(
-			"AnthropicSemanticLayerModel = %q",
-			cfg.AnthropicSemanticLayerModel,
+			"SemanticLayerProviderModels[anthropic] = %q",
+			cfg.SemanticLayerProviderModels["anthropic"],
 		)
 	}
-	if cfg.OpenAISemanticLayerModel != "gpt-4.1" {
+	if cfg.SemanticLayerProviderModels["deepseek"] != "deepseek-chat" {
 		t.Fatalf(
-			"OpenAISemanticLayerModel = %q",
-			cfg.OpenAISemanticLayerModel,
+			"SemanticLayerProviderModels[deepseek] = %q",
+			cfg.SemanticLayerProviderModels["deepseek"],
 		)
 	}
-	if cfg.AnthropicQueryModel != "claude-haiku-4" {
-		t.Fatalf("AnthropicQueryModel = %q", cfg.AnthropicQueryModel)
+	if cfg.QueryProviderModels["anthropic"] != "claude-haiku-4" {
+		t.Fatalf("QueryProviderModels[anthropic] = %q", cfg.QueryProviderModels["anthropic"])
 	}
-	if cfg.OpenAIQueryModel != "gpt-4.1-mini" {
-		t.Fatalf("OpenAIQueryModel = %q", cfg.OpenAIQueryModel)
+	if cfg.QueryProviderModels["deepseek"] != "deepseek-chat" {
+		t.Fatalf("QueryProviderModels[deepseek] = %q", cfg.QueryProviderModels["deepseek"])
+	}
+	if cfg.PreflightProviderModels["deepseek"] != "deepseek-chat" {
+		t.Fatalf("PreflightProviderModels[deepseek] = %q", cfg.PreflightProviderModels["deepseek"])
 	}
 }
 
@@ -267,6 +291,17 @@ func TestLoadRejectsInvalidDBPoolConfig(t *testing.T) {
 				t.Fatalf("err = %q, want %q", err.Error(), tc.wantErr)
 			}
 		})
+	}
+}
+
+func clearProviderEnv(t *testing.T) {
+	t.Helper()
+
+	for _, spec := range llmprovider.Specs() {
+		t.Setenv(spec.APIKeyEnv, "")
+		t.Setenv(spec.SemanticLayerModelEnv, "")
+		t.Setenv(spec.QueryModelEnv, "")
+		t.Setenv(spec.PreflightModelEnv, "")
 	}
 }
 

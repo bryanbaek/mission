@@ -29,6 +29,67 @@ require_env() {
   [[ -n "${!name:-}" ]] || fail "required environment variable is missing: ${name}"
 }
 
+provider_env_prefix() {
+  printf '%s' "$1" | tr '[:lower:]-' '[:upper:]_'
+}
+
+configured_providers() {
+  local provider prefix api_key_var api_key
+  local out=()
+  for provider in anthropic openai together mistral cerebras deepseek xai fireworks; do
+    prefix="$(provider_env_prefix "${provider}")"
+    api_key_var="${prefix}_API_KEY"
+    api_key="${!api_key_var:-}"
+    if [[ -n "${api_key}" ]]; then
+      out+=("${provider}")
+    fi
+  done
+  printf '%s\n' "${out[@]}"
+}
+
+resolve_provider_model() {
+  local provider="$1"
+  local configured_count="$2"
+  local prefix preflight_var query_var semantic_var model
+  prefix="$(provider_env_prefix "${provider}")"
+  preflight_var="${prefix}_PREFLIGHT_MODEL"
+  query_var="${prefix}_QUERY_MODEL"
+  semantic_var="${prefix}_SEMANTIC_LAYER_MODEL"
+  model="${!preflight_var:-${!query_var:-${!semantic_var:-}}}"
+  if [[ -z "${model}" && "${configured_count}" -eq 1 ]]; then
+    model="${QUERY_MODEL:-${SEMANTIC_LAYER_MODEL:-}}"
+  fi
+  printf '%s' "${model}"
+}
+
+run_provider_live_checks() {
+  local providers=()
+  local provider prefix api_key_var api_key model
+  while IFS= read -r provider; do
+    [[ -n "${provider}" ]] && providers+=("${provider}")
+  done < <(configured_providers)
+
+  if [[ "${#providers[@]}" -eq 0 ]]; then
+    fail "configure at least one LLM provider API key (ANTHROPIC_API_KEY, OPENAI_API_KEY, TOGETHER_API_KEY, MISTRAL_API_KEY, CEREBRAS_API_KEY, DEEPSEEK_API_KEY, XAI_API_KEY, or FIREWORKS_API_KEY)"
+  fi
+
+  for provider in "${providers[@]}"; do
+    prefix="$(provider_env_prefix "${provider}")"
+    api_key_var="${prefix}_API_KEY"
+    api_key="${!api_key_var:-}"
+    model="$(resolve_provider_model "${provider}" "${#providers[@]}")"
+    if [[ -z "${model}" ]]; then
+      fail "provider ${provider} is configured but no ${prefix}_PREFLIGHT_MODEL, ${prefix}_QUERY_MODEL, or ${prefix}_SEMANTIC_LAYER_MODEL is set"
+    fi
+
+    go run ./cmd/preflight-helper llm-ping \
+      --provider "${provider}" \
+      --api-key "${api_key}" \
+      --model "${model}" >/dev/null \
+      || fail "${provider} live preflight request failed for model ${model}; verify key, model, and account credit"
+  done
+}
+
 require_command gcloud
 require_command jq
 require_command docker
@@ -42,8 +103,6 @@ require_env SENTRY_RELEASE
 require_env VITE_SENTRY_DSN
 require_env VITE_SENTRY_ENVIRONMENT
 require_env VITE_SENTRY_RELEASE
-require_env ANTHROPIC_API_KEY
-require_env OPENAI_API_KEY
 
 PUBLIC_CONTROL_PLANE_URL="${PUBLIC_CONTROL_PLANE_URL:-}"
 if [[ -z "${PUBLIC_CONTROL_PLANE_URL}" ]]; then
@@ -106,6 +165,8 @@ SERVICE_URL="$(
 if [[ -z "${SERVICE_URL}" ]]; then
   fail "Cloud Run service '${CLOUD_RUN_SERVICE}' not found in region '${CLOUD_RUN_REGION}' — deploy it first"
 fi
+
+run_provider_live_checks
 
 echo "preflight passed"
 echo "  service: ${SERVICE_URL}"

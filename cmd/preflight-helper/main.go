@@ -5,16 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
-	anthropic "github.com/anthropics/anthropic-sdk-go"
-	anthropicoption "github.com/anthropics/anthropic-sdk-go/option"
-	openai "github.com/openai/openai-go/v3"
-	openaioption "github.com/openai/openai-go/v3/option"
-	"github.com/openai/openai-go/v3/responses"
-
 	"github.com/bryanbaek/mission/internal/controlplane/db"
+	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
+	"github.com/bryanbaek/mission/internal/controlplane/llmprovider"
 )
 
 func main() {
@@ -32,10 +30,12 @@ func run(args []string) error {
 	switch args[0] {
 	case "migrations-status":
 		return runMigrationsStatus(args[1:])
+	case "llm-ping":
+		return runLLMPing(args[1:])
 	case "anthropic-ping":
-		return runAnthropicPing(args[1:])
+		return runLegacyProviderPing("anthropic", args[1:])
 	case "openai-ping":
-		return runOpenAIPing(args[1:])
+		return runLegacyProviderPing("openai", args[1:])
 	default:
 		return fmt.Errorf("unknown command %q", args[0])
 	}
@@ -61,66 +61,77 @@ func runMigrationsStatus(args []string) error {
 	return json.NewEncoder(os.Stdout).Encode(status)
 }
 
-func runAnthropicPing(args []string) error {
-	fs := flag.NewFlagSet("anthropic-ping", flag.ContinueOnError)
+func runLLMPing(args []string) error {
+	fs := flag.NewFlagSet("llm-ping", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 
+	var provider string
 	var apiKey string
 	var model string
-	fs.StringVar(&apiKey, "api-key", "", "Anthropic API key")
-	fs.StringVar(&model, "model", "", "Anthropic model")
+	var baseURL string
+	fs.StringVar(&provider, "provider", "", "LLM provider name")
+	fs.StringVar(&apiKey, "api-key", "", "LLM provider API key")
+	fs.StringVar(&model, "model", "", "LLM provider model")
+	fs.StringVar(&baseURL, "base-url", "", "Override provider base URL")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	if apiKey == "" {
-		return fmt.Errorf("--api-key is required")
-	}
-	if model == "" {
-		return fmt.Errorf("--model is required")
-	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	client := anthropic.NewClient(anthropicoption.WithAPIKey(apiKey))
-	_, err := client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.Model(model),
-		MaxTokens: 1,
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock("ping")),
-		},
-	})
-	return err
+	return pingProvider(provider, apiKey, model, baseURL)
 }
 
-func runOpenAIPing(args []string) error {
-	fs := flag.NewFlagSet("openai-ping", flag.ContinueOnError)
+func runLegacyProviderPing(provider string, args []string) error {
+	fs := flag.NewFlagSet(provider+"-ping", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 
 	var apiKey string
 	var model string
-	fs.StringVar(&apiKey, "api-key", "", "OpenAI API key")
-	fs.StringVar(&model, "model", "", "OpenAI model")
+	var baseURL string
+	fs.StringVar(&apiKey, "api-key", "", "LLM provider API key")
+	fs.StringVar(&model, "model", "", "LLM provider model")
+	fs.StringVar(&baseURL, "base-url", "", "Override provider base URL")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	if apiKey == "" {
+
+	return pingProvider(provider, apiKey, model, baseURL)
+}
+
+func pingProvider(provider, apiKey, model, baseURL string) error {
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		return fmt.Errorf("--provider is required")
+	}
+	if _, ok := llmprovider.ByName(provider); !ok {
+		return fmt.Errorf("unsupported provider %q", provider)
+	}
+	if strings.TrimSpace(apiKey) == "" {
 		return fmt.Errorf("--api-key is required")
 	}
-	if model == "" {
+	if strings.TrimSpace(model) == "" {
 		return fmt.Errorf("--model is required")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	client := openai.NewClient(openaioption.WithAPIKey(apiKey))
-	_, err := client.Responses.New(ctx, responses.ResponseNewParams{
-		Model:           openai.ResponsesModel(model),
-		MaxOutputTokens: openai.Int(1),
-		Input: responses.ResponseNewParamsInputUnion{
-			OfString: openai.String("ping"),
-		},
+	providerClient, err := llmprovider.BuildWithBaseURL(
+		provider,
+		apiKey,
+		baseURL,
+		&http.Client{Timeout: 30 * time.Second},
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = providerClient.Complete(ctx, llm.CompletionRequest{
+		Model:     model,
+		MaxTokens: 1,
+		Messages: []llm.Message{{
+			Role:    "user",
+			Content: "ping",
+		}},
 	})
 	return err
 }

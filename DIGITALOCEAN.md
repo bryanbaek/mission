@@ -14,7 +14,7 @@ The edge agent is not deployed on App Platform. It runs on each tenant's infrast
 - Use path-based ingress rules to send `/api`, `/healthz`, and Connect-RPC service paths to the control-plane.
 - Route `/` to the static site.
 - Use a managed Postgres instance in the same region as the app.
-- Store `CLERK_SECRET_KEY`, `ANTHROPIC_API_KEY`, and `OPENAI_API_KEY` as encrypted App Platform environment variables.
+- Store `CLERK_SECRET_KEY` and whichever LLM provider keys you enable as encrypted App Platform environment variables. Supported provider secret names are `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TOGETHER_API_KEY`, `MISTRAL_API_KEY`, `CEREBRAS_API_KEY`, `DEEPSEEK_API_KEY`, `XAI_API_KEY`, and `FIREWORKS_API_KEY`.
 
 Repo note: the frontend currently uses relative `/healthz`, `/api`, and Connect-RPC paths, so a same-origin deployment is the lowest-friction production setup.
 
@@ -72,10 +72,15 @@ Set these on the `control-plane` service:
 - `LOG_LEVEL=info`
 - `DATABASE_URL=${mission-db.DATABASE_PRIVATE_URL}` if the database is an App Platform database component or a managed database in the same VPC
 - `CLERK_SECRET_KEY=<secret>`
-- `ANTHROPIC_API_KEY=<secret>` or `OPENAI_API_KEY=<secret>`
-- `DEFAULT_LLM_PROVIDER=anthropic` or `openai`
+- At least one of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TOGETHER_API_KEY`, `MISTRAL_API_KEY`, `CEREBRAS_API_KEY`, `DEEPSEEK_API_KEY`, `XAI_API_KEY`, or `FIREWORKS_API_KEY`
+- `DEFAULT_LLM_PROVIDER=<provider-name>` where `<provider-name>` is one of `anthropic`, `openai`, `together`, `mistral`, `cerebras`, `deepseek`, `xai`, or `fireworks`
 - `SEMANTIC_LAYER_MODEL=<model-name>`
 - `QUERY_MODEL=<model-name>`
+- Optional provider-specific overrides:
+  `ANTHROPIC_SEMANTIC_LAYER_MODEL`, `OPENAI_SEMANTIC_LAYER_MODEL`, `TOGETHER_SEMANTIC_LAYER_MODEL`, `MISTRAL_SEMANTIC_LAYER_MODEL`, `CEREBRAS_SEMANTIC_LAYER_MODEL`, `DEEPSEEK_SEMANTIC_LAYER_MODEL`, `XAI_SEMANTIC_LAYER_MODEL`, `FIREWORKS_SEMANTIC_LAYER_MODEL`
+- Optional provider-specific query overrides:
+  `ANTHROPIC_QUERY_MODEL`, `OPENAI_QUERY_MODEL`, `TOGETHER_QUERY_MODEL`, `MISTRAL_QUERY_MODEL`, `CEREBRAS_QUERY_MODEL`, `DEEPSEEK_QUERY_MODEL`, `XAI_QUERY_MODEL`, `FIREWORKS_QUERY_MODEL`
+- For multi-provider deployments, prefer provider-specific model overrides instead of relying on the global `SEMANTIC_LAYER_MODEL` / `QUERY_MODEL` fallback.
 - `EDGE_AGENT_IMAGE=registry.digitalocean.com/<registry>/edge-agent:<tag>`
 
 Set this on the `web` static site as a build-time variable:

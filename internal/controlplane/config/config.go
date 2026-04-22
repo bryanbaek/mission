@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bryanbaek/mission/internal/controlplane/llmprovider"
 )
 
 type Config struct {
@@ -23,23 +25,19 @@ type Config struct {
 	FrontendSentryEnvironment   string
 	FrontendSentryRelease       string
 	PublicControlPlaneURL       string
-	AnthropicAPIKey             string
-	OpenAIAPIKey                string
 	DefaultLLMProvider          string
 	SemanticLayerModel          string
 	QueryModel                  string
-	AnthropicSemanticLayerModel string
-	OpenAISemanticLayerModel    string
-	AnthropicQueryModel         string
-	OpenAIQueryModel            string
+	ProviderAPIKeys             map[string]string
+	SemanticLayerProviderModels map[string]string
+	QueryProviderModels         map[string]string
+	PreflightProviderModels     map[string]string
 	EdgeAgentVersion            string
 	EdgeAgentImageRepo          string
 	EdgeAgentImage              string
 	SentryDSN                   string
 	SentryEnvironment           string
 	SentryRelease               string
-	AnthropicPreflightModel     string
-	OpenAIPreflightModel        string
 }
 
 func Load() (Config, error) {
@@ -111,25 +109,15 @@ func Load() (Config, error) {
 			os.Getenv("VITE_SENTRY_RELEASE"),
 			os.Getenv("SENTRY_RELEASE"),
 		),
-		PublicControlPlaneURL: strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
-		AnthropicAPIKey:       os.Getenv("ANTHROPIC_API_KEY"),
-		OpenAIAPIKey:          os.Getenv("OPENAI_API_KEY"),
-		DefaultLLMProvider:    getenv("DEFAULT_LLM_PROVIDER", "anthropic"),
-		SemanticLayerModel:    getenv("SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6"),
-		QueryModel:            getenv("QUERY_MODEL", "claude-sonnet-4-6"),
-		AnthropicSemanticLayerModel: strings.TrimSpace(
-			os.Getenv("ANTHROPIC_SEMANTIC_LAYER_MODEL"),
-		),
-		OpenAISemanticLayerModel: strings.TrimSpace(
-			os.Getenv("OPENAI_SEMANTIC_LAYER_MODEL"),
-		),
-		AnthropicQueryModel: strings.TrimSpace(
-			os.Getenv("ANTHROPIC_QUERY_MODEL"),
-		),
-		OpenAIQueryModel: strings.TrimSpace(
-			os.Getenv("OPENAI_QUERY_MODEL"),
-		),
-		EdgeAgentVersion: getenv("EDGE_AGENT_VERSION", "v0.1.0"),
+		PublicControlPlaneURL:       strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
+		DefaultLLMProvider:          getenv("DEFAULT_LLM_PROVIDER", llmprovider.DefaultProviderName),
+		SemanticLayerModel:          getenv("SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6"),
+		QueryModel:                  getenv("QUERY_MODEL", "claude-sonnet-4-6"),
+		ProviderAPIKeys:             loadProviderMap(func(spec llmprovider.Spec) string { return spec.APIKeyEnv }),
+		SemanticLayerProviderModels: loadProviderMap(func(spec llmprovider.Spec) string { return spec.SemanticLayerModelEnv }),
+		QueryProviderModels:         loadProviderMap(func(spec llmprovider.Spec) string { return spec.QueryModelEnv }),
+		PreflightProviderModels:     loadProviderMap(func(spec llmprovider.Spec) string { return spec.PreflightModelEnv }),
+		EdgeAgentVersion:            getenv("EDGE_AGENT_VERSION", "v0.1.0"),
 		EdgeAgentImageRepo: getenv(
 			"EDGE_AGENT_IMAGE_REPOSITORY",
 			"registry.digitalocean.com/mission/edge-agent",
@@ -137,11 +125,6 @@ func Load() (Config, error) {
 		SentryDSN:         os.Getenv("SENTRY_DSN"),
 		SentryEnvironment: getenv("SENTRY_ENVIRONMENT", getenv("ENV", "development")),
 		SentryRelease:     os.Getenv("SENTRY_RELEASE"),
-		AnthropicPreflightModel: getenv(
-			"ANTHROPIC_PREFLIGHT_MODEL",
-			"claude-3-5-haiku-latest",
-		),
-		OpenAIPreflightModel: getenv("OPENAI_PREFLIGHT_MODEL", "gpt-4.1-nano"),
 	}
 	cfg.EdgeAgentImage = resolveEdgeAgentImage(
 		os.Getenv("EDGE_AGENT_IMAGE"),
@@ -209,4 +192,21 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func loadProviderMap(envKey func(llmprovider.Spec) string) map[string]string {
+	out := make(map[string]string)
+	for _, spec := range llmprovider.Specs() {
+		key := strings.TrimSpace(envKey(spec))
+		if key == "" {
+			continue
+		}
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			out[spec.Name] = value
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
