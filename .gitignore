@@ -12,6 +12,8 @@
 
 # Go
 bin/
+/control-plane
+/edge-agent
 /tmp/
 
 # Frontend

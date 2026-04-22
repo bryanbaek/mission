@@ -39,7 +39,7 @@ func restorePoolSeams(t *testing.T) {
 func TestNewPoolReturnsParseError(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewPool(context.Background(), "://bad-url")
+	_, err := NewPool(context.Background(), "://bad-url", 10)
 	if err == nil {
 		t.Fatal("NewPool returned nil error for invalid URL")
 	}
@@ -90,7 +90,7 @@ func TestNewPoolConfiguresPoolAndPings(t *testing.T) {
 		return dummyPool, client, nil
 	}
 
-	pool, err := NewPool(context.Background(), "postgres://mission:mission@localhost:5432/mission")
+	pool, err := NewPool(context.Background(), "postgres://mission:mission@localhost:5432/mission", 10)
 	if err != nil {
 		t.Fatalf("NewPool returned error: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestNewPoolReturnsCreateError(t *testing.T) {
 		return nil, nil, errors.New("create failed")
 	}
 
-	_, err := NewPool(context.Background(), "postgres://mission")
+	_, err := NewPool(context.Background(), "postgres://mission", 10)
 	if err == nil {
 		t.Fatal("NewPool returned nil error")
 	}
@@ -154,7 +154,7 @@ func TestNewPoolClosesPoolWhenPingFails(t *testing.T) {
 		return new(pgxpool.Pool), client, nil
 	}
 
-	pool, err := NewPool(context.Background(), "postgres://mission")
+	pool, err := NewPool(context.Background(), "postgres://mission", 10)
 	if err == nil {
 		t.Fatal("NewPool returned nil error")
 	}

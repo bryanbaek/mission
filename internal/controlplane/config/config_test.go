@@ -1,6 +1,9 @@
 package config
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestLoadDefaults(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
@@ -12,6 +15,8 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("EDGE_AGENT_VERSION", "")
 	t.Setenv("EDGE_AGENT_IMAGE_REPOSITORY", "")
 	t.Setenv("PUBLIC_CONTROL_PLANE_URL", "")
+	t.Setenv("SHUTDOWN_TIMEOUT_SECONDS", "")
+	t.Setenv("DB_MAX_CONNS", "")
 	t.Setenv("VITE_SENTRY_DSN", "")
 	t.Setenv("VITE_SENTRY_ENVIRONMENT", "")
 	t.Setenv("VITE_SENTRY_RELEASE", "")
@@ -41,6 +46,12 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if cfg.PublicControlPlaneURL != "http://localhost:8080" {
 		t.Fatalf("PublicControlPlaneURL = %q, want http://localhost:8080", cfg.PublicControlPlaneURL)
+	}
+	if cfg.ShutdownTimeout != 10*time.Second {
+		t.Fatalf("ShutdownTimeout = %s, want 10s", cfg.ShutdownTimeout)
+	}
+	if cfg.DBMaxConns != 10 {
+		t.Fatalf("DBMaxConns = %d, want 10", cfg.DBMaxConns)
 	}
 	if cfg.FrontendSentryEnvironment != "development" {
 		t.Fatalf("FrontendSentryEnvironment = %q, want development", cfg.FrontendSentryEnvironment)

@@ -18,6 +18,10 @@ export default defineConfig({
       "/api": "http://localhost:8080",
       "/tenant.v1.TenantService": "http://localhost:8080",
       "/onboarding.v1.OnboardingService": "http://localhost:8080",
+      "/query.v1.QueryService": "http://localhost:8080",
+      "/semantic.v1.SemanticLayerService": "http://localhost:8080",
+      "/starter.v1.StarterQuestionsService": "http://localhost:8080",
+      "/agent.v1.AgentService": "http://localhost:8080",
     },
   },
   test: {

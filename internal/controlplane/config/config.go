@@ -5,12 +5,15 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
 	Env                       string
 	HTTPPort                  int
+	ShutdownTimeout           time.Duration
 	DatabaseURL               string
+	DBMaxConns                int32
 	LogLevel                  string
 	ClerkSecretKey            string
 	ClerkPublishableKey       string
@@ -38,10 +41,20 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	shutdownSecs, err := strconv.Atoi(getenv("SHUTDOWN_TIMEOUT_SECONDS", "10"))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid SHUTDOWN_TIMEOUT_SECONDS: %w", err)
+	}
+	dbMaxConns, err := strconv.Atoi(getenv("DB_MAX_CONNS", "10"))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid DB_MAX_CONNS: %w", err)
+	}
 	cfg := Config{
-		Env:                 getenv("ENV", "development"),
-		HTTPPort:            port,
-		DatabaseURL:         os.Getenv("DATABASE_URL"),
+		Env:             getenv("ENV", "development"),
+		HTTPPort:        port,
+		ShutdownTimeout: time.Duration(shutdownSecs) * time.Second,
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		DBMaxConns:      int32(dbMaxConns),
 		LogLevel:            getenv("LOG_LEVEL", "info"),
 		ClerkSecretKey:      os.Getenv("CLERK_SECRET_KEY"),
 		ClerkPublishableKey: firstNonEmpty(os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"), os.Getenv("CLERK_PUBLISHABLE_KEY")),
@@ -51,7 +64,7 @@ func Load() (Config, error) {
 			os.Getenv("SENTRY_ENVIRONMENT"),
 			getenv("ENV", "development"),
 		),
-		FrontendSentryRelease:   firstNonEmpty(os.Getenv("VITE_SENTRY_RELEASE"), os.Getenv("SENTRY_RELEASE")),
+		FrontendSentryRelease: firstNonEmpty(os.Getenv("VITE_SENTRY_RELEASE"), os.Getenv("SENTRY_RELEASE")),
 		PublicControlPlaneURL:   strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
 		AnthropicAPIKey:         os.Getenv("ANTHROPIC_API_KEY"),
 		OpenAIAPIKey:            os.Getenv("OPENAI_API_KEY"),
