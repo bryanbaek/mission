@@ -17,6 +17,7 @@ import (
 
 type fakeQueryController struct {
 	askFn              func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error)
+	listMyRunsFn       func(context.Context, uuid.UUID, string, int32) (controller.ListMyQueryRunsResult, error)
 	submitFeedbackFn   func(context.Context, uuid.UUID, string, uuid.UUID, model.QueryFeedbackRating, string, string) (controller.SubmitQueryFeedbackResult, error)
 	createCanonicalFn  func(context.Context, uuid.UUID, string, uuid.UUID, string, string, string) (model.TenantCanonicalQueryExample, error)
 	listCanonicalFn    func(context.Context, uuid.UUID, string) (controller.ListCanonicalQueryExamplesResult, error)
@@ -30,6 +31,15 @@ func (f fakeQueryController) AskQuestion(
 	question string,
 ) (controller.AskQuestionResult, error) {
 	return f.askFn(ctx, tenantID, clerkUserID, question)
+}
+
+func (f fakeQueryController) ListMyQueryRuns(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	limit int32,
+) (controller.ListMyQueryRunsResult, error) {
+	return f.listMyRunsFn(ctx, tenantID, clerkUserID, limit)
 }
 
 func (f fakeQueryController) SubmitFeedback(
@@ -214,6 +224,129 @@ func TestQueryHandlerAttachesTerminalFailureDetails(t *testing.T) {
 	if detail.QueryRunId != queryRunID.String() {
 		t.Fatalf("query_run_id detail = %q, want %s", detail.QueryRunId, queryRunID)
 	}
+}
+
+func TestQueryHandlerListMyQueryRunsMapsResultToProto(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	runID := uuid.New()
+	createdAt := time.Unix(1_700_003_000, 0).UTC()
+	completedAt := createdAt.Add(15 * time.Second)
+	handler := NewQueryHandler(fakeQueryController{
+		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+			return controller.AskQuestionResult{}, errors.New("unexpected AskQuestion call")
+		},
+		listMyRunsFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID string, limit int32) (controller.ListMyQueryRunsResult, error) {
+			if gotTenantID != tenantID {
+				t.Fatalf("tenantID = %s, want %s", gotTenantID, tenantID)
+			}
+			if clerkUserID != "user_123" {
+				t.Fatalf("clerkUserID = %q", clerkUserID)
+			}
+			if limit != 7 {
+				t.Fatalf("limit = %d, want 7", limit)
+			}
+			return controller.ListMyQueryRunsResult{
+				Runs: []model.TenantQueryRun{{
+					ID:                  runID,
+					TenantID:            tenantID,
+					Question:            "최근 평균 pH는?",
+					Status:              model.QueryRunStatusFailed,
+					PromptContextSource: model.QueryPromptContextSourceRawSchema,
+					SQLOriginal:         "SELECT missing FROM readings",
+					SQLExecuted:         "",
+					Attempts: []model.QueryRunAttempt{{
+						SQL:   "SELECT missing FROM readings",
+						Error: "Unknown column",
+						Stage: "execution",
+					}},
+					Warnings:     []string{"warning"},
+					RowCount:     0,
+					ElapsedMS:    18,
+					ErrorStage:   "execution",
+					ErrorMessage: "Unknown column",
+					CreatedAt:    createdAt,
+					CompletedAt:  &completedAt,
+				}},
+			}, nil
+		},
+		submitFeedbackFn: func(context.Context, uuid.UUID, string, uuid.UUID, model.QueryFeedbackRating, string, string) (controller.SubmitQueryFeedbackResult, error) {
+			return controller.SubmitQueryFeedbackResult{}, errors.New("unexpected SubmitFeedback call")
+		},
+		createCanonicalFn: func(context.Context, uuid.UUID, string, uuid.UUID, string, string, string) (model.TenantCanonicalQueryExample, error) {
+			return model.TenantCanonicalQueryExample{}, errors.New("unexpected CreateCanonicalExample call")
+		},
+		listCanonicalFn: func(context.Context, uuid.UUID, string) (controller.ListCanonicalQueryExamplesResult, error) {
+			return controller.ListCanonicalQueryExamplesResult{}, errors.New("unexpected ListCanonicalExamples call")
+		},
+		archiveCanonicalFn: func(context.Context, uuid.UUID, string, uuid.UUID) error {
+			return errors.New("unexpected ArchiveCanonicalExample call")
+		},
+	})
+
+	resp, err := handler.ListMyQueryRuns(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.ListMyQueryRunsRequest{
+			TenantId: tenantID.String(),
+			Limit:    7,
+		}),
+	)
+	if err != nil {
+		t.Fatalf("ListMyQueryRuns returned error: %v", err)
+	}
+	if len(resp.Msg.Runs) != 1 {
+		t.Fatalf("runs len = %d, want 1", len(resp.Msg.Runs))
+	}
+	run := resp.Msg.Runs[0]
+	if run.Id != runID.String() {
+		t.Fatalf("id = %q, want %s", run.Id, runID)
+	}
+	if run.Status != queryv1.QueryRunStatus_QUERY_RUN_STATUS_FAILED {
+		t.Fatalf("status = %v", run.Status)
+	}
+	if run.PromptContextSource != queryv1.QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA {
+		t.Fatalf("prompt_context_source = %v", run.PromptContextSource)
+	}
+	if len(run.Attempts) != 1 || run.Attempts[0].Error != "Unknown column" {
+		t.Fatalf("attempts = %+v", run.Attempts)
+	}
+	if run.CreatedAt == nil || run.CompletedAt == nil {
+		t.Fatalf("timestamps missing: %+v", run)
+	}
+}
+
+func TestQueryHandlerListMyQueryRunsMapsAccessDenied(t *testing.T) {
+	t.Parallel()
+
+	handler := NewQueryHandler(fakeQueryController{
+		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+			return controller.AskQuestionResult{}, errors.New("unexpected AskQuestion call")
+		},
+		listMyRunsFn: func(context.Context, uuid.UUID, string, int32) (controller.ListMyQueryRunsResult, error) {
+			return controller.ListMyQueryRunsResult{}, controller.ErrQueryAccessDenied
+		},
+		submitFeedbackFn: func(context.Context, uuid.UUID, string, uuid.UUID, model.QueryFeedbackRating, string, string) (controller.SubmitQueryFeedbackResult, error) {
+			return controller.SubmitQueryFeedbackResult{}, errors.New("unexpected SubmitFeedback call")
+		},
+		createCanonicalFn: func(context.Context, uuid.UUID, string, uuid.UUID, string, string, string) (model.TenantCanonicalQueryExample, error) {
+			return model.TenantCanonicalQueryExample{}, errors.New("unexpected CreateCanonicalExample call")
+		},
+		listCanonicalFn: func(context.Context, uuid.UUID, string) (controller.ListCanonicalQueryExamplesResult, error) {
+			return controller.ListCanonicalQueryExamplesResult{}, errors.New("unexpected ListCanonicalExamples call")
+		},
+		archiveCanonicalFn: func(context.Context, uuid.UUID, string, uuid.UUID) error {
+			return errors.New("unexpected ArchiveCanonicalExample call")
+		},
+	})
+
+	_, err := handler.ListMyQueryRuns(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.ListMyQueryRunsRequest{
+			TenantId: uuid.NewString(),
+		}),
+	)
+	requireConnectCode(t, err, connect.CodePermissionDenied)
 }
 
 func TestQueryHandlerSubmitFeedback(t *testing.T) {

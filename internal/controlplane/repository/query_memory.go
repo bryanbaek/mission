@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -37,6 +38,31 @@ type queryRunCompletion struct {
 	CompletedAt         time.Time
 }
 
+type queryRunScanner interface {
+	Scan(dest ...any) error
+}
+
+const tenantQueryRunSelectColumns = `
+			id,
+			tenant_id,
+			schema_version_id,
+			semantic_layer_id,
+			prompt_context_source::text,
+			clerk_user_id,
+			question,
+			status::text,
+			sql_original,
+			sql_executed,
+			attempts_json,
+			warnings_json,
+			row_count,
+			elapsed_ms,
+			error_stage,
+			error_message,
+			created_at,
+			completed_at
+`
+
 type TenantQueryRunRepository struct {
 	db queryMemoryDB
 }
@@ -52,14 +78,7 @@ func (r *TenantQueryRunRepository) Create(
 	source model.QueryPromptContextSource,
 	clerkUserID, question string,
 ) (model.TenantQueryRun, error) {
-	var rec model.TenantQueryRun
-	var (
-		sqlOriginal  sql.NullString
-		sqlExecuted  sql.NullString
-		errorStage   sql.NullString
-		errorMessage sql.NullString
-	)
-	err := r.db.QueryRow(ctx, `
+	rec, err := scanTenantQueryRun(r.db.QueryRow(ctx, `
 		INSERT INTO tenant_query_runs (
 			tenant_id,
 			schema_version_id,
@@ -70,47 +89,11 @@ func (r *TenantQueryRunRepository) Create(
 			status
 		) VALUES ($1, $2, $3, $4::query_prompt_context_source, $5, $6, 'running')
 		RETURNING
-			id,
-			tenant_id,
-			schema_version_id,
-			semantic_layer_id,
-			prompt_context_source::text,
-			clerk_user_id,
-			question,
-			status::text,
-			sql_original,
-			sql_executed,
-			row_count,
-			elapsed_ms,
-			error_stage,
-			error_message,
-			created_at,
-			completed_at
-	`, tenantID, schemaVersionID, semanticLayerID, string(source), clerkUserID, question).Scan(
-		&rec.ID,
-		&rec.TenantID,
-		&rec.SchemaVersionID,
-		&rec.SemanticLayerID,
-		&rec.PromptContextSource,
-		&rec.ClerkUserID,
-		&rec.Question,
-		&rec.Status,
-		&sqlOriginal,
-		&sqlExecuted,
-		&rec.RowCount,
-		&rec.ElapsedMS,
-		&errorStage,
-		&errorMessage,
-		&rec.CreatedAt,
-		&rec.CompletedAt,
-	)
+`+tenantQueryRunSelectColumns+`
+	`, tenantID, schemaVersionID, semanticLayerID, string(source), clerkUserID, question))
 	if err != nil {
 		return model.TenantQueryRun{}, fmt.Errorf("insert tenant query run: %w", err)
 	}
-	rec.SQLOriginal = sqlOriginal.String
-	rec.SQLExecuted = sqlExecuted.String
-	rec.ErrorStage = errorStage.String
-	rec.ErrorMessage = errorMessage.String
 	return rec, nil
 }
 
@@ -120,26 +103,45 @@ func (r *TenantQueryRunRepository) GetByTenantAndID(
 ) (model.TenantQueryRun, error) {
 	return r.selectOne(ctx, `
 		SELECT
-			id,
-			tenant_id,
-			schema_version_id,
-			semantic_layer_id,
-			prompt_context_source::text,
-			clerk_user_id,
-			question,
-			status::text,
-			sql_original,
-			sql_executed,
-			row_count,
-			elapsed_ms,
-			error_stage,
-			error_message,
-			created_at,
-			completed_at
+`+tenantQueryRunSelectColumns+`
 		FROM tenant_query_runs
 		WHERE tenant_id = $1
 		  AND id = $2
 	`, tenantID, id)
+}
+
+func (r *TenantQueryRunRepository) ListByTenantAndUser(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	limit int,
+) ([]model.TenantQueryRun, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT
+`+tenantQueryRunSelectColumns+`
+		FROM tenant_query_runs
+		WHERE tenant_id = $1
+		  AND clerk_user_id = $2
+		ORDER BY created_at DESC
+		LIMIT $3
+	`, tenantID, clerkUserID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list tenant query runs: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]model.TenantQueryRun, 0)
+	for rows.Next() {
+		rec, err := scanTenantQueryRun(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan tenant query run: %w", err)
+		}
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate tenant query runs: %w", err)
+	}
+	return out, nil
 }
 
 func (r *TenantQueryRunRepository) CompleteSucceeded(
@@ -202,14 +204,7 @@ func (r *TenantQueryRunRepository) complete(
 	if err != nil {
 		return model.TenantQueryRun{}, err
 	}
-	var rec model.TenantQueryRun
-	var (
-		sqlOriginal  sql.NullString
-		sqlExecuted  sql.NullString
-		errorStage   sql.NullString
-		errorMessage sql.NullString
-	)
-	err = r.db.QueryRow(ctx, `
+	rec, err := scanTenantQueryRun(r.db.QueryRow(ctx, `
 		UPDATE tenant_query_runs
 		SET
 			status = $2::query_run_status,
@@ -225,22 +220,7 @@ func (r *TenantQueryRunRepository) complete(
 			completed_at = $12
 		WHERE id = $1
 		RETURNING
-			id,
-			tenant_id,
-			schema_version_id,
-			semantic_layer_id,
-			prompt_context_source::text,
-			clerk_user_id,
-			question,
-			status::text,
-			sql_original,
-			sql_executed,
-			row_count,
-			elapsed_ms,
-			error_stage,
-			error_message,
-			created_at,
-			completed_at
+`+tenantQueryRunSelectColumns+`
 	`, id,
 		string(params.Status),
 		nullableString(params.SQLOriginal),
@@ -253,34 +233,13 @@ func (r *TenantQueryRunRepository) complete(
 		nullableString(params.ErrorStage),
 		nullableString(params.ErrorMessage),
 		params.CompletedAt.UTC(),
-	).Scan(
-		&rec.ID,
-		&rec.TenantID,
-		&rec.SchemaVersionID,
-		&rec.SemanticLayerID,
-		&rec.PromptContextSource,
-		&rec.ClerkUserID,
-		&rec.Question,
-		&rec.Status,
-		&sqlOriginal,
-		&sqlExecuted,
-		&rec.RowCount,
-		&rec.ElapsedMS,
-		&errorStage,
-		&errorMessage,
-		&rec.CreatedAt,
-		&rec.CompletedAt,
-	)
+	))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return model.TenantQueryRun{}, ErrNotFound
 	}
 	if err != nil {
 		return model.TenantQueryRun{}, fmt.Errorf("update tenant query run: %w", err)
 	}
-	rec.SQLOriginal = sqlOriginal.String
-	rec.SQLExecuted = sqlExecuted.String
-	rec.ErrorStage = errorStage.String
-	rec.ErrorMessage = errorMessage.String
 	return rec, nil
 }
 
@@ -289,14 +248,27 @@ func (r *TenantQueryRunRepository) selectOne(
 	query string,
 	args ...any,
 ) (model.TenantQueryRun, error) {
+	rec, err := scanTenantQueryRun(r.db.QueryRow(ctx, query, args...))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.TenantQueryRun{}, ErrNotFound
+	}
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("select tenant query run: %w", err)
+	}
+	return rec, nil
+}
+
+func scanTenantQueryRun(scanner queryRunScanner) (model.TenantQueryRun, error) {
 	var rec model.TenantQueryRun
 	var (
 		sqlOriginal  sql.NullString
 		sqlExecuted  sql.NullString
 		errorStage   sql.NullString
 		errorMessage sql.NullString
+		attemptsJSON []byte
+		warningsJSON []byte
 	)
-	err := r.db.QueryRow(ctx, query, args...).Scan(
+	if err := scanner.Scan(
 		&rec.ID,
 		&rec.TenantID,
 		&rec.SchemaVersionID,
@@ -307,24 +279,55 @@ func (r *TenantQueryRunRepository) selectOne(
 		&rec.Status,
 		&sqlOriginal,
 		&sqlExecuted,
+		&attemptsJSON,
+		&warningsJSON,
 		&rec.RowCount,
 		&rec.ElapsedMS,
 		&errorStage,
 		&errorMessage,
 		&rec.CreatedAt,
 		&rec.CompletedAt,
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return model.TenantQueryRun{}, ErrNotFound
-	}
-	if err != nil {
-		return model.TenantQueryRun{}, fmt.Errorf("select tenant query run: %w", err)
+	); err != nil {
+		return model.TenantQueryRun{}, err
 	}
 	rec.SQLOriginal = sqlOriginal.String
 	rec.SQLExecuted = sqlExecuted.String
 	rec.ErrorStage = errorStage.String
 	rec.ErrorMessage = errorMessage.String
+
+	attempts, err := decodeQueryRunAttempts(attemptsJSON)
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("decode query attempts: %w", err)
+	}
+	warnings, err := decodeQueryRunWarnings(warningsJSON)
+	if err != nil {
+		return model.TenantQueryRun{}, fmt.Errorf("decode query warnings: %w", err)
+	}
+	rec.Attempts = attempts
+	rec.Warnings = warnings
 	return rec, nil
+}
+
+func decodeQueryRunAttempts(payload []byte) ([]model.QueryRunAttempt, error) {
+	if len(bytes.TrimSpace(payload)) == 0 {
+		return nil, nil
+	}
+	var attempts []model.QueryRunAttempt
+	if err := json.Unmarshal(payload, &attempts); err != nil {
+		return nil, err
+	}
+	return attempts, nil
+}
+
+func decodeQueryRunWarnings(payload []byte) ([]string, error) {
+	if len(bytes.TrimSpace(payload)) == 0 {
+		return nil, nil
+	}
+	var warnings []string
+	if err := json.Unmarshal(payload, &warnings); err != nil {
+		return nil, err
+	}
+	return warnings, nil
 }
 
 type TenantQueryFeedbackRepository struct {

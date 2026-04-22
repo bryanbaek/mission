@@ -43,12 +43,14 @@ func TestTenantQueryRunRepositoryCreate(t *testing.T) {
 					*(dest[7].(*model.QueryRunStatus)) = model.QueryRunStatusRunning
 					*(dest[8].(*dbsql.NullString)) = dbsql.NullString{}
 					*(dest[9].(*dbsql.NullString)) = dbsql.NullString{}
-					*(dest[10].(*int64)) = 0
-					*(dest[11].(*int64)) = 0
-					*(dest[12].(*dbsql.NullString)) = dbsql.NullString{}
-					*(dest[13].(*dbsql.NullString)) = dbsql.NullString{}
-					*(dest[14].(*time.Time)) = createdAt
-					*(dest[15].(**time.Time)) = nil
+					*(dest[10].(*[]byte)) = []byte("[]")
+					*(dest[11].(*[]byte)) = []byte("[]")
+					*(dest[12].(*int64)) = 0
+					*(dest[13].(*int64)) = 0
+					*(dest[14].(*dbsql.NullString)) = dbsql.NullString{}
+					*(dest[15].(*dbsql.NullString)) = dbsql.NullString{}
+					*(dest[16].(*time.Time)) = createdAt
+					*(dest[17].(**time.Time)) = nil
 					return nil
 				}}
 			},
@@ -126,12 +128,14 @@ func TestTenantQueryRunRepositoryCompleteSucceededMarshalsPayloads(t *testing.T)
 					*(dest[7].(*model.QueryRunStatus)) = model.QueryRunStatusSucceeded
 					*(dest[8].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT 1", Valid: true}
 					*(dest[9].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT 1 LIMIT 1000", Valid: true}
-					*(dest[10].(*int64)) = 1
-					*(dest[11].(*int64)) = 22
-					*(dest[12].(*dbsql.NullString)) = dbsql.NullString{}
-					*(dest[13].(*dbsql.NullString)) = dbsql.NullString{}
-					*(dest[14].(*time.Time)) = completedAt.Add(-time.Minute)
-					*(dest[15].(**time.Time)) = &completedAt
+					*(dest[10].(*[]byte)) = []byte(`[{"sql":"SELECT 1","error":"","stage":"execution"}]`)
+					*(dest[11].(*[]byte)) = []byte(`["warning"]`)
+					*(dest[12].(*int64)) = 1
+					*(dest[13].(*int64)) = 22
+					*(dest[14].(*dbsql.NullString)) = dbsql.NullString{}
+					*(dest[15].(*dbsql.NullString)) = dbsql.NullString{}
+					*(dest[16].(*time.Time)) = completedAt.Add(-time.Minute)
+					*(dest[17].(**time.Time)) = &completedAt
 					return nil
 				}}
 			},
@@ -156,8 +160,110 @@ func TestTenantQueryRunRepositoryCompleteSucceededMarshalsPayloads(t *testing.T)
 	if got.Status != model.QueryRunStatusSucceeded {
 		t.Fatalf("Status = %q, want succeeded", got.Status)
 	}
+	if len(got.Attempts) != 1 || got.Attempts[0].SQL != "SELECT 1" {
+		t.Fatalf("Attempts = %+v", got.Attempts)
+	}
+	if len(got.Warnings) != 1 || got.Warnings[0] != "warning" {
+		t.Fatalf("Warnings = %+v", got.Warnings)
+	}
 	if got.CompletedAt == nil || !got.CompletedAt.Equal(completedAt) {
 		t.Fatalf("CompletedAt = %v, want %v", got.CompletedAt, completedAt)
+	}
+}
+
+func TestTenantQueryRunRepositoryListByTenantAndUser(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	userID := "user_123"
+	createdAtA := time.Unix(1_700_000_800, 0).UTC()
+	createdAtB := createdAtA.Add(-time.Minute)
+	completedAtA := createdAtA.Add(10 * time.Second)
+
+	rows := &fakeRows{
+		scans: []func(dest ...any) error{
+			func(dest ...any) error {
+				*(dest[0].(*uuid.UUID)) = uuid.New()
+				*(dest[1].(*uuid.UUID)) = tenantID
+				*(dest[2].(*uuid.UUID)) = uuid.New()
+				*(dest[3].(**uuid.UUID)) = nil
+				*(dest[4].(*model.QueryPromptContextSource)) = model.QueryPromptContextSourceApproved
+				*(dest[5].(*string)) = userID
+				*(dest[6].(*string)) = "첫 번째 질문"
+				*(dest[7].(*model.QueryRunStatus)) = model.QueryRunStatusSucceeded
+				*(dest[8].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT 1", Valid: true}
+				*(dest[9].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT 1 LIMIT 1000", Valid: true}
+				*(dest[10].(*[]byte)) = []byte(`[{"sql":"SELECT 1","error":"","stage":"execution"}]`)
+				*(dest[11].(*[]byte)) = []byte(`["warning-a"]`)
+				*(dest[12].(*int64)) = 1
+				*(dest[13].(*int64)) = 25
+				*(dest[14].(*dbsql.NullString)) = dbsql.NullString{}
+				*(dest[15].(*dbsql.NullString)) = dbsql.NullString{}
+				*(dest[16].(*time.Time)) = createdAtA
+				*(dest[17].(**time.Time)) = &completedAtA
+				return nil
+			},
+			func(dest ...any) error {
+				*(dest[0].(*uuid.UUID)) = uuid.New()
+				*(dest[1].(*uuid.UUID)) = tenantID
+				*(dest[2].(*uuid.UUID)) = uuid.New()
+				*(dest[3].(**uuid.UUID)) = nil
+				*(dest[4].(*model.QueryPromptContextSource)) = model.QueryPromptContextSourceRawSchema
+				*(dest[5].(*string)) = userID
+				*(dest[6].(*string)) = "두 번째 질문"
+				*(dest[7].(*model.QueryRunStatus)) = model.QueryRunStatusFailed
+				*(dest[8].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT missing", Valid: true}
+				*(dest[9].(*dbsql.NullString)) = dbsql.NullString{}
+				*(dest[10].(*[]byte)) = []byte(`[{"sql":"SELECT missing","error":"Unknown column","stage":"execution"}]`)
+				*(dest[11].(*[]byte)) = []byte(`["warning-b"]`)
+				*(dest[12].(*int64)) = 0
+				*(dest[13].(*int64)) = 10
+				*(dest[14].(*dbsql.NullString)) = dbsql.NullString{String: "execution", Valid: true}
+				*(dest[15].(*dbsql.NullString)) = dbsql.NullString{String: "Unknown column", Valid: true}
+				*(dest[16].(*time.Time)) = createdAtB
+				*(dest[17].(**time.Time)) = nil
+				return nil
+			},
+		},
+	}
+	repo := &TenantQueryRunRepository{
+		db: &fakeTenantDB{
+			queryFn: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
+				if !strings.Contains(sql, "FROM tenant_query_runs") {
+					t.Fatalf("unexpected SQL: %q", sql)
+				}
+				if len(args) != 3 {
+					t.Fatalf("args len = %d, want 3", len(args))
+				}
+				if args[0] != tenantID || args[1] != userID || args[2] != 20 {
+					t.Fatalf("unexpected args: %#v", args)
+				}
+				return rows, nil
+			},
+		},
+	}
+
+	got, err := repo.ListByTenantAndUser(context.Background(), tenantID, userID, 20)
+	if err != nil {
+		t.Fatalf("ListByTenantAndUser returned error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2", len(got))
+	}
+	if got[0].Question != "첫 번째 질문" || got[1].Question != "두 번째 질문" {
+		t.Fatalf("questions = %+v", got)
+	}
+	if got[0].Status != model.QueryRunStatusSucceeded || got[1].Status != model.QueryRunStatusFailed {
+		t.Fatalf("statuses = %+v", got)
+	}
+	if got[0].Attempts[0].SQL != "SELECT 1" || got[1].Attempts[0].Error != "Unknown column" {
+		t.Fatalf("attempts = %+v", got)
+	}
+	if got[0].Warnings[0] != "warning-a" || got[1].Warnings[0] != "warning-b" {
+		t.Fatalf("warnings = %+v", got)
+	}
+	if got[1].ErrorStage != "execution" || got[1].ErrorMessage != "Unknown column" {
+		t.Fatalf("error fields = %+v", got[1])
 	}
 }
 

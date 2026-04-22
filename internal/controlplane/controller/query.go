@@ -49,6 +49,7 @@ var (
 const (
 	defaultRetrievedExamplesLimit = 3
 	defaultCanonicalExampleLimit  = 20
+	defaultListMyQueryRunsLimit   = 20
 )
 
 type queryMembershipCheckerCtl interface {
@@ -90,6 +91,12 @@ type queryRunStoreCtl interface {
 		ctx context.Context,
 		tenantID, id uuid.UUID,
 	) (model.TenantQueryRun, error)
+	ListByTenantAndUser(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+		limit int,
+	) ([]model.TenantQueryRun, error)
 	CompleteSucceeded(
 		ctx context.Context,
 		id uuid.UUID,
@@ -205,6 +212,10 @@ type SubmitQueryFeedbackResult struct {
 type ListCanonicalQueryExamplesResult struct {
 	ViewerCanManage bool
 	Examples        []model.TenantCanonicalQueryExample
+}
+
+type ListMyQueryRunsResult struct {
+	Runs []model.TenantQueryRun
 }
 
 // QueryController orchestrates the NL-to-SQL pipeline: semantic-layer lookup,
@@ -616,6 +627,38 @@ func (c *QueryController) SubmitFeedback(
 		return SubmitQueryFeedbackResult{}, err
 	}
 	return SubmitQueryFeedbackResult{Feedback: feedback}, nil
+}
+
+func (c *QueryController) ListMyQueryRuns(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	limit int32,
+) (ListMyQueryRunsResult, error) {
+	if _, err := c.tenants.EnsureMembership(ctx, tenantID, clerkUserID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return ListMyQueryRunsResult{}, ErrQueryAccessDenied
+		}
+		return ListMyQueryRunsResult{}, err
+	}
+
+	normalizedLimit := int(limit)
+	if normalizedLimit <= 0 || normalizedLimit > defaultListMyQueryRunsLimit {
+		normalizedLimit = defaultListMyQueryRunsLimit
+	}
+
+	runs, err := c.runs.ListByTenantAndUser(
+		ctx,
+		tenantID,
+		clerkUserID,
+		normalizedLimit,
+	)
+	if err != nil {
+		return ListMyQueryRunsResult{}, err
+	}
+	return ListMyQueryRunsResult{
+		Runs: append([]model.TenantQueryRun(nil), runs...),
+	}, nil
 }
 
 func (c *QueryController) CreateCanonicalExample(

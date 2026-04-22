@@ -52,6 +52,20 @@ message AskQuestionResponse {
   string query_run_id = 11;
 }
 
+enum QueryRunStatus {
+  QUERY_RUN_STATUS_UNSPECIFIED = 0;
+  QUERY_RUN_STATUS_RUNNING = 1;
+  QUERY_RUN_STATUS_SUCCEEDED = 2;
+  QUERY_RUN_STATUS_FAILED = 3;
+}
+
+enum QueryPromptContextSource {
+  QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED = 0;
+  QUERY_PROMPT_CONTEXT_SOURCE_APPROVED = 1;
+  QUERY_PROMPT_CONTEXT_SOURCE_DRAFT = 2;
+  QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA = 3;
+}
+
 enum QueryFeedbackRating {
   QUERY_FEEDBACK_RATING_UNSPECIFIED = 0;
   QUERY_FEEDBACK_RATING_UP = 1;
@@ -117,8 +131,35 @@ message ArchiveCanonicalQueryExampleRequest {
 
 message ArchiveCanonicalQueryExampleResponse {}
 
+message QueryRunHistoryItem {
+  string id = 1;
+  string question = 2;
+  QueryRunStatus status = 3;
+  QueryPromptContextSource prompt_context_source = 4;
+  string sql_original = 5;
+  string sql_executed = 6;
+  int64 row_count = 7;
+  int64 elapsed_ms = 8;
+  string error_stage = 9;
+  string error_message = 10;
+  repeated string warnings = 11;
+  repeated AttemptDebug attempts = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp completed_at = 14;
+}
+
+message ListMyQueryRunsRequest {
+  string tenant_id = 1;
+  int32 limit = 2;
+}
+
+message ListMyQueryRunsResponse {
+  repeated QueryRunHistoryItem runs = 1;
+}
+
 service QueryService {
   rpc AskQuestion(AskQuestionRequest) returns (AskQuestionResponse);
+  rpc ListMyQueryRuns(ListMyQueryRunsRequest) returns (ListMyQueryRunsResponse);
   rpc SubmitQueryFeedback(SubmitQueryFeedbackRequest)
       returns (SubmitQueryFeedbackResponse);
   rpc CreateCanonicalQueryExample(CreateCanonicalQueryExampleRequest)

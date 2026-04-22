@@ -36,6 +36,9 @@ const (
 	// QueryServiceAskQuestionProcedure is the fully-qualified name of the QueryService's AskQuestion
 	// RPC.
 	QueryServiceAskQuestionProcedure = "/query.v1.QueryService/AskQuestion"
+	// QueryServiceListMyQueryRunsProcedure is the fully-qualified name of the QueryService's
+	// ListMyQueryRuns RPC.
+	QueryServiceListMyQueryRunsProcedure = "/query.v1.QueryService/ListMyQueryRuns"
 	// QueryServiceSubmitQueryFeedbackProcedure is the fully-qualified name of the QueryService's
 	// SubmitQueryFeedback RPC.
 	QueryServiceSubmitQueryFeedbackProcedure = "/query.v1.QueryService/SubmitQueryFeedback"
@@ -53,6 +56,7 @@ const (
 // QueryServiceClient is a client for the query.v1.QueryService service.
 type QueryServiceClient interface {
 	AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error)
+	ListMyQueryRuns(context.Context, *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error)
 	SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error)
 	CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error)
 	ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error)
@@ -74,6 +78,12 @@ func NewQueryServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+QueryServiceAskQuestionProcedure,
 			connect.WithSchema(queryServiceMethods.ByName("AskQuestion")),
+			connect.WithClientOptions(opts...),
+		),
+		listMyQueryRuns: connect.NewClient[v1.ListMyQueryRunsRequest, v1.ListMyQueryRunsResponse](
+			httpClient,
+			baseURL+QueryServiceListMyQueryRunsProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("ListMyQueryRuns")),
 			connect.WithClientOptions(opts...),
 		),
 		submitQueryFeedback: connect.NewClient[v1.SubmitQueryFeedbackRequest, v1.SubmitQueryFeedbackResponse](
@@ -106,6 +116,7 @@ func NewQueryServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 // queryServiceClient implements QueryServiceClient.
 type queryServiceClient struct {
 	askQuestion                  *connect.Client[v1.AskQuestionRequest, v1.AskQuestionResponse]
+	listMyQueryRuns              *connect.Client[v1.ListMyQueryRunsRequest, v1.ListMyQueryRunsResponse]
 	submitQueryFeedback          *connect.Client[v1.SubmitQueryFeedbackRequest, v1.SubmitQueryFeedbackResponse]
 	createCanonicalQueryExample  *connect.Client[v1.CreateCanonicalQueryExampleRequest, v1.CreateCanonicalQueryExampleResponse]
 	listCanonicalQueryExamples   *connect.Client[v1.ListCanonicalQueryExamplesRequest, v1.ListCanonicalQueryExamplesResponse]
@@ -115,6 +126,11 @@ type queryServiceClient struct {
 // AskQuestion calls query.v1.QueryService.AskQuestion.
 func (c *queryServiceClient) AskQuestion(ctx context.Context, req *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error) {
 	return c.askQuestion.CallUnary(ctx, req)
+}
+
+// ListMyQueryRuns calls query.v1.QueryService.ListMyQueryRuns.
+func (c *queryServiceClient) ListMyQueryRuns(ctx context.Context, req *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error) {
+	return c.listMyQueryRuns.CallUnary(ctx, req)
 }
 
 // SubmitQueryFeedback calls query.v1.QueryService.SubmitQueryFeedback.
@@ -140,6 +156,7 @@ func (c *queryServiceClient) ArchiveCanonicalQueryExample(ctx context.Context, r
 // QueryServiceHandler is an implementation of the query.v1.QueryService service.
 type QueryServiceHandler interface {
 	AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error)
+	ListMyQueryRuns(context.Context, *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error)
 	SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error)
 	CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error)
 	ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error)
@@ -157,6 +174,12 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect.HandlerOpti
 		QueryServiceAskQuestionProcedure,
 		svc.AskQuestion,
 		connect.WithSchema(queryServiceMethods.ByName("AskQuestion")),
+		connect.WithHandlerOptions(opts...),
+	)
+	queryServiceListMyQueryRunsHandler := connect.NewUnaryHandler(
+		QueryServiceListMyQueryRunsProcedure,
+		svc.ListMyQueryRuns,
+		connect.WithSchema(queryServiceMethods.ByName("ListMyQueryRuns")),
 		connect.WithHandlerOptions(opts...),
 	)
 	queryServiceSubmitQueryFeedbackHandler := connect.NewUnaryHandler(
@@ -187,6 +210,8 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect.HandlerOpti
 		switch r.URL.Path {
 		case QueryServiceAskQuestionProcedure:
 			queryServiceAskQuestionHandler.ServeHTTP(w, r)
+		case QueryServiceListMyQueryRunsProcedure:
+			queryServiceListMyQueryRunsHandler.ServeHTTP(w, r)
 		case QueryServiceSubmitQueryFeedbackProcedure:
 			queryServiceSubmitQueryFeedbackHandler.ServeHTTP(w, r)
 		case QueryServiceCreateCanonicalQueryExampleProcedure:
@@ -206,6 +231,10 @@ type UnimplementedQueryServiceHandler struct{}
 
 func (UnimplementedQueryServiceHandler) AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.AskQuestion is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) ListMyQueryRuns(context.Context, *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.ListMyQueryRuns is not implemented"))
 }
 
 func (UnimplementedQueryServiceHandler) SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error) {

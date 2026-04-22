@@ -12,10 +12,13 @@ import { useSearchParams } from "react-router-dom";
 
 import {
   AskQuestionResponseSchema,
+  QueryPromptContextSource,
   QueryFeedbackRating,
+  QueryRunStatus,
   type AskQuestionResponse,
   type AttemptDebug,
   type CanonicalQueryExample,
+  type QueryRunHistoryItem,
 } from "../gen/query/v1/query_pb";
 import StarterQuestions from "../components/StarterQuestions";
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
@@ -215,6 +218,49 @@ function ratingButtonClass(active: boolean) {
     styles.ratingButton,
     active ? styles.ratingActive : styles.ratingIdle,
   ].join(" ");
+}
+
+function queryRunStatusChipClass(status: QueryRunStatus) {
+  switch (status) {
+    case QueryRunStatus.SUCCEEDED:
+      return styles.successChip;
+    case QueryRunStatus.FAILED:
+      return styles.warningChip;
+    default:
+      return styles.chip;
+  }
+}
+
+function queryRunStatusLabel(
+  status: QueryRunStatus,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  switch (status) {
+    case QueryRunStatus.RUNNING:
+      return t("chat.persistent.status.running");
+    case QueryRunStatus.SUCCEEDED:
+      return t("chat.persistent.status.succeeded");
+    case QueryRunStatus.FAILED:
+      return t("chat.persistent.status.failed");
+    default:
+      return t("common.unknown");
+  }
+}
+
+function queryPromptContextLabel(
+  source: QueryPromptContextSource,
+  t: ReturnType<typeof useI18n>["t"],
+): string {
+  switch (source) {
+    case QueryPromptContextSource.APPROVED:
+      return t("chat.persistent.source.approved");
+    case QueryPromptContextSource.DRAFT:
+      return t("chat.persistent.source.draft");
+    case QueryPromptContextSource.RAW_SCHEMA:
+      return t("chat.persistent.source.rawSchema");
+    default:
+      return t("common.unknown");
+  }
 }
 
 function AttemptList({ attempts }: { attempts: AttemptDebug[] }) {
@@ -720,6 +766,219 @@ function QueryResultCard({
   );
 }
 
+function PersistentHistoryCard({
+  item,
+  onRerun,
+}: {
+  item: QueryRunHistoryItem;
+  onRerun: (question: string) => void;
+}) {
+  const { formatDateTime, formatNumber, t } = useI18n();
+  const createdAtMillis = timestampToMillis(item.createdAt);
+  const completedAtMillis = timestampToMillis(item.completedAt);
+
+  return (
+    <article className={styles.historyItem}>
+      <div
+        className={[
+          "flex flex-col gap-3",
+          "md:flex-row md:items-start md:justify-between",
+        ].join(" ")}
+      >
+        <div className="min-w-0">
+          <p
+            className={[
+              "text-xs font-semibold uppercase tracking-[0.18em]",
+              "text-slate-400",
+            ].join(" ")}
+          >
+            {createdAtMillis === null
+              ? t("common.na")
+              : formatDateTime(createdAtMillis)}
+          </p>
+          <div className="mt-2">
+            <p className="text-sm font-medium text-slate-500">
+              {t("chat.card.question")}
+            </p>
+            <div className={`${styles.promptCard} mt-2`}>{item.question}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 self-start">
+          <span className={queryRunStatusChipClass(item.status)}>
+            {queryRunStatusLabel(item.status, t)}
+          </span>
+          <button
+            type="button"
+            className={styles.subtleButton}
+            onClick={() => onRerun(item.question)}
+          >
+            {t("chat.persistent.rerun")}
+          </button>
+        </div>
+      </div>
+
+      <div className={`${styles.chipRow} mt-4`}>
+        <span className={styles.chip}>
+          {t("chat.persistent.context")}:{" "}
+          {queryPromptContextLabel(item.promptContextSource, t)}
+        </span>
+        <span className={styles.chip}>
+          {t("chat.persistent.metadataOnly")}
+        </span>
+      </div>
+
+      {item.warnings.length ? (
+        <div className={`${styles.chipRow} mt-4`}>
+          {item.warnings.map((warning, index) => (
+            <span key={`${warning}-${index}`} className={styles.warningChip}>
+              {warning}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className={`${styles.metaGrid} mt-4`}>
+        <div className={styles.metaTile}>
+          <p className={styles.metaLabel}>{t("chat.persistent.createdAt")}</p>
+          <p className={styles.metaValue}>
+            {createdAtMillis === null
+              ? t("common.na")
+              : formatDateTime(createdAtMillis)}
+          </p>
+        </div>
+        <div className={styles.metaTile}>
+          <p className={styles.metaLabel}>{t("chat.persistent.completedAt")}</p>
+          <p className={styles.metaValue}>
+            {completedAtMillis === null
+              ? t("common.na")
+              : formatDateTime(completedAtMillis)}
+          </p>
+        </div>
+        <div className={styles.metaTile}>
+          <p className={styles.metaLabel}>{t("chat.result.rowCount")}</p>
+          <p className={styles.metaValue}>{formatNumber(item.rowCount)}</p>
+        </div>
+        <div className={styles.metaTile}>
+          <p className={styles.metaLabel}>{t("chat.result.elapsed")}</p>
+          <p className={styles.metaValue}>
+            {formatNumber(item.elapsedMs)} ms
+          </p>
+        </div>
+      </div>
+
+      {item.errorMessage ? (
+        <div className={`${styles.bannerError} mt-4`}>
+          <p className="font-medium">{t("chat.persistent.failure")}</p>
+          <p className="mt-1">
+            {item.errorStage
+              ? `${stageLabel(item.errorStage, t)} · ${item.errorMessage}`
+              : item.errorMessage}
+          </p>
+        </div>
+      ) : null}
+
+      <details className={`${styles.details} mt-4`}>
+        <summary className={styles.detailsHeader}>
+          {t("chat.persistent.detailsTitle")}
+        </summary>
+        <div className={`${styles.detailsBody} flex flex-col gap-4`}>
+          {item.sqlOriginal ? (
+            <div>
+              <p className="text-sm font-medium text-slate-900">
+                {t("chat.result.originalSql")}
+              </p>
+              <pre className={`${styles.sqlBox} mt-2`}>
+                <code>{item.sqlOriginal}</code>
+              </pre>
+            </div>
+          ) : null}
+          {item.sqlExecuted ? (
+            <div>
+              <p className="text-sm font-medium text-slate-900">
+                {t("chat.result.executedSql")}
+              </p>
+              <pre className={`${styles.sqlBox} mt-2`}>
+                <code>{item.sqlExecuted}</code>
+              </pre>
+            </div>
+          ) : null}
+          {item.attempts.length ? (
+            <div>
+              <p className="text-sm font-medium text-slate-900">
+                {t("chat.result.attempts")}
+              </p>
+              <div className="mt-2">
+                <AttemptList attempts={item.attempts} />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </details>
+    </article>
+  );
+}
+
+function PersistentHistoryPanel({
+  runs,
+  loading,
+  error,
+  onRerun,
+  locale,
+}: {
+  runs: QueryRunHistoryItem[];
+  loading: boolean;
+  error: string | null;
+  onRerun: (question: string) => void;
+  locale: Locale;
+}) {
+  const { formatNumber, t } = useI18n();
+
+  return (
+    <section className={styles.sectionCard}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <h2 className="text-lg font-semibold">
+            {t("chat.persistent.title")}
+          </h2>
+          <p className={styles.muted}>{t("chat.persistent.subtitle")}</p>
+        </div>
+        {runs.length > 0 ? (
+          <span className={styles.chip}>
+            {historyCountLabel(
+              runs.length,
+              locale,
+              formatNumber(runs.length),
+              t,
+            )}
+          </span>
+        ) : null}
+      </div>
+
+      {error ? <div className={`${styles.bannerError} mt-4`}>{error}</div> : null}
+
+      {loading ? (
+        <div className={`${styles.bannerInfo} mt-4`}>
+          {t("chat.persistent.loading")}
+        </div>
+      ) : runs.length === 0 ? (
+        <div className={`${styles.bannerInfo} mt-4`}>
+          {t("chat.persistent.empty")}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col gap-4">
+          {runs.map((run) => (
+            <PersistentHistoryCard
+              key={run.id}
+              item={run}
+              onRerun={onRerun}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 type CanonicalExamplesPanelProps = {
   examples: CanonicalQueryExample[];
   canManage: boolean;
@@ -851,6 +1110,14 @@ export default function ChatPage() {
   const [viewerCanManageByTenant, setViewerCanManageByTenant] = useState<
     Record<string, boolean>
   >({});
+  const [persistentHistory, setPersistentHistory] = useState<
+    QueryRunHistoryItem[]
+  >([]);
+  const [loadingPersistentHistory, setLoadingPersistentHistory] =
+    useState(false);
+  const [persistentHistoryError, setPersistentHistoryError] = useState<
+    string | null
+  >(null);
 
   const defaultQuestion = t("chat.form.defaultQuestion");
   const previousDefaultQuestion = useRef(defaultQuestion);
@@ -898,6 +1165,35 @@ export default function ChatPage() {
   useEffect(() => {
     void loadTenants();
   }, [loadTenants]);
+
+  const loadPersistentHistory = useCallback(
+    async (tenantId: string) => {
+      setLoadingPersistentHistory(true);
+      try {
+        const response = await queryClient.listMyQueryRuns({
+          tenantId,
+          limit: 20,
+        });
+        setPersistentHistory(response.runs);
+        setPersistentHistoryError(null);
+      } catch (err) {
+        setPersistentHistory([]);
+        setPersistentHistoryError(normalizeError(err));
+      } finally {
+        setLoadingPersistentHistory(false);
+      }
+    },
+    [queryClient],
+  );
+
+  useEffect(() => {
+    if (!selectedID) {
+      setPersistentHistory([]);
+      setPersistentHistoryError(null);
+      return;
+    }
+    void loadPersistentHistory(selectedID);
+  }, [loadPersistentHistory, selectedID]);
 
   const loadCanonicalExamples = useCallback(
     async (tenantID: string) => {
@@ -957,6 +1253,7 @@ export default function ChatPage() {
           },
           ...current,
         ]);
+        await loadPersistentHistory(selectedTenant.id);
         setQuestion("");
       } catch (err) {
         setHistory((current) => [
@@ -972,11 +1269,12 @@ export default function ChatPage() {
           },
           ...current,
         ]);
+        await loadPersistentHistory(selectedTenant.id);
       } finally {
         setSubmitting(false);
       }
     },
-    [queryClient, question, selectedTenant, submitting],
+    [loadPersistentHistory, queryClient, question, selectedTenant, submitting],
   );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -1212,6 +1510,16 @@ export default function ChatPage() {
               </div>
             </form>
           </section>
+
+          {selectedID ? (
+            <PersistentHistoryPanel
+              runs={persistentHistory}
+              loading={loadingPersistentHistory}
+              error={persistentHistoryError}
+              onRerun={runQuestion}
+              locale={locale}
+            />
+          ) : null}
 
           <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
