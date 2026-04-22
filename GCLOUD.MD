@@ -111,12 +111,7 @@ The control-plane Dockerfile now:
 - builds the Go binary
 - copies both into the final distroless image
 
-Build-time frontend values are supplied with Docker build args:
-
-- `VITE_CLERK_PUBLISHABLE_KEY`
-- `VITE_SENTRY_DSN`
-- `VITE_SENTRY_ENVIRONMENT`
-- `VITE_SENTRY_RELEASE`
+Frontend public configuration is now served at runtime from `/app-config.json`, so it is not baked into the image with Docker build args.
 
 Build and push:
 
@@ -126,10 +121,6 @@ gcloud auth configure-docker "${REGION}-docker.pkg.dev"
 docker build \
   -f Dockerfile.control-plane \
   -t "${IMAGE_URL}" \
-  --build-arg VITE_CLERK_PUBLISHABLE_KEY="pk_live_replace_me" \
-  --build-arg VITE_SENTRY_DSN="" \
-  --build-arg VITE_SENTRY_ENVIRONMENT="production" \
-  --build-arg VITE_SENTRY_RELEASE="$(git rev-parse --short HEAD)" \
   .
 
 docker push "${IMAGE_URL}"
@@ -189,8 +180,8 @@ gcloud run deploy control-plane \
   --network default \
   --subnet default \
   --vpc-egress private-ranges-only \
-  --set-env-vars "ENV=production,LOG_LEVEL=info,DATABASE_URL=${DATABASE_URL},PUBLIC_CONTROL_PLANE_URL=${CONTROL_PLANE_DOMAIN},DEFAULT_LLM_PROVIDER=anthropic,SEMANTIC_LAYER_MODEL=claude-sonnet-4-6,QUERY_MODEL=claude-sonnet-4-6,EDGE_AGENT_IMAGE=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/edge-agent:TAG,SENTRY_ENVIRONMENT=production" \
-  --set-secrets "CLERK_SECRET_KEY=CLERK_SECRET_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,SENTRY_DSN=SENTRY_DSN:latest"
+  --set-env-vars "ENV=production,LOG_LEVEL=info,DATABASE_URL=${DATABASE_URL},PUBLIC_CONTROL_PLANE_URL=${CONTROL_PLANE_DOMAIN},DEFAULT_LLM_PROVIDER=anthropic,SEMANTIC_LAYER_MODEL=claude-sonnet-4-6,QUERY_MODEL=claude-sonnet-4-6,EDGE_AGENT_IMAGE=${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/edge-agent:TAG,CLERK_PUBLISHABLE_KEY=pk_live_replace_me,VITE_SENTRY_ENVIRONMENT=production,VITE_SENTRY_RELEASE=$(git rev-parse --short HEAD)" \
+  --set-secrets "CLERK_SECRET_KEY=CLERK_SECRET_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,SENTRY_DSN=SENTRY_DSN:latest,VITE_SENTRY_DSN=SENTRY_DSN:latest"
 ```
 
 ### Option B: replace the sample YAML

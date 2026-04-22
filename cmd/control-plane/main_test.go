@@ -18,6 +18,9 @@ func TestRegisterFrontendRoutesPreservesBackendRoutes(t *testing.T) {
 
 	frontend := newRouterTestFrontendHandler(t)
 	router := chi.NewRouter()
+	router.Get("/app-config.json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("{}"))
+	})
 	router.Get("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
@@ -35,6 +38,12 @@ func TestRegisterFrontendRoutesPreservesBackendRoutes(t *testing.T) {
 		target string
 		want   string
 	}{
+		{
+			name:   "app config",
+			method: http.MethodGet,
+			target: "/app-config.json",
+			want:   "{}",
+		},
 		{
 			name:   "health",
 			method: http.MethodGet,
@@ -103,6 +112,12 @@ func TestRegisterFrontendRoutesServesSPAAndAssets(t *testing.T) {
 			target:       "/assets/app.js",
 			wantContains: "bundled asset",
 			wantCode:     http.StatusOK,
+		},
+		{
+			name:         "app config path is not shadowed",
+			target:       "/app-config.json",
+			wantContains: "",
+			wantCode:     http.StatusNotFound,
 		},
 		{
 			name:     "reserved api prefix is not shadowed",

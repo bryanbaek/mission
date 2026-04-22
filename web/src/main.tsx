@@ -5,25 +5,33 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { I18nProvider } from "./lib/i18n";
 import { ClerkGate } from "./lib/ClerkGate";
+import { getRuntimeConfig, loadRuntimeConfig } from "./lib/runtimeConfig";
 import { ThemeProvider } from "./lib/theme";
 import "./index.css";
 
-if (import.meta.env.VITE_SENTRY_DSN) {
-  Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
-    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT,
-    release: import.meta.env.VITE_SENTRY_RELEASE,
-  });
-}
+void bootstrap();
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <I18nProvider>
-        <ClerkGate>
-          <App />
-        </ClerkGate>
-      </I18nProvider>
-    </ThemeProvider>
-  </React.StrictMode>,
-);
+async function bootstrap() {
+  await loadRuntimeConfig();
+  const runtimeConfig = getRuntimeConfig();
+
+  if (runtimeConfig.sentryDsn) {
+    Sentry.init({
+      dsn: runtimeConfig.sentryDsn,
+      environment: runtimeConfig.sentryEnvironment,
+      release: runtimeConfig.sentryRelease,
+    });
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <ThemeProvider>
+        <I18nProvider>
+          <ClerkGate>
+            <App />
+          </ClerkGate>
+        </I18nProvider>
+      </ThemeProvider>
+    </React.StrictMode>,
+  );
+}

@@ -8,26 +8,29 @@ import (
 )
 
 type Config struct {
-	Env                     string
-	HTTPPort                int
-	DatabaseURL             string
-	LogLevel                string
-	ClerkSecretKey          string
-	ClerkPublishableKey     string
-	PublicControlPlaneURL   string
-	AnthropicAPIKey         string
-	OpenAIAPIKey            string
-	DefaultLLMProvider      string
-	SemanticLayerModel      string
-	QueryModel              string
-	EdgeAgentVersion        string
-	EdgeAgentImageRepo      string
-	EdgeAgentImage          string
-	SentryDSN               string
-	SentryEnvironment       string
-	SentryRelease           string
-	AnthropicPreflightModel string
-	OpenAIPreflightModel    string
+	Env                       string
+	HTTPPort                  int
+	DatabaseURL               string
+	LogLevel                  string
+	ClerkSecretKey            string
+	ClerkPublishableKey       string
+	FrontendSentryDSN         string
+	FrontendSentryEnvironment string
+	FrontendSentryRelease     string
+	PublicControlPlaneURL     string
+	AnthropicAPIKey           string
+	OpenAIAPIKey              string
+	DefaultLLMProvider        string
+	SemanticLayerModel        string
+	QueryModel                string
+	EdgeAgentVersion          string
+	EdgeAgentImageRepo        string
+	EdgeAgentImage            string
+	SentryDSN                 string
+	SentryEnvironment         string
+	SentryRelease             string
+	AnthropicPreflightModel   string
+	OpenAIPreflightModel      string
 }
 
 func Load() (Config, error) {
@@ -36,12 +39,19 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	cfg := Config{
-		Env:                     getenv("ENV", "development"),
-		HTTPPort:                port,
-		DatabaseURL:             os.Getenv("DATABASE_URL"),
-		LogLevel:                getenv("LOG_LEVEL", "info"),
-		ClerkSecretKey:          os.Getenv("CLERK_SECRET_KEY"),
-		ClerkPublishableKey:     firstNonEmpty(os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"), os.Getenv("CLERK_PUBLISHABLE_KEY")),
+		Env:                 getenv("ENV", "development"),
+		HTTPPort:            port,
+		DatabaseURL:         os.Getenv("DATABASE_URL"),
+		LogLevel:            getenv("LOG_LEVEL", "info"),
+		ClerkSecretKey:      os.Getenv("CLERK_SECRET_KEY"),
+		ClerkPublishableKey: firstNonEmpty(os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"), os.Getenv("CLERK_PUBLISHABLE_KEY")),
+		FrontendSentryDSN:   firstNonEmpty(os.Getenv("VITE_SENTRY_DSN"), os.Getenv("SENTRY_DSN")),
+		FrontendSentryEnvironment: firstNonEmpty(
+			os.Getenv("VITE_SENTRY_ENVIRONMENT"),
+			os.Getenv("SENTRY_ENVIRONMENT"),
+			getenv("ENV", "development"),
+		),
+		FrontendSentryRelease:   firstNonEmpty(os.Getenv("VITE_SENTRY_RELEASE"), os.Getenv("SENTRY_RELEASE")),
 		PublicControlPlaneURL:   strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
 		AnthropicAPIKey:         os.Getenv("ANTHROPIC_API_KEY"),
 		OpenAIAPIKey:            os.Getenv("OPENAI_API_KEY"),

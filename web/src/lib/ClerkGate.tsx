@@ -33,6 +33,7 @@ import {
   StarterQuestionsClientContext,
   type StarterQuestionsClient,
 } from "./starterQuestionsClient";
+import { getRuntimeConfig } from "./runtimeConfig";
 
 type Props = {
   children: React.ReactNode;
@@ -41,12 +42,12 @@ type Props = {
 // ClerkGate wraps the app with ClerkProvider, gates protected routes behind
 // a sign-in screen, and exposes a Clerk-backed TenantClient to descendants.
 export function ClerkGate({ children }: Props) {
-  const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const key = getRuntimeConfig().clerkPublishableKey;
   if (!key) {
     return (
       <div className="mx-auto max-w-xl p-8 text-sm text-rose-700">
-        Missing <code>VITE_CLERK_PUBLISHABLE_KEY</code>. Set it in{" "}
-        <code>web/.env.local</code> or the deploy environment.
+        Missing <code>CLERK_PUBLISHABLE_KEY</code>. Set it in the runtime
+        environment so the control plane can publish <code>/app-config.json</code>.
       </div>
     );
   }

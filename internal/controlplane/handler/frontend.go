@@ -10,6 +10,7 @@ import (
 )
 
 var reservedFrontendPrefixes = []string{
+	"/app-config.json",
 	"/healthz",
 	"/api",
 	"/tenant.v1.TenantService",

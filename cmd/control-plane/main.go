@@ -205,6 +205,14 @@ func run() error {
 		onboardingHandler,
 	)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
+	frontendRuntimeConfigHandler := handler.NewFrontendRuntimeConfigHandler(
+		handler.FrontendRuntimeConfig{
+			ClerkPublishableKey: cfg.ClerkPublishableKey,
+			SentryDSN:           cfg.FrontendSentryDSN,
+			SentryEnvironment:   cfg.FrontendSentryEnvironment,
+			SentryRelease:       cfg.FrontendSentryRelease,
+		},
+	)
 	frontendHandler, err := loadFrontendHandler(cfg)
 	if err != nil {
 		return err
@@ -217,6 +225,8 @@ func run() error {
 	r.Use(sentryMiddleware())
 
 	// Public
+	r.Get("/app-config.json", frontendRuntimeConfigHandler.JSON)
+	r.Head("/app-config.json", frontendRuntimeConfigHandler.JSON)
 	r.With(middleware.Timeout(30*time.Second)).
 		Get("/healthz", healthHandler.Healthz)
 

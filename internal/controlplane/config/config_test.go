@@ -12,6 +12,9 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("EDGE_AGENT_VERSION", "")
 	t.Setenv("EDGE_AGENT_IMAGE_REPOSITORY", "")
 	t.Setenv("PUBLIC_CONTROL_PLANE_URL", "")
+	t.Setenv("VITE_SENTRY_DSN", "")
+	t.Setenv("VITE_SENTRY_ENVIRONMENT", "")
+	t.Setenv("VITE_SENTRY_RELEASE", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -38,6 +41,9 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if cfg.PublicControlPlaneURL != "http://localhost:8080" {
 		t.Fatalf("PublicControlPlaneURL = %q, want http://localhost:8080", cfg.PublicControlPlaneURL)
+	}
+	if cfg.FrontendSentryEnvironment != "development" {
+		t.Fatalf("FrontendSentryEnvironment = %q, want development", cfg.FrontendSentryEnvironment)
 	}
 }
 
@@ -114,6 +120,27 @@ func TestLoadUsesEdgeAgentOverride(t *testing.T) {
 	}
 	if cfg.EdgeAgentImage != "registry.digitalocean.com/custom/edge-agent:release-7" {
 		t.Fatalf("EdgeAgentImage = %q", cfg.EdgeAgentImage)
+	}
+}
+
+func TestLoadUsesFrontendSentryOverrides(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("VITE_SENTRY_DSN", "https://public@example.com/1")
+	t.Setenv("VITE_SENTRY_ENVIRONMENT", "preview")
+	t.Setenv("VITE_SENTRY_RELEASE", "frontend-release")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.FrontendSentryDSN != "https://public@example.com/1" {
+		t.Fatalf("FrontendSentryDSN = %q", cfg.FrontendSentryDSN)
+	}
+	if cfg.FrontendSentryEnvironment != "preview" {
+		t.Fatalf("FrontendSentryEnvironment = %q", cfg.FrontendSentryEnvironment)
+	}
+	if cfg.FrontendSentryRelease != "frontend-release" {
+		t.Fatalf("FrontendSentryRelease = %q", cfg.FrontendSentryRelease)
 	}
 }
 
