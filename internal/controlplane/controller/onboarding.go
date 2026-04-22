@@ -719,32 +719,40 @@ func (c *OnboardingController) refreshAgentConnection(
 	payload model.OnboardingPayload,
 ) (model.TenantOnboardingState, model.OnboardingPayload, model.OnboardingWorkspace, error) {
 	snapshot, ok := c.latestOnlineAgentSession(record.TenantID, payload.AgentTokenID)
-	if !ok {
-		return record, payload, workspace, nil
-	}
-	connectedAt := snapshot.ConnectedAt.UTC()
 	changed := false
-	if payload.AgentTokenID != snapshot.TokenID.String() {
-		payload.AgentTokenID = snapshot.TokenID.String()
-		changed = true
-	}
-	if payload.AgentSessionID != snapshot.SessionID {
-		payload.AgentSessionID = snapshot.SessionID
-		changed = true
-	}
-	if payload.AgentConnectedAt == nil || !payload.AgentConnectedAt.Equal(connectedAt) {
-		payload.AgentConnectedAt = &connectedAt
-		changed = true
-	}
-	if payload.AgentTokenPlain != "" {
-		payload.AgentTokenPlain = ""
-		changed = true
-	}
-
 	currentStep := record.CurrentStep
-	if currentStep < OnboardingStepDatabase {
-		currentStep = OnboardingStepDatabase
-		changed = true
+
+	if ok {
+		connectedAt := snapshot.ConnectedAt.UTC()
+		if payload.AgentTokenID != snapshot.TokenID.String() {
+			payload.AgentTokenID = snapshot.TokenID.String()
+			changed = true
+		}
+		if payload.AgentSessionID != snapshot.SessionID {
+			payload.AgentSessionID = snapshot.SessionID
+			changed = true
+		}
+		if payload.AgentConnectedAt == nil || !payload.AgentConnectedAt.Equal(connectedAt) {
+			payload.AgentConnectedAt = &connectedAt
+			changed = true
+		}
+		if payload.AgentTokenPlain != "" {
+			payload.AgentTokenPlain = ""
+			changed = true
+		}
+		if currentStep < OnboardingStepDatabase {
+			currentStep = OnboardingStepDatabase
+			changed = true
+		}
+	} else {
+		if payload.AgentSessionID != "" {
+			payload.AgentSessionID = ""
+			changed = true
+		}
+		if payload.AgentConnectedAt != nil {
+			payload.AgentConnectedAt = nil
+			changed = true
+		}
 	}
 	if !changed {
 		return record, payload, workspace, nil

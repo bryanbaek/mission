@@ -502,6 +502,77 @@ func TestRefreshAgentConnectionIgnoresOfflineTenantSession(t *testing.T) {
 	}
 }
 
+func TestRefreshAgentConnectionClearsStaleConnectedFields(t *testing.T) {
+	fixture := newOnboardingControllerFixture(t, OnboardingStepDatabase, model.OnboardingPayload{})
+	storedTokenID := uuid.New()
+	connectedAt := fixture.now.Add(-3 * time.Minute)
+
+	fixture.sessions.tokenSnapshots[storedTokenID] = AgentSessionSnapshot{
+		SessionID:   "old-session",
+		TenantID:    fixture.tenantID,
+		TokenID:     storedTokenID,
+		ConnectedAt: connectedAt,
+		Status:      "offline",
+	}
+
+	record := model.TenantOnboardingState{
+		TenantID:    fixture.tenantID,
+		CurrentStep: OnboardingStepDatabase,
+	}
+	payload := model.OnboardingPayload{
+		AgentTokenID:     storedTokenID.String(),
+		AgentWaitStarted: cloneTimePtr(&fixture.now),
+		AgentSessionID:   "old-session",
+		AgentConnectedAt: cloneTimePtr(&connectedAt),
+	}
+	workspace := model.OnboardingWorkspace{
+		TenantID:    fixture.tenantID,
+		CurrentStep: OnboardingStepDatabase,
+		UpdatedAt:   fixture.now.Add(-time.Hour),
+	}
+
+	nextRecord, nextPayload, nextWorkspace, err := fixture.ctrl.refreshAgentConnection(
+		context.Background(),
+		workspace,
+		record,
+		payload,
+	)
+	if err != nil {
+		t.Fatalf("refreshAgentConnection returned error: %v", err)
+	}
+
+	if nextRecord.CurrentStep != OnboardingStepDatabase {
+		t.Fatalf("currentStep = %d, want %d", nextRecord.CurrentStep, OnboardingStepDatabase)
+	}
+	if nextPayload.AgentTokenID != storedTokenID.String() {
+		t.Fatalf("AgentTokenID = %q, want %q", nextPayload.AgentTokenID, storedTokenID.String())
+	}
+	if nextPayload.AgentWaitStarted == nil || !nextPayload.AgentWaitStarted.Equal(fixture.now.UTC()) {
+		t.Fatalf("AgentWaitStarted = %v, want %v", nextPayload.AgentWaitStarted, fixture.now.UTC())
+	}
+	if nextPayload.AgentSessionID != "" {
+		t.Fatalf("AgentSessionID = %q, want empty", nextPayload.AgentSessionID)
+	}
+	if nextPayload.AgentConnectedAt != nil {
+		t.Fatalf("AgentConnectedAt = %v, want nil", nextPayload.AgentConnectedAt)
+	}
+	if nextWorkspace.CurrentStep != OnboardingStepDatabase {
+		t.Fatalf("workspace.CurrentStep = %d, want %d", nextWorkspace.CurrentStep, OnboardingStepDatabase)
+	}
+	if !nextWorkspace.UpdatedAt.After(workspace.UpdatedAt) {
+		t.Fatalf("workspace.UpdatedAt = %v, want after %v", nextWorkspace.UpdatedAt, workspace.UpdatedAt)
+	}
+	if fixture.states.upsertCalls != 1 {
+		t.Fatalf("upsertCalls = %d, want 1", fixture.states.upsertCalls)
+	}
+	if len(fixture.sessions.latestTokenCalls) != 1 {
+		t.Fatalf("LatestSessionForToken calls = %d, want 1", len(fixture.sessions.latestTokenCalls))
+	}
+	if len(fixture.sessions.latestTenantCalls) != 1 {
+		t.Fatalf("LatestSessionForTenant calls = %d, want 1", len(fixture.sessions.latestTenantCalls))
+	}
+}
+
 func TestEnsureInstallBundleDoesNotReissueWhenPlaintextMissing(t *testing.T) {
 	existingTokenID := uuid.New()
 	fixture := newOnboardingControllerFixture(t, OnboardingStepAgentInstall, model.OnboardingPayload{
@@ -666,6 +737,63 @@ func TestConfigureDatabaseUsesReboundTokenAfterTenantFallback(t *testing.T) {
 	}
 	if view.Payload.DBVerifiedAt == nil || !view.Payload.DBVerifiedAt.Equal(fixture.now.Add(2*time.Minute).UTC()) {
 		t.Fatalf("DBVerifiedAt = %v, want %v", view.Payload.DBVerifiedAt, fixture.now.Add(2*time.Minute).UTC())
+	}
+}
+
+func TestGetAgentConnectionStatusClearsDisconnectedStateWithoutStepRegression(t *testing.T) {
+	fixture := newOnboardingControllerFixture(t, OnboardingStepAgentInstall, model.OnboardingPayload{})
+	liveTokenID := uuid.New()
+	connectedAt := fixture.now.Add(-30 * time.Second)
+
+	fixture.sessions.tenantSnapshots[fixture.tenantID] = AgentSessionSnapshot{
+		SessionID:   "live-session",
+		TenantID:    fixture.tenantID,
+		TokenID:     liveTokenID,
+		ConnectedAt: connectedAt,
+		Status:      "online",
+	}
+
+	connectedView, err := fixture.ctrl.EnsureInstallBundle(
+		context.Background(),
+		fixture.tenantID,
+		fixture.userID,
+	)
+	if err != nil {
+		t.Fatalf("EnsureInstallBundle returned error: %v", err)
+	}
+	if !connectedView.AgentConnected {
+		t.Fatal("AgentConnected = false, want true")
+	}
+	if connectedView.State.CurrentStep != OnboardingStepDatabase {
+		t.Fatalf("currentStep = %d, want %d", connectedView.State.CurrentStep, OnboardingStepDatabase)
+	}
+
+	delete(fixture.sessions.tokenSnapshots, liveTokenID)
+	delete(fixture.sessions.tenantSnapshots, fixture.tenantID)
+
+	view, err := fixture.ctrl.GetAgentConnectionStatus(
+		context.Background(),
+		fixture.tenantID,
+		fixture.userID,
+	)
+	if err != nil {
+		t.Fatalf("GetAgentConnectionStatus returned error: %v", err)
+	}
+
+	if view.AgentConnected {
+		t.Fatal("AgentConnected = true, want false")
+	}
+	if view.State.CurrentStep != OnboardingStepDatabase {
+		t.Fatalf("currentStep = %d, want %d", view.State.CurrentStep, OnboardingStepDatabase)
+	}
+	if view.Payload.AgentTokenID != liveTokenID.String() {
+		t.Fatalf("AgentTokenID = %q, want %q", view.Payload.AgentTokenID, liveTokenID.String())
+	}
+	if view.Payload.AgentSessionID != "" {
+		t.Fatalf("AgentSessionID = %q, want empty", view.Payload.AgentSessionID)
+	}
+	if view.Payload.AgentConnectedAt != nil {
+		t.Fatalf("AgentConnectedAt = %v, want nil", view.Payload.AgentConnectedAt)
 	}
 }
 
