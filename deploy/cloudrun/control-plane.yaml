@@ -1,0 +1,54 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: control-plane
+  labels:
+    cloud.googleapis.com/location: REGION
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/minScale: "1"
+    run.googleapis.com/maxScale: "1"
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/network-interfaces: '[{"network":"NETWORK","subnetwork":"SUBNET"}]'
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containerConcurrency: 10
+      timeoutSeconds: 3600
+      serviceAccountName: SERVICE_ACCOUNT_EMAIL
+      containers:
+        - image: IMAGE_URL
+          ports:
+            - name: h2c
+              containerPort: 8080
+          env:
+            - name: ENV
+              value: production
+            - name: LOG_LEVEL
+              value: info
+            - name: DATABASE_URL
+              value: postgres://DB_USER:DB_PASSWORD@CLOUD_SQL_PRIVATE_IP:5432/DB_NAME?sslmode=disable
+            - name: CLERK_SECRET_KEY
+              value: CLERK_SECRET_KEY
+            - name: PUBLIC_CONTROL_PLANE_URL
+              value: https://CONTROL_PLANE_DOMAIN
+            - name: DEFAULT_LLM_PROVIDER
+              value: anthropic
+            - name: SEMANTIC_LAYER_MODEL
+              value: claude-sonnet-4-6
+            - name: QUERY_MODEL
+              value: claude-sonnet-4-6
+            - name: EDGE_AGENT_IMAGE
+              value: REGION-docker.pkg.dev/PROJECT_ID/mission/edge-agent:TAG
+            - name: SENTRY_DSN
+              value: SENTRY_DSN
+            - name: SENTRY_ENVIRONMENT
+              value: production
+            - name: SENTRY_RELEASE
+              value: RELEASE
+            - name: ANTHROPIC_API_KEY
+              value: ANTHROPIC_API_KEY
+            - name: OPENAI_API_KEY
+              value: OPENAI_API_KEY

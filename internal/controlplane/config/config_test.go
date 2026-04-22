@@ -5,6 +5,7 @@ import "testing"
 func TestLoadDefaults(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
 	t.Setenv("ENV", "")
+	t.Setenv("PORT", "")
 	t.Setenv("HTTP_PORT", "")
 	t.Setenv("LOG_LEVEL", "")
 	t.Setenv("EDGE_AGENT_IMAGE", "")
@@ -42,11 +43,51 @@ func TestLoadDefaults(t *testing.T) {
 
 func TestLoadInvalidHTTPPort(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("PORT", "")
 	t.Setenv("HTTP_PORT", "bad-port")
 
 	_, err := Load()
 	if err == nil {
 		t.Fatal("Load returned nil error for invalid HTTP_PORT")
+	}
+}
+
+func TestLoadUsesCloudRunPortWhenPresent(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("PORT", "9090")
+	t.Setenv("HTTP_PORT", "8081")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.HTTPPort != 9090 {
+		t.Fatalf("HTTPPort = %d, want 9090", cfg.HTTPPort)
+	}
+}
+
+func TestLoadUsesCloudRunPortWhenOnlyPortSet(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("PORT", "7070")
+	t.Setenv("HTTP_PORT", "")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.HTTPPort != 7070 {
+		t.Fatalf("HTTPPort = %d, want 7070", cfg.HTTPPort)
+	}
+}
+
+func TestLoadRejectsInvalidCloudRunPort(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("PORT", "bad-port")
+	t.Setenv("HTTP_PORT", "8080")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load returned nil error for invalid PORT")
 	}
 }
 

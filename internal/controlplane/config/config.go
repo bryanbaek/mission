@@ -31,9 +31,9 @@ type Config struct {
 }
 
 func Load() (Config, error) {
-	port, err := strconv.Atoi(getenv("HTTP_PORT", "8080"))
+	port, err := loadHTTPPort()
 	if err != nil {
-		return Config{}, fmt.Errorf("invalid HTTP_PORT: %w", err)
+		return Config{}, err
 	}
 	cfg := Config{
 		Env:                     getenv("ENV", "development"),
@@ -76,6 +76,18 @@ func Load() (Config, error) {
 		cfg.PublicControlPlaneURL = fmt.Sprintf("http://localhost:%d", cfg.HTTPPort)
 	}
 	return cfg, nil
+}
+
+func loadHTTPPort() (int, error) {
+	raw := strings.TrimSpace(firstNonEmpty(os.Getenv("PORT"), os.Getenv("HTTP_PORT")))
+	if raw == "" {
+		raw = "8080"
+	}
+	port, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("invalid PORT/HTTP_PORT: %w", err)
+	}
+	return port, nil
 }
 
 func getenv(key, fallback string) string {
