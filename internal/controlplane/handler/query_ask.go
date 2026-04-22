@@ -30,6 +30,19 @@ type queryServiceController interface {
 		clerkUserID string,
 		limit int32,
 	) (controller.ListMyQueryRunsResult, error)
+	ListReviewQueue(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+		filter model.ReviewQueueFilter,
+		limit int32,
+	) (controller.ListReviewQueueResult, error)
+	MarkQueryRunReviewed(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+		queryRunID uuid.UUID,
+	) (controller.MarkQueryRunReviewedResult, error)
 	SubmitFeedback(
 		ctx context.Context,
 		tenantID uuid.UUID,
@@ -121,6 +134,80 @@ func (h *QueryHandler) ListMyQueryRuns(
 	}
 	return connect.NewResponse(&queryv1.ListMyQueryRunsResponse{
 		Runs: runs,
+	}), nil
+}
+
+func (h *QueryHandler) ListReviewQueue(
+	ctx context.Context,
+	req *connect.Request[queryv1.ListReviewQueueRequest],
+) (*connect.Response[queryv1.ListReviewQueueResponse], error) {
+	user, ok := auth.FromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(
+			connect.CodeUnauthenticated,
+			errors.New("unauthenticated"),
+		)
+	}
+
+	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := h.ctrl.ListReviewQueue(
+		ctx,
+		tenantID,
+		user.ID,
+		reviewQueueFilterFromProto(req.Msg.Filter),
+		req.Msg.Limit,
+	)
+	if err != nil {
+		return nil, queryReadError(err)
+	}
+
+	items := make([]*queryv1.QueryRunReviewItem, 0, len(result.Items))
+	for _, item := range result.Items {
+		items = append(items, queryRunReviewToProto(item))
+	}
+	return connect.NewResponse(&queryv1.ListReviewQueueResponse{
+		Items: items,
+	}), nil
+}
+
+func (h *QueryHandler) MarkQueryRunReviewed(
+	ctx context.Context,
+	req *connect.Request[queryv1.MarkQueryRunReviewedRequest],
+) (*connect.Response[queryv1.MarkQueryRunReviewedResponse], error) {
+	user, ok := auth.FromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(
+			connect.CodeUnauthenticated,
+			errors.New("unauthenticated"),
+		)
+	}
+
+	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+	queryRunID, err := parseUUIDArg(req.Msg.QueryRunId, "query_run_id")
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := h.ctrl.MarkQueryRunReviewed(
+		ctx,
+		tenantID,
+		user.ID,
+		queryRunID,
+	)
+	if err != nil {
+		return nil, queryMutationError(err)
+	}
+
+	return connect.NewResponse(&queryv1.MarkQueryRunReviewedResponse{
+		QueryRunId: result.QueryRunID.String(),
+		ReviewedAt: timestamppb.New(result.ReviewedAt),
 	}), nil
 }
 
@@ -297,7 +384,8 @@ func queryAskError(err error, result controller.AskQuestionResult) error {
 
 func queryReadError(err error) error {
 	switch {
-	case errors.Is(err, controller.ErrQueryAccessDenied):
+	case errors.Is(err, controller.ErrQueryAccessDenied),
+		errors.Is(err, controller.ErrQueryReviewOwnerOnly):
 		return connect.NewError(connect.CodePermissionDenied, err)
 	default:
 		return connect.NewError(connect.CodeInternal, err)
@@ -308,7 +396,8 @@ func queryMutationError(err error) error {
 	switch {
 	case errors.Is(err, controller.ErrQueryAccessDenied),
 		errors.Is(err, controller.ErrQueryFeedbackAccessDenied),
-		errors.Is(err, controller.ErrCanonicalQueryExampleOwnerOnly):
+		errors.Is(err, controller.ErrCanonicalQueryExampleOwnerOnly),
+		errors.Is(err, controller.ErrQueryReviewOwnerOnly):
 		return connect.NewError(connect.CodePermissionDenied, err)
 	case errors.Is(err, controller.ErrInvalidQueryFeedback),
 		errors.Is(err, controller.ErrInvalidCanonicalQueryExample):
@@ -409,6 +498,23 @@ func queryRunHistoryToProto(
 	return out
 }
 
+func queryRunReviewToProto(
+	item model.TenantQueryRunReviewItem,
+) *queryv1.QueryRunReviewItem {
+	out := &queryv1.QueryRunReviewItem{
+		Run:                       queryRunHistoryToProto(item.Run),
+		HasFeedback:               item.HasFeedback,
+		HasActiveCanonicalExample: item.HasActiveCanonicalExample,
+	}
+	if item.LatestFeedback != nil {
+		out.LatestFeedback = feedbackToProto(*item.LatestFeedback)
+	}
+	if item.ReviewedAt != nil {
+		out.ReviewedAt = timestamppb.New(*item.ReviewedAt)
+	}
+	return out
+}
+
 func toControllerAttempts(
 	attempts []model.QueryRunAttempt,
 ) []controller.AskQuestionAttempt {
@@ -473,6 +579,17 @@ func ratingToProto(
 		return queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_DOWN
 	default:
 		return queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_UNSPECIFIED
+	}
+}
+
+func reviewQueueFilterFromProto(
+	filter queryv1.ReviewQueueFilter,
+) model.ReviewQueueFilter {
+	switch filter {
+	case queryv1.ReviewQueueFilter_REVIEW_QUEUE_FILTER_ALL_RECENT:
+		return model.ReviewQueueFilterAllRecent
+	default:
+		return model.ReviewQueueFilterOpen
 	}
 }
 

@@ -61,6 +61,8 @@ type fakeQueryRunStore struct {
 	createFn            func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error)
 	getFn               func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error)
 	listFn              func(context.Context, uuid.UUID, string, int) ([]model.TenantQueryRun, error)
+	listReviewFn        func(context.Context, uuid.UUID, model.ReviewQueueFilter, int) ([]model.TenantQueryRunReviewItem, error)
+	markReviewedFn      func(context.Context, uuid.UUID, uuid.UUID, time.Time, string) error
 	completeSucceededFn func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error)
 	completeFailedFn    func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error)
 }
@@ -93,6 +95,30 @@ func (f fakeQueryRunStore) ListByTenantAndUser(
 		return nil, errors.New("unexpected ListByTenantAndUser")
 	}
 	return f.listFn(ctx, tenantID, clerkUserID, limit)
+}
+
+func (f fakeQueryRunStore) ListReviewQueue(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	filter model.ReviewQueueFilter,
+	limit int,
+) ([]model.TenantQueryRunReviewItem, error) {
+	if f.listReviewFn == nil {
+		return nil, errors.New("unexpected ListReviewQueue")
+	}
+	return f.listReviewFn(ctx, tenantID, filter, limit)
+}
+
+func (f fakeQueryRunStore) MarkReviewed(
+	ctx context.Context,
+	tenantID, id uuid.UUID,
+	reviewedAt time.Time,
+	reviewedByUserID string,
+) error {
+	if f.markReviewedFn == nil {
+		return errors.New("unexpected MarkReviewed")
+	}
+	return f.markReviewedFn(ctx, tenantID, id, reviewedAt, reviewedByUserID)
 }
 
 func (f fakeQueryRunStore) CompleteSucceeded(
@@ -1145,5 +1171,294 @@ func TestQueryControllerCreateCanonicalExampleRequiresOwner(t *testing.T) {
 	)
 	if !errors.Is(err, ErrCanonicalQueryExampleOwnerOnly) {
 		t.Fatalf("CreateCanonicalExample error = %v, want ErrCanonicalQueryExampleOwnerOnly", err)
+	}
+}
+
+func TestQueryControllerListReviewQueueRequiresOwner(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	ctrl := newTestQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{TenantID: tenantID, Role: model.RoleMember}, nil
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{}, errors.New("unexpected LatestByTenant")
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestApprovedBySchemaVersion")
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestDraftBySchemaVersion")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected Create")
+			},
+			getFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected GetByTenantAndID")
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteFailed")
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected SearchActiveByQuestion")
+			},
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string, string, string) (model.TenantCanonicalQueryExample, error) {
+				return model.TenantCanonicalQueryExample{}, errors.New("unexpected Create")
+			},
+			listFn: func(context.Context, uuid.UUID, int) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected ListActiveByTenant")
+			},
+			archiveFn: func(context.Context, uuid.UUID, uuid.UUID, time.Time) error {
+				return errors.New("unexpected Archive")
+			},
+		},
+		&fakeQueryAgent{executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+			return AgentExecuteQueryResult{}, errors.New("unexpected ExecuteQuery")
+		}},
+		&fakeQueryCompleter{},
+	)
+
+	_, err := ctrl.ListReviewQueue(
+		context.Background(),
+		tenantID,
+		"user_123",
+		model.ReviewQueueFilterOpen,
+		0,
+	)
+	if !errors.Is(err, ErrQueryReviewOwnerOnly) {
+		t.Fatalf("ListReviewQueue error = %v, want ErrQueryReviewOwnerOnly", err)
+	}
+}
+
+func TestQueryControllerListReviewQueueReturnsOwnerItemsWithDefaultLimit(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	var gotFilter model.ReviewQueueFilter
+	var gotLimit int
+	ctrl := newTestQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{TenantID: tenantID, Role: model.RoleOwner}, nil
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{}, errors.New("unexpected LatestByTenant")
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestApprovedBySchemaVersion")
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestDraftBySchemaVersion")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected Create")
+			},
+			getFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected GetByTenantAndID")
+			},
+			listReviewFn: func(_ context.Context, gotTenantID uuid.UUID, filter model.ReviewQueueFilter, limit int) ([]model.TenantQueryRunReviewItem, error) {
+				if gotTenantID != tenantID {
+					t.Fatalf("tenantID = %s, want %s", gotTenantID, tenantID)
+				}
+				gotFilter = filter
+				gotLimit = limit
+				return []model.TenantQueryRunReviewItem{{
+					Run: model.TenantQueryRun{
+						ID:       queryRunID,
+						TenantID: tenantID,
+						Question: "평균 pH는?",
+						Status:   model.QueryRunStatusFailed,
+						CreatedAt: time.Unix(
+							1_700_001_200,
+							0,
+						).UTC(),
+					},
+				}}, nil
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteFailed")
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected SearchActiveByQuestion")
+			},
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, string, string, string) (model.TenantCanonicalQueryExample, error) {
+				return model.TenantCanonicalQueryExample{}, errors.New("unexpected Create")
+			},
+			listFn: func(context.Context, uuid.UUID, int) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected ListActiveByTenant")
+			},
+			archiveFn: func(context.Context, uuid.UUID, uuid.UUID, time.Time) error {
+				return errors.New("unexpected Archive")
+			},
+		},
+		&fakeQueryAgent{executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+			return AgentExecuteQueryResult{}, errors.New("unexpected ExecuteQuery")
+		}},
+		&fakeQueryCompleter{},
+	)
+
+	result, err := ctrl.ListReviewQueue(
+		context.Background(),
+		tenantID,
+		"user_123",
+		"",
+		0,
+	)
+	if err != nil {
+		t.Fatalf("ListReviewQueue returned error: %v", err)
+	}
+	if gotFilter != model.ReviewQueueFilterOpen {
+		t.Fatalf("filter = %q, want open", gotFilter)
+	}
+	if gotLimit != defaultReviewQueueLimit {
+		t.Fatalf("limit = %d, want %d", gotLimit, defaultReviewQueueLimit)
+	}
+	if len(result.Items) != 1 || result.Items[0].Run.ID != queryRunID {
+		t.Fatalf("items = %+v", result.Items)
+	}
+}
+
+func TestQueryControllerCreateCanonicalExampleMarksRunReviewed(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	schemaVersionID := uuid.New()
+	now := time.Unix(1_700_001_300, 0).UTC()
+	var markedReviewed bool
+
+	ctrl := NewQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{TenantID: tenantID, Role: model.RoleOwner}, nil
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{}, errors.New("unexpected LatestByTenant")
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestApprovedBySchemaVersion")
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestDraftBySchemaVersion")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected Create")
+			},
+			getFn: func(_ context.Context, gotTenantID uuid.UUID, gotQueryRunID uuid.UUID) (model.TenantQueryRun, error) {
+				if gotTenantID != tenantID || gotQueryRunID != queryRunID {
+					t.Fatalf("unexpected ids: %s / %s", gotTenantID, gotQueryRunID)
+				}
+				return model.TenantQueryRun{
+					ID:              queryRunID,
+					TenantID:        tenantID,
+					SchemaVersionID: schemaVersionID,
+				}, nil
+			},
+			markReviewedFn: func(_ context.Context, gotTenantID, gotQueryRunID uuid.UUID, reviewedAt time.Time, reviewedByUserID string) error {
+				if gotTenantID != tenantID || gotQueryRunID != queryRunID {
+					t.Fatalf("unexpected ids: %s / %s", gotTenantID, gotQueryRunID)
+				}
+				if reviewedByUserID != "owner_123" {
+					t.Fatalf("reviewedByUserID = %q", reviewedByUserID)
+				}
+				if !reviewedAt.Equal(now) {
+					t.Fatalf("reviewedAt = %v, want %v", reviewedAt, now)
+				}
+				markedReviewed = true
+				return nil
+			},
+			listReviewFn: func(context.Context, uuid.UUID, model.ReviewQueueFilter, int) ([]model.TenantQueryRunReviewItem, error) {
+				return nil, errors.New("unexpected ListReviewQueue")
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteFailed")
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected SearchActiveByQuestion")
+			},
+			createFn: func(_ context.Context, gotTenantID, gotSchemaVersionID, gotSourceQueryRunID uuid.UUID, createdByUserID, question, sql, notes string) (model.TenantCanonicalQueryExample, error) {
+				if gotTenantID != tenantID || gotSchemaVersionID != schemaVersionID || gotSourceQueryRunID != queryRunID {
+					t.Fatalf("unexpected create ids: %s / %s / %s", gotTenantID, gotSchemaVersionID, gotSourceQueryRunID)
+				}
+				if createdByUserID != "owner_123" || question != "평균 pH는?" || sql != "SELECT AVG(ph) FROM readings" || notes != "기본 집계" {
+					t.Fatalf("unexpected create payload: %q / %q / %q / %q", createdByUserID, question, sql, notes)
+				}
+				return model.TenantCanonicalQueryExample{ID: uuid.New(), SourceQueryRunID: gotSourceQueryRunID}, nil
+			},
+			listFn: func(context.Context, uuid.UUID, int) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected ListActiveByTenant")
+			},
+			archiveFn: func(context.Context, uuid.UUID, uuid.UUID, time.Time) error {
+				return errors.New("unexpected Archive")
+			},
+		},
+		&fakeQueryAgent{executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+			return AgentExecuteQueryResult{}, errors.New("unexpected ExecuteQuery")
+		}},
+		&fakeQueryCompleter{},
+		QueryControllerConfig{
+			Now:                  func() time.Time { return now },
+			Model:                "fake-model",
+			MaxTokens:            1024,
+			SummaryModel:         "fake-model",
+			SummaryMaxTokens:     512,
+			MaxSummaryRows:       10,
+			MaxRetrievedExamples: 3,
+			MaxCanonicalExamples: 20,
+		},
+	)
+
+	if _, err := ctrl.CreateCanonicalExample(
+		context.Background(),
+		tenantID,
+		"owner_123",
+		queryRunID,
+		"평균 pH는?",
+		"SELECT AVG(ph) FROM readings",
+		"기본 집계",
+	); err != nil {
+		t.Fatalf("CreateCanonicalExample returned error: %v", err)
+	}
+	if !markedReviewed {
+		t.Fatal("expected MarkReviewed to be called")
 	}
 }

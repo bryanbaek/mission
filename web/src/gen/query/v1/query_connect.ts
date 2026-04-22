@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ArchiveCanonicalQueryExampleRequest, ArchiveCanonicalQueryExampleResponse, AskQuestionRequest, AskQuestionResponse, CreateCanonicalQueryExampleRequest, CreateCanonicalQueryExampleResponse, ListCanonicalQueryExamplesRequest, ListCanonicalQueryExamplesResponse, ListMyQueryRunsRequest, ListMyQueryRunsResponse, SubmitQueryFeedbackRequest, SubmitQueryFeedbackResponse } from "./query_pb.js";
+import { ArchiveCanonicalQueryExampleRequest, ArchiveCanonicalQueryExampleResponse, AskQuestionRequest, AskQuestionResponse, CreateCanonicalQueryExampleRequest, CreateCanonicalQueryExampleResponse, ListCanonicalQueryExamplesRequest, ListCanonicalQueryExamplesResponse, ListMyQueryRunsRequest, ListMyQueryRunsResponse, ListReviewQueueRequest, ListReviewQueueResponse, MarkQueryRunReviewedRequest, MarkQueryRunReviewedResponse, SubmitQueryFeedbackRequest, SubmitQueryFeedbackResponse } from "./query_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -28,6 +28,24 @@ export const QueryService = {
       name: "ListMyQueryRuns",
       I: ListMyQueryRunsRequest,
       O: ListMyQueryRunsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.ListReviewQueue
+     */
+    listReviewQueue: {
+      name: "ListReviewQueue",
+      I: ListReviewQueueRequest,
+      O: ListReviewQueueResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.MarkQueryRunReviewed
+     */
+    markQueryRunReviewed: {
+      name: "MarkQueryRunReviewed",
+      I: MarkQueryRunReviewedRequest,
+      O: MarkQueryRunReviewedResponse,
       kind: MethodKind.Unary,
     },
     /**

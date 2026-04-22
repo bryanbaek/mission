@@ -1,16 +1,51 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 
+import { WorkspaceRole } from "../gen/onboarding/v1/onboarding_pb";
 import { useI18n } from "../lib/i18n";
+import { useOnboardingClient } from "../lib/onboardingClient";
 import { useTheme, type ThemeMode } from "../lib/theme-context";
 
 export default function Layout() {
+  const onboardingClient = useOnboardingClient();
   const { locale, setLocale, t } = useI18n();
   const { themeMode, setThemeMode } = useTheme();
+  const [hasOwnerWorkspace, setHasOwnerWorkspace] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadWorkspaces = async () => {
+      try {
+        const response = await onboardingClient.listWorkspaces({});
+        if (cancelled) {
+          return;
+        }
+        setHasOwnerWorkspace(
+          response.workspaces.some(
+            (workspace) => workspace.role === WorkspaceRole.OWNER,
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          setHasOwnerWorkspace(false);
+        }
+      }
+    };
+
+    void loadWorkspaces();
+    return () => {
+      cancelled = true;
+    };
+  }, [onboardingClient]);
 
   const nav = [
     { to: "/", label: t("layout.nav.tenants") },
     { to: "/chat", label: t("layout.nav.questions") },
+    ...(hasOwnerWorkspace
+      ? [{ to: "/review", label: t("layout.nav.review") }]
+      : []),
     { to: "/semantic-layer", label: t("layout.nav.semanticLayer") },
     { to: "/agents", label: t("layout.nav.agents") },
   ];

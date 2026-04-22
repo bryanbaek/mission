@@ -19,6 +19,8 @@ import (
 type fakeQueryController struct {
 	askFn              func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error)
 	listMyRunsFn       func(context.Context, uuid.UUID, string, int32) (controller.ListMyQueryRunsResult, error)
+	listReviewFn       func(context.Context, uuid.UUID, string, model.ReviewQueueFilter, int32) (controller.ListReviewQueueResult, error)
+	markReviewedFn     func(context.Context, uuid.UUID, string, uuid.UUID) (controller.MarkQueryRunReviewedResult, error)
 	submitFeedbackFn   func(context.Context, uuid.UUID, string, uuid.UUID, model.QueryFeedbackRating, string, string) (controller.SubmitQueryFeedbackResult, error)
 	createCanonicalFn  func(context.Context, uuid.UUID, string, uuid.UUID, string, string, string) (model.TenantCanonicalQueryExample, error)
 	listCanonicalFn    func(context.Context, uuid.UUID, string) (controller.ListCanonicalQueryExamplesResult, error)
@@ -41,6 +43,25 @@ func (f fakeQueryController) ListMyQueryRuns(
 	limit int32,
 ) (controller.ListMyQueryRunsResult, error) {
 	return f.listMyRunsFn(ctx, tenantID, clerkUserID, limit)
+}
+
+func (f fakeQueryController) ListReviewQueue(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	filter model.ReviewQueueFilter,
+	limit int32,
+) (controller.ListReviewQueueResult, error) {
+	return f.listReviewFn(ctx, tenantID, clerkUserID, filter, limit)
+}
+
+func (f fakeQueryController) MarkQueryRunReviewed(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	queryRunID uuid.UUID,
+) (controller.MarkQueryRunReviewedResult, error) {
+	return f.markReviewedFn(ctx, tenantID, clerkUserID, queryRunID)
 }
 
 func (f fakeQueryController) SubmitFeedback(
@@ -372,6 +393,139 @@ func TestQueryHandlerListMyQueryRunsMapsAccessDenied(t *testing.T) {
 		}),
 	)
 	requireConnectCode(t, err, connect.CodePermissionDenied)
+}
+
+func TestQueryHandlerListReviewQueueMapsResultToProto(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	reviewedAt := time.Unix(1_700_001_400, 0).UTC()
+	feedbackAt := reviewedAt.Add(-time.Minute)
+	handler := NewQueryHandler(fakeQueryController{
+		listReviewFn: func(
+			_ context.Context,
+			gotTenantID uuid.UUID,
+			clerkUserID string,
+			filter model.ReviewQueueFilter,
+			limit int32,
+		) (controller.ListReviewQueueResult, error) {
+			if gotTenantID != tenantID {
+				t.Fatalf("tenantID = %s, want %s", gotTenantID, tenantID)
+			}
+			if clerkUserID != "user_123" {
+				t.Fatalf("clerkUserID = %q", clerkUserID)
+			}
+			if filter != model.ReviewQueueFilterAllRecent {
+				t.Fatalf("filter = %q, want all_recent", filter)
+			}
+			if limit != 12 {
+				t.Fatalf("limit = %d, want 12", limit)
+			}
+			return controller.ListReviewQueueResult{
+				Items: []model.TenantQueryRunReviewItem{{
+					Run: model.TenantQueryRun{
+						ID:                  queryRunID,
+						TenantID:            tenantID,
+						Question:            "평균 pH는?",
+						Status:              model.QueryRunStatusFailed,
+						PromptContextSource: model.QueryPromptContextSourceRawSchema,
+						SQLOriginal:         "SELECT missing FROM readings",
+						Attempts: []model.QueryRunAttempt{{
+							SQL:   "SELECT missing FROM readings",
+							Error: "Unknown column",
+							Stage: "execution",
+						}},
+						Warnings:     []string{"warning"},
+						ErrorStage:   "execution",
+						ErrorMessage: "Unknown column",
+						CreatedAt:    feedbackAt,
+					},
+					HasFeedback: true,
+					LatestFeedback: &model.TenantQueryFeedback{
+						QueryRunID:   queryRunID,
+						Rating:       model.QueryFeedbackRatingDown,
+						Comment:      "조인이 잘못됐습니다.",
+						CorrectedSQL: "SELECT AVG(ph) FROM readings",
+						CreatedAt:    feedbackAt,
+						UpdatedAt:    feedbackAt,
+					},
+					HasActiveCanonicalExample: true,
+					ReviewedAt:                &reviewedAt,
+				}},
+			}, nil
+		},
+	})
+
+	resp, err := handler.ListReviewQueue(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.ListReviewQueueRequest{
+			TenantId: tenantID.String(),
+			Filter:   queryv1.ReviewQueueFilter_REVIEW_QUEUE_FILTER_ALL_RECENT,
+			Limit:    12,
+		}),
+	)
+	if err != nil {
+		t.Fatalf("ListReviewQueue returned error: %v", err)
+	}
+	if len(resp.Msg.Items) != 1 {
+		t.Fatalf("items len = %d, want 1", len(resp.Msg.Items))
+	}
+	item := resp.Msg.Items[0]
+	if item.Run == nil || item.Run.Id != queryRunID.String() {
+		t.Fatalf("run = %+v", item.Run)
+	}
+	if !item.HasFeedback || item.LatestFeedback == nil {
+		t.Fatalf("feedback fields missing: %+v", item)
+	}
+	if item.LatestFeedback.Rating != queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_DOWN {
+		t.Fatalf("rating = %v", item.LatestFeedback.Rating)
+	}
+	if !item.HasActiveCanonicalExample {
+		t.Fatal("HasActiveCanonicalExample = false, want true")
+	}
+	if item.ReviewedAt == nil {
+		t.Fatal("ReviewedAt = nil, want timestamp")
+	}
+}
+
+func TestQueryHandlerMarkQueryRunReviewedMapsResult(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	reviewedAt := time.Unix(1_700_001_500, 0).UTC()
+	handler := NewQueryHandler(fakeQueryController{
+		markReviewedFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID string, gotQueryRunID uuid.UUID) (controller.MarkQueryRunReviewedResult, error) {
+			if gotTenantID != tenantID || gotQueryRunID != queryRunID {
+				t.Fatalf("unexpected ids: %s / %s", gotTenantID, gotQueryRunID)
+			}
+			if clerkUserID != "user_123" {
+				t.Fatalf("clerkUserID = %q", clerkUserID)
+			}
+			return controller.MarkQueryRunReviewedResult{
+				QueryRunID: queryRunID,
+				ReviewedAt: reviewedAt,
+			}, nil
+		},
+	})
+
+	resp, err := handler.MarkQueryRunReviewed(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.MarkQueryRunReviewedRequest{
+			TenantId:   tenantID.String(),
+			QueryRunId: queryRunID.String(),
+		}),
+	)
+	if err != nil {
+		t.Fatalf("MarkQueryRunReviewed returned error: %v", err)
+	}
+	if resp.Msg.QueryRunId != queryRunID.String() {
+		t.Fatalf("query_run_id = %q, want %s", resp.Msg.QueryRunId, queryRunID)
+	}
+	if resp.Msg.ReviewedAt == nil {
+		t.Fatal("reviewed_at = nil, want timestamp")
+	}
 }
 
 func TestQueryHandlerSubmitFeedback(t *testing.T) {

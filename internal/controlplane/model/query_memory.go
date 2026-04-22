@@ -27,6 +27,13 @@ const (
 	QueryFeedbackRatingDown QueryFeedbackRating = "down"
 )
 
+type ReviewQueueFilter string
+
+const (
+	ReviewQueueFilterOpen      ReviewQueueFilter = "open"
+	ReviewQueueFilterAllRecent ReviewQueueFilter = "all_recent"
+)
+
 type QueryRunAttempt struct {
 	SQL   string `json:"sql"`
 	Error string `json:"error"`
@@ -75,4 +82,13 @@ type TenantCanonicalQueryExample struct {
 	Notes            string
 	ArchivedAt       *time.Time
 	CreatedAt        time.Time
+}
+
+type TenantQueryRunReviewItem struct {
+	Run                       TenantQueryRun
+	HasFeedback               bool
+	LatestFeedback            *TenantQueryFeedback
+	HasActiveCanonicalExample bool
+	ReviewedAt                *time.Time
+	ReviewSignalAt            time.Time
 }

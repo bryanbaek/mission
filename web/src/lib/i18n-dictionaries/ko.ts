@@ -14,6 +14,7 @@ export const ko: Record<TranslationKey, string> = {
   "common.no": "아니오",
   "layout.nav.tenants": "테넌트",
   "layout.nav.questions": "질문하기",
+  "layout.nav.review": "리뷰함",
   "layout.nav.semanticLayer": "시맨틱 레이어",
   "layout.nav.agents": "에이전트",
   "layout.theme.label": "테마",
@@ -198,6 +199,47 @@ export const ko: Record<TranslationKey, string> = {
   "chat.examples.create": "예시 저장",
   "chat.examples.creating": "예시 저장 중...",
   "chat.examples.createSuccess": "새 승인 예시를 저장했습니다.",
+  "review.hero.title": "리뷰함",
+  "review.hero.subtitle":
+    "실패한 실행과 수정된 답변을 제품 지식으로 전환하는 오너 전용 검토 대기열입니다.",
+  "review.tenants.ownerOnly":
+    "이 화면에는 오너 권한이 있는 작업 공간만 표시됩니다. 실패를 정리하거나, 표준 예시로 승격하거나, 검토 완료로 닫을 수 있습니다.",
+  "review.tenants.emptyOwners":
+    "검토할 수 있는 오너 범위 작업 공간이 아직 없습니다.",
+  "review.queue.title": "오너 리뷰 대기열",
+  "review.queue.subtitle":
+    "가장 최근의 피드백 신호부터 보여줍니다. `열린 리뷰`에서는 이미 해결된 실행을 숨깁니다.",
+  "review.queue.loading": "리뷰 항목을 불러오는 중...",
+  "review.queue.emptyOpen":
+    "지금은 미해결 리뷰 항목이 없습니다. 실패한 실행, 낮은 평가, 수정 SQL이 자동으로 여기에 쌓입니다.",
+  "review.queue.emptyAllRecent":
+    "최근 리뷰 신호가 있는 실행이 아직 없습니다.",
+  "review.filters.open": "열린 리뷰",
+  "review.filters.allRecent": "최근 전체",
+  "review.status.hasFeedback": "피드백 있음",
+  "review.status.activeExample": "승인 예시 생성됨",
+  "review.status.reviewed": "검토 완료",
+  "review.status.needsReview": "오너 검토 필요",
+  "review.feedback.title": "최신 피드백",
+  "review.feedback.subtitle":
+    "가장 최근의 검토 신호를 기준으로 수정, 예시 승격, 혹은 종료 여부를 결정하세요.",
+  "review.feedback.empty":
+    "이 실행에는 명시적인 피드백이 없습니다. 실행 자체가 실패했기 때문에 대기열에 포함되었습니다.",
+  "review.feedback.noComment": "작성된 코멘트가 없습니다.",
+  "review.feedback.correctedSql": "수정된 SQL",
+  "review.actions.title": "오너 액션",
+  "review.actions.subtitle":
+    "표준 예시로 저장하거나, 승격 없이 검토 완료로 처리할 수 있습니다.",
+  "review.actions.openInChat": "채팅에서 열기",
+  "review.actions.markReviewed": "검토 완료 처리",
+  "review.actions.markingReviewed": "검토 완료 처리 중...",
+  "review.actions.resolvedWithExample":
+    "이 실행에서 승인 예시를 저장하여 해결된 항목입니다.",
+  "review.actions.resolvedByReview":
+    "표준 예시 없이 오너 검토만으로 해결된 항목입니다.",
+  "review.examples.create": "승인 예시 저장",
+  "review.examples.notesPlaceholder":
+    "이 쿼리를 언제 재사용해야 하는지, 혹은 피해야 하는지를 남겨 두세요.",
   "starterQuestions.title": "바로 실행해 볼 질문",
   "starterQuestions.subtitle":
     "승인된 시맨틱 레이어를 바탕으로 실제 테이블을 쓰는 질문만 골랐습니다. 하나를 눌러 바로 결과를 확인하세요.",

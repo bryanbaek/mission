@@ -13,6 +13,7 @@ export const commonEn = {
 export const layoutEn = {
   "layout.nav.tenants": "Tenants",
   "layout.nav.questions": "Ask",
+  "layout.nav.review": "Review",
   "layout.nav.semanticLayer": "Semantic Layer",
   "layout.nav.agents": "Agents",
   "layout.theme.label": "Theme",
@@ -211,6 +212,47 @@ export const chatEn = {
   "chat.examples.create": "Save example",
   "chat.examples.creating": "Saving example...",
   "chat.examples.createSuccess": "Saved a new approved example.",
+  "review.hero.title": "Review inbox",
+  "review.hero.subtitle":
+    "Owner-only queue for failed runs and corrected answers that should become reusable product knowledge.",
+  "review.tenants.ownerOnly":
+    "Only owner-scoped workspaces appear here. Use this queue to resolve failures, save canonical fixes, or clear reviewed items.",
+  "review.tenants.emptyOwners":
+    "No owner-scoped workspaces are available for review yet.",
+  "review.queue.title": "Owner review queue",
+  "review.queue.subtitle":
+    "Newest feedback signals first. Open review hides runs that are already resolved.",
+  "review.queue.loading": "Loading review items...",
+  "review.queue.emptyOpen":
+    "No unresolved review items right now. Failed runs, down-ratings, and corrected SQL will land here automatically.",
+  "review.queue.emptyAllRecent":
+    "No recent review-signaled runs yet.",
+  "review.filters.open": "Open review",
+  "review.filters.allRecent": "All recent",
+  "review.status.hasFeedback": "Feedback attached",
+  "review.status.activeExample": "Approved example created",
+  "review.status.reviewed": "Reviewed",
+  "review.status.needsReview": "Needs owner review",
+  "review.feedback.title": "Latest feedback",
+  "review.feedback.subtitle":
+    "Use the most recent reviewer signal to decide whether to fix, promote, or close the run.",
+  "review.feedback.empty":
+    "No explicit feedback was attached to this run. It is in the queue because the run failed.",
+  "review.feedback.noComment": "No written comment was provided.",
+  "review.feedback.correctedSql": "Corrected SQL",
+  "review.actions.title": "Owner actions",
+  "review.actions.subtitle":
+    "Either save a canonical example or mark the run reviewed without promotion.",
+  "review.actions.openInChat": "Open in chat",
+  "review.actions.markReviewed": "Mark reviewed",
+  "review.actions.markingReviewed": "Marking reviewed...",
+  "review.actions.resolvedWithExample":
+    "Resolved by saving an approved example from this run.",
+  "review.actions.resolvedByReview":
+    "Resolved by an owner review without creating a canonical example.",
+  "review.examples.create": "Save approved example",
+  "review.examples.notesPlaceholder":
+    "What should future owners know about when to reuse or avoid this query?",
 } as const;
 
 export const starterQuestionsEn = {

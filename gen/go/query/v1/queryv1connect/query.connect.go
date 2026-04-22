@@ -39,6 +39,12 @@ const (
 	// QueryServiceListMyQueryRunsProcedure is the fully-qualified name of the QueryService's
 	// ListMyQueryRuns RPC.
 	QueryServiceListMyQueryRunsProcedure = "/query.v1.QueryService/ListMyQueryRuns"
+	// QueryServiceListReviewQueueProcedure is the fully-qualified name of the QueryService's
+	// ListReviewQueue RPC.
+	QueryServiceListReviewQueueProcedure = "/query.v1.QueryService/ListReviewQueue"
+	// QueryServiceMarkQueryRunReviewedProcedure is the fully-qualified name of the QueryService's
+	// MarkQueryRunReviewed RPC.
+	QueryServiceMarkQueryRunReviewedProcedure = "/query.v1.QueryService/MarkQueryRunReviewed"
 	// QueryServiceSubmitQueryFeedbackProcedure is the fully-qualified name of the QueryService's
 	// SubmitQueryFeedback RPC.
 	QueryServiceSubmitQueryFeedbackProcedure = "/query.v1.QueryService/SubmitQueryFeedback"
@@ -57,6 +63,8 @@ const (
 type QueryServiceClient interface {
 	AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error)
 	ListMyQueryRuns(context.Context, *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error)
+	ListReviewQueue(context.Context, *connect.Request[v1.ListReviewQueueRequest]) (*connect.Response[v1.ListReviewQueueResponse], error)
+	MarkQueryRunReviewed(context.Context, *connect.Request[v1.MarkQueryRunReviewedRequest]) (*connect.Response[v1.MarkQueryRunReviewedResponse], error)
 	SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error)
 	CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error)
 	ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error)
@@ -84,6 +92,18 @@ func NewQueryServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+QueryServiceListMyQueryRunsProcedure,
 			connect.WithSchema(queryServiceMethods.ByName("ListMyQueryRuns")),
+			connect.WithClientOptions(opts...),
+		),
+		listReviewQueue: connect.NewClient[v1.ListReviewQueueRequest, v1.ListReviewQueueResponse](
+			httpClient,
+			baseURL+QueryServiceListReviewQueueProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("ListReviewQueue")),
+			connect.WithClientOptions(opts...),
+		),
+		markQueryRunReviewed: connect.NewClient[v1.MarkQueryRunReviewedRequest, v1.MarkQueryRunReviewedResponse](
+			httpClient,
+			baseURL+QueryServiceMarkQueryRunReviewedProcedure,
+			connect.WithSchema(queryServiceMethods.ByName("MarkQueryRunReviewed")),
 			connect.WithClientOptions(opts...),
 		),
 		submitQueryFeedback: connect.NewClient[v1.SubmitQueryFeedbackRequest, v1.SubmitQueryFeedbackResponse](
@@ -117,6 +137,8 @@ func NewQueryServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 type queryServiceClient struct {
 	askQuestion                  *connect.Client[v1.AskQuestionRequest, v1.AskQuestionResponse]
 	listMyQueryRuns              *connect.Client[v1.ListMyQueryRunsRequest, v1.ListMyQueryRunsResponse]
+	listReviewQueue              *connect.Client[v1.ListReviewQueueRequest, v1.ListReviewQueueResponse]
+	markQueryRunReviewed         *connect.Client[v1.MarkQueryRunReviewedRequest, v1.MarkQueryRunReviewedResponse]
 	submitQueryFeedback          *connect.Client[v1.SubmitQueryFeedbackRequest, v1.SubmitQueryFeedbackResponse]
 	createCanonicalQueryExample  *connect.Client[v1.CreateCanonicalQueryExampleRequest, v1.CreateCanonicalQueryExampleResponse]
 	listCanonicalQueryExamples   *connect.Client[v1.ListCanonicalQueryExamplesRequest, v1.ListCanonicalQueryExamplesResponse]
@@ -131,6 +153,16 @@ func (c *queryServiceClient) AskQuestion(ctx context.Context, req *connect.Reque
 // ListMyQueryRuns calls query.v1.QueryService.ListMyQueryRuns.
 func (c *queryServiceClient) ListMyQueryRuns(ctx context.Context, req *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error) {
 	return c.listMyQueryRuns.CallUnary(ctx, req)
+}
+
+// ListReviewQueue calls query.v1.QueryService.ListReviewQueue.
+func (c *queryServiceClient) ListReviewQueue(ctx context.Context, req *connect.Request[v1.ListReviewQueueRequest]) (*connect.Response[v1.ListReviewQueueResponse], error) {
+	return c.listReviewQueue.CallUnary(ctx, req)
+}
+
+// MarkQueryRunReviewed calls query.v1.QueryService.MarkQueryRunReviewed.
+func (c *queryServiceClient) MarkQueryRunReviewed(ctx context.Context, req *connect.Request[v1.MarkQueryRunReviewedRequest]) (*connect.Response[v1.MarkQueryRunReviewedResponse], error) {
+	return c.markQueryRunReviewed.CallUnary(ctx, req)
 }
 
 // SubmitQueryFeedback calls query.v1.QueryService.SubmitQueryFeedback.
@@ -157,6 +189,8 @@ func (c *queryServiceClient) ArchiveCanonicalQueryExample(ctx context.Context, r
 type QueryServiceHandler interface {
 	AskQuestion(context.Context, *connect.Request[v1.AskQuestionRequest]) (*connect.Response[v1.AskQuestionResponse], error)
 	ListMyQueryRuns(context.Context, *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error)
+	ListReviewQueue(context.Context, *connect.Request[v1.ListReviewQueueRequest]) (*connect.Response[v1.ListReviewQueueResponse], error)
+	MarkQueryRunReviewed(context.Context, *connect.Request[v1.MarkQueryRunReviewedRequest]) (*connect.Response[v1.MarkQueryRunReviewedResponse], error)
 	SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error)
 	CreateCanonicalQueryExample(context.Context, *connect.Request[v1.CreateCanonicalQueryExampleRequest]) (*connect.Response[v1.CreateCanonicalQueryExampleResponse], error)
 	ListCanonicalQueryExamples(context.Context, *connect.Request[v1.ListCanonicalQueryExamplesRequest]) (*connect.Response[v1.ListCanonicalQueryExamplesResponse], error)
@@ -180,6 +214,18 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect.HandlerOpti
 		QueryServiceListMyQueryRunsProcedure,
 		svc.ListMyQueryRuns,
 		connect.WithSchema(queryServiceMethods.ByName("ListMyQueryRuns")),
+		connect.WithHandlerOptions(opts...),
+	)
+	queryServiceListReviewQueueHandler := connect.NewUnaryHandler(
+		QueryServiceListReviewQueueProcedure,
+		svc.ListReviewQueue,
+		connect.WithSchema(queryServiceMethods.ByName("ListReviewQueue")),
+		connect.WithHandlerOptions(opts...),
+	)
+	queryServiceMarkQueryRunReviewedHandler := connect.NewUnaryHandler(
+		QueryServiceMarkQueryRunReviewedProcedure,
+		svc.MarkQueryRunReviewed,
+		connect.WithSchema(queryServiceMethods.ByName("MarkQueryRunReviewed")),
 		connect.WithHandlerOptions(opts...),
 	)
 	queryServiceSubmitQueryFeedbackHandler := connect.NewUnaryHandler(
@@ -212,6 +258,10 @@ func NewQueryServiceHandler(svc QueryServiceHandler, opts ...connect.HandlerOpti
 			queryServiceAskQuestionHandler.ServeHTTP(w, r)
 		case QueryServiceListMyQueryRunsProcedure:
 			queryServiceListMyQueryRunsHandler.ServeHTTP(w, r)
+		case QueryServiceListReviewQueueProcedure:
+			queryServiceListReviewQueueHandler.ServeHTTP(w, r)
+		case QueryServiceMarkQueryRunReviewedProcedure:
+			queryServiceMarkQueryRunReviewedHandler.ServeHTTP(w, r)
 		case QueryServiceSubmitQueryFeedbackProcedure:
 			queryServiceSubmitQueryFeedbackHandler.ServeHTTP(w, r)
 		case QueryServiceCreateCanonicalQueryExampleProcedure:
@@ -235,6 +285,14 @@ func (UnimplementedQueryServiceHandler) AskQuestion(context.Context, *connect.Re
 
 func (UnimplementedQueryServiceHandler) ListMyQueryRuns(context.Context, *connect.Request[v1.ListMyQueryRunsRequest]) (*connect.Response[v1.ListMyQueryRunsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.ListMyQueryRuns is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) ListReviewQueue(context.Context, *connect.Request[v1.ListReviewQueueRequest]) (*connect.Response[v1.ListReviewQueueResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.ListReviewQueue is not implemented"))
+}
+
+func (UnimplementedQueryServiceHandler) MarkQueryRunReviewed(context.Context, *connect.Request[v1.MarkQueryRunReviewedRequest]) (*connect.Response[v1.MarkQueryRunReviewedResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("query.v1.QueryService.MarkQueryRunReviewed is not implemented"))
 }
 
 func (UnimplementedQueryServiceHandler) SubmitQueryFeedback(context.Context, *connect.Request[v1.SubmitQueryFeedbackRequest]) (*connect.Response[v1.SubmitQueryFeedbackResponse], error) {

@@ -45,12 +45,14 @@ var (
 	ErrCanonicalQueryExampleNotFound  = errors.New("canonical query example not found")
 	ErrCanonicalQueryExampleOwnerOnly = errors.New("owner role required")
 	ErrInvalidCanonicalQueryExample   = errors.New("question and sql are required")
+	ErrQueryReviewOwnerOnly           = errors.New("owner role required")
 )
 
 const (
 	defaultRetrievedExamplesLimit = 3
 	defaultCanonicalExampleLimit  = 20
 	defaultListMyQueryRunsLimit   = 20
+	defaultReviewQueueLimit       = 50
 )
 
 type queryMembershipCheckerCtl interface {
@@ -98,6 +100,18 @@ type queryRunStoreCtl interface {
 		clerkUserID string,
 		limit int,
 	) ([]model.TenantQueryRun, error)
+	ListReviewQueue(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		filter model.ReviewQueueFilter,
+		limit int,
+	) ([]model.TenantQueryRunReviewItem, error)
+	MarkReviewed(
+		ctx context.Context,
+		tenantID, id uuid.UUID,
+		reviewedAt time.Time,
+		reviewedByUserID string,
+	) error
 	CompleteSucceeded(
 		ctx context.Context,
 		id uuid.UUID,
@@ -219,6 +233,15 @@ type ListCanonicalQueryExamplesResult struct {
 
 type ListMyQueryRunsResult struct {
 	Runs []model.TenantQueryRun
+}
+
+type ListReviewQueueResult struct {
+	Items []model.TenantQueryRunReviewItem
+}
+
+type MarkQueryRunReviewedResult struct {
+	QueryRunID uuid.UUID
+	ReviewedAt time.Time
 }
 
 type queryPromptContextResult struct {
@@ -888,6 +911,80 @@ func (c *QueryController) ListMyQueryRuns(
 	}, nil
 }
 
+func (c *QueryController) ListReviewQueue(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	filter model.ReviewQueueFilter,
+	limit int32,
+) (ListReviewQueueResult, error) {
+	membership, err := c.tenants.EnsureMembership(ctx, tenantID, clerkUserID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return ListReviewQueueResult{}, ErrQueryAccessDenied
+	}
+	if err != nil {
+		return ListReviewQueueResult{}, err
+	}
+	if membership.Role != model.RoleOwner {
+		return ListReviewQueueResult{}, ErrQueryReviewOwnerOnly
+	}
+
+	normalizedLimit := int(limit)
+	if normalizedLimit <= 0 || normalizedLimit > defaultReviewQueueLimit {
+		normalizedLimit = defaultReviewQueueLimit
+	}
+	switch filter {
+	case model.ReviewQueueFilterAllRecent:
+	default:
+		filter = model.ReviewQueueFilterOpen
+	}
+
+	items, err := c.runs.ListReviewQueue(ctx, tenantID, filter, normalizedLimit)
+	if err != nil {
+		return ListReviewQueueResult{}, err
+	}
+	return ListReviewQueueResult{
+		Items: append([]model.TenantQueryRunReviewItem(nil), items...),
+	}, nil
+}
+
+func (c *QueryController) MarkQueryRunReviewed(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	queryRunID uuid.UUID,
+) (MarkQueryRunReviewedResult, error) {
+	membership, err := c.tenants.EnsureMembership(ctx, tenantID, clerkUserID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return MarkQueryRunReviewedResult{}, ErrQueryAccessDenied
+	}
+	if err != nil {
+		return MarkQueryRunReviewedResult{}, err
+	}
+	if membership.Role != model.RoleOwner {
+		return MarkQueryRunReviewedResult{}, ErrQueryReviewOwnerOnly
+	}
+
+	reviewedAt := c.now().UTC()
+	if err := c.runs.MarkReviewed(
+		ctx,
+		tenantID,
+		queryRunID,
+		reviewedAt,
+		clerkUserID,
+	); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return MarkQueryRunReviewedResult{}, ErrQueryRunNotFound
+		}
+		return MarkQueryRunReviewedResult{}, err
+	}
+
+	return MarkQueryRunReviewedResult{
+		QueryRunID: queryRunID,
+		ReviewedAt: reviewedAt,
+	}, nil
+}
+
 func (c *QueryController) CreateCanonicalExample(
 	ctx context.Context,
 	tenantID uuid.UUID,
@@ -917,7 +1014,7 @@ func (c *QueryController) CreateCanonicalExample(
 		return model.TenantCanonicalQueryExample{}, err
 	}
 
-	return c.examples.Create(
+	example, err := c.examples.Create(
 		ctx,
 		tenantID,
 		run.SchemaVersionID,
@@ -927,6 +1024,22 @@ func (c *QueryController) CreateCanonicalExample(
 		sql,
 		notes,
 	)
+	if err != nil {
+		return model.TenantCanonicalQueryExample{}, err
+	}
+	if err := c.runs.MarkReviewed(
+		ctx,
+		tenantID,
+		run.ID,
+		c.now().UTC(),
+		clerkUserID,
+	); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return model.TenantCanonicalQueryExample{}, ErrQueryRunNotFound
+		}
+		return model.TenantCanonicalQueryExample{}, err
+	}
+	return example, nil
 }
 
 func (c *QueryController) ListCanonicalExamples(

@@ -175,6 +175,55 @@ func (QueryFeedbackRating) EnumDescriptor() ([]byte, []int) {
 	return file_query_v1_query_proto_rawDescGZIP(), []int{2}
 }
 
+type ReviewQueueFilter int32
+
+const (
+	ReviewQueueFilter_REVIEW_QUEUE_FILTER_UNSPECIFIED ReviewQueueFilter = 0
+	ReviewQueueFilter_REVIEW_QUEUE_FILTER_OPEN        ReviewQueueFilter = 1
+	ReviewQueueFilter_REVIEW_QUEUE_FILTER_ALL_RECENT  ReviewQueueFilter = 2
+)
+
+// Enum value maps for ReviewQueueFilter.
+var (
+	ReviewQueueFilter_name = map[int32]string{
+		0: "REVIEW_QUEUE_FILTER_UNSPECIFIED",
+		1: "REVIEW_QUEUE_FILTER_OPEN",
+		2: "REVIEW_QUEUE_FILTER_ALL_RECENT",
+	}
+	ReviewQueueFilter_value = map[string]int32{
+		"REVIEW_QUEUE_FILTER_UNSPECIFIED": 0,
+		"REVIEW_QUEUE_FILTER_OPEN":        1,
+		"REVIEW_QUEUE_FILTER_ALL_RECENT":  2,
+	}
+)
+
+func (x ReviewQueueFilter) Enum() *ReviewQueueFilter {
+	p := new(ReviewQueueFilter)
+	*p = x
+	return p
+}
+
+func (x ReviewQueueFilter) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ReviewQueueFilter) Descriptor() protoreflect.EnumDescriptor {
+	return file_query_v1_query_proto_enumTypes[3].Descriptor()
+}
+
+func (ReviewQueueFilter) Type() protoreflect.EnumType {
+	return &file_query_v1_query_proto_enumTypes[3]
+}
+
+func (x ReviewQueueFilter) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ReviewQueueFilter.Descriptor instead.
+func (ReviewQueueFilter) EnumDescriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{3}
+}
+
 // AskQuestionRequest carries a natural-language question from a tenant member.
 // The control plane is responsible for resolving the tenant's approved
 // semantic layer (falling back to draft or raw schema) and generating SQL.
@@ -1220,6 +1269,82 @@ func (x *QueryRunHistoryItem) GetCompletedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+type QueryRunReviewItem struct {
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	Run                       *QueryRunHistoryItem   `protobuf:"bytes,1,opt,name=run,proto3" json:"run,omitempty"`
+	HasFeedback               bool                   `protobuf:"varint,2,opt,name=has_feedback,json=hasFeedback,proto3" json:"has_feedback,omitempty"`
+	LatestFeedback            *QueryFeedback         `protobuf:"bytes,3,opt,name=latest_feedback,json=latestFeedback,proto3" json:"latest_feedback,omitempty"`
+	HasActiveCanonicalExample bool                   `protobuf:"varint,4,opt,name=has_active_canonical_example,json=hasActiveCanonicalExample,proto3" json:"has_active_canonical_example,omitempty"`
+	ReviewedAt                *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=reviewed_at,json=reviewedAt,proto3" json:"reviewed_at,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *QueryRunReviewItem) Reset() {
+	*x = QueryRunReviewItem{}
+	mi := &file_query_v1_query_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryRunReviewItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryRunReviewItem) ProtoMessage() {}
+
+func (x *QueryRunReviewItem) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryRunReviewItem.ProtoReflect.Descriptor instead.
+func (*QueryRunReviewItem) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *QueryRunReviewItem) GetRun() *QueryRunHistoryItem {
+	if x != nil {
+		return x.Run
+	}
+	return nil
+}
+
+func (x *QueryRunReviewItem) GetHasFeedback() bool {
+	if x != nil {
+		return x.HasFeedback
+	}
+	return false
+}
+
+func (x *QueryRunReviewItem) GetLatestFeedback() *QueryFeedback {
+	if x != nil {
+		return x.LatestFeedback
+	}
+	return nil
+}
+
+func (x *QueryRunReviewItem) GetHasActiveCanonicalExample() bool {
+	if x != nil {
+		return x.HasActiveCanonicalExample
+	}
+	return false
+}
+
+func (x *QueryRunReviewItem) GetReviewedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ReviewedAt
+	}
+	return nil
+}
+
 type ListMyQueryRunsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
@@ -1230,7 +1355,7 @@ type ListMyQueryRunsRequest struct {
 
 func (x *ListMyQueryRunsRequest) Reset() {
 	*x = ListMyQueryRunsRequest{}
-	mi := &file_query_v1_query_proto_msgTypes[15]
+	mi := &file_query_v1_query_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1242,7 +1367,7 @@ func (x *ListMyQueryRunsRequest) String() string {
 func (*ListMyQueryRunsRequest) ProtoMessage() {}
 
 func (x *ListMyQueryRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_query_v1_query_proto_msgTypes[15]
+	mi := &file_query_v1_query_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1255,7 +1380,7 @@ func (x *ListMyQueryRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMyQueryRunsRequest.ProtoReflect.Descriptor instead.
 func (*ListMyQueryRunsRequest) Descriptor() ([]byte, []int) {
-	return file_query_v1_query_proto_rawDescGZIP(), []int{15}
+	return file_query_v1_query_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListMyQueryRunsRequest) GetTenantId() string {
@@ -1281,7 +1406,7 @@ type ListMyQueryRunsResponse struct {
 
 func (x *ListMyQueryRunsResponse) Reset() {
 	*x = ListMyQueryRunsResponse{}
-	mi := &file_query_v1_query_proto_msgTypes[16]
+	mi := &file_query_v1_query_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1293,7 +1418,7 @@ func (x *ListMyQueryRunsResponse) String() string {
 func (*ListMyQueryRunsResponse) ProtoMessage() {}
 
 func (x *ListMyQueryRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_query_v1_query_proto_msgTypes[16]
+	mi := &file_query_v1_query_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1306,12 +1431,220 @@ func (x *ListMyQueryRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMyQueryRunsResponse.ProtoReflect.Descriptor instead.
 func (*ListMyQueryRunsResponse) Descriptor() ([]byte, []int) {
-	return file_query_v1_query_proto_rawDescGZIP(), []int{16}
+	return file_query_v1_query_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListMyQueryRunsResponse) GetRuns() []*QueryRunHistoryItem {
 	if x != nil {
 		return x.Runs
+	}
+	return nil
+}
+
+type ListReviewQueueRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Filter        ReviewQueueFilter      `protobuf:"varint,2,opt,name=filter,proto3,enum=query.v1.ReviewQueueFilter" json:"filter,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListReviewQueueRequest) Reset() {
+	*x = ListReviewQueueRequest{}
+	mi := &file_query_v1_query_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListReviewQueueRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListReviewQueueRequest) ProtoMessage() {}
+
+func (x *ListReviewQueueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListReviewQueueRequest.ProtoReflect.Descriptor instead.
+func (*ListReviewQueueRequest) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListReviewQueueRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *ListReviewQueueRequest) GetFilter() ReviewQueueFilter {
+	if x != nil {
+		return x.Filter
+	}
+	return ReviewQueueFilter_REVIEW_QUEUE_FILTER_UNSPECIFIED
+}
+
+func (x *ListReviewQueueRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListReviewQueueResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*QueryRunReviewItem  `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListReviewQueueResponse) Reset() {
+	*x = ListReviewQueueResponse{}
+	mi := &file_query_v1_query_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListReviewQueueResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListReviewQueueResponse) ProtoMessage() {}
+
+func (x *ListReviewQueueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListReviewQueueResponse.ProtoReflect.Descriptor instead.
+func (*ListReviewQueueResponse) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ListReviewQueueResponse) GetItems() []*QueryRunReviewItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type MarkQueryRunReviewedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	QueryRunId    string                 `protobuf:"bytes,2,opt,name=query_run_id,json=queryRunId,proto3" json:"query_run_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarkQueryRunReviewedRequest) Reset() {
+	*x = MarkQueryRunReviewedRequest{}
+	mi := &file_query_v1_query_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarkQueryRunReviewedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarkQueryRunReviewedRequest) ProtoMessage() {}
+
+func (x *MarkQueryRunReviewedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarkQueryRunReviewedRequest.ProtoReflect.Descriptor instead.
+func (*MarkQueryRunReviewedRequest) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *MarkQueryRunReviewedRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *MarkQueryRunReviewedRequest) GetQueryRunId() string {
+	if x != nil {
+		return x.QueryRunId
+	}
+	return ""
+}
+
+type MarkQueryRunReviewedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	QueryRunId    string                 `protobuf:"bytes,1,opt,name=query_run_id,json=queryRunId,proto3" json:"query_run_id,omitempty"`
+	ReviewedAt    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=reviewed_at,json=reviewedAt,proto3" json:"reviewed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarkQueryRunReviewedResponse) Reset() {
+	*x = MarkQueryRunReviewedResponse{}
+	mi := &file_query_v1_query_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarkQueryRunReviewedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarkQueryRunReviewedResponse) ProtoMessage() {}
+
+func (x *MarkQueryRunReviewedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarkQueryRunReviewedResponse.ProtoReflect.Descriptor instead.
+func (*MarkQueryRunReviewedResponse) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *MarkQueryRunReviewedResponse) GetQueryRunId() string {
+	if x != nil {
+		return x.QueryRunId
+	}
+	return ""
+}
+
+func (x *MarkQueryRunReviewedResponse) GetReviewedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ReviewedAt
 	}
 	return nil
 }
@@ -1414,12 +1747,34 @@ const file_query_v1_query_proto_rawDesc = "" +
 	"\battempts\x18\f \x03(\v2\x16.query.v1.AttemptDebugR\battempts\x129\n" +
 	"\n" +
 	"created_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12=\n" +
-	"\fcompleted_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"K\n" +
+	"\fcompleted_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"\xa8\x02\n" +
+	"\x12QueryRunReviewItem\x12/\n" +
+	"\x03run\x18\x01 \x01(\v2\x1d.query.v1.QueryRunHistoryItemR\x03run\x12!\n" +
+	"\fhas_feedback\x18\x02 \x01(\bR\vhasFeedback\x12@\n" +
+	"\x0flatest_feedback\x18\x03 \x01(\v2\x17.query.v1.QueryFeedbackR\x0elatestFeedback\x12?\n" +
+	"\x1chas_active_canonical_example\x18\x04 \x01(\bR\x19hasActiveCanonicalExample\x12;\n" +
+	"\vreviewed_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"reviewedAt\"K\n" +
 	"\x16ListMyQueryRunsRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\"L\n" +
 	"\x17ListMyQueryRunsResponse\x121\n" +
-	"\x04runs\x18\x01 \x03(\v2\x1d.query.v1.QueryRunHistoryItemR\x04runs*\x8d\x01\n" +
+	"\x04runs\x18\x01 \x03(\v2\x1d.query.v1.QueryRunHistoryItemR\x04runs\"\x80\x01\n" +
+	"\x16ListReviewQueueRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x123\n" +
+	"\x06filter\x18\x02 \x01(\x0e2\x1b.query.v1.ReviewQueueFilterR\x06filter\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\"M\n" +
+	"\x17ListReviewQueueResponse\x122\n" +
+	"\x05items\x18\x01 \x03(\v2\x1c.query.v1.QueryRunReviewItemR\x05items\"\\\n" +
+	"\x1bMarkQueryRunReviewedRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12 \n" +
+	"\fquery_run_id\x18\x02 \x01(\tR\n" +
+	"queryRunId\"}\n" +
+	"\x1cMarkQueryRunReviewedResponse\x12 \n" +
+	"\fquery_run_id\x18\x01 \x01(\tR\n" +
+	"queryRunId\x12;\n" +
+	"\vreviewed_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"reviewedAt*\x8d\x01\n" +
 	"\x0eQueryRunStatus\x12 \n" +
 	"\x1cQUERY_RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18QUERY_RUN_STATUS_RUNNING\x10\x01\x12\x1e\n" +
@@ -1433,10 +1788,16 @@ const file_query_v1_query_proto_rawDesc = "" +
 	"\x13QueryFeedbackRating\x12%\n" +
 	"!QUERY_FEEDBACK_RATING_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18QUERY_FEEDBACK_RATING_UP\x10\x01\x12\x1e\n" +
-	"\x1aQUERY_FEEDBACK_RATING_DOWN\x10\x022\x8a\x05\n" +
+	"\x1aQUERY_FEEDBACK_RATING_DOWN\x10\x02*z\n" +
+	"\x11ReviewQueueFilter\x12#\n" +
+	"\x1fREVIEW_QUEUE_FILTER_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18REVIEW_QUEUE_FILTER_OPEN\x10\x01\x12\"\n" +
+	"\x1eREVIEW_QUEUE_FILTER_ALL_RECENT\x10\x022\xc9\x06\n" +
 	"\fQueryService\x12J\n" +
 	"\vAskQuestion\x12\x1c.query.v1.AskQuestionRequest\x1a\x1d.query.v1.AskQuestionResponse\x12V\n" +
-	"\x0fListMyQueryRuns\x12 .query.v1.ListMyQueryRunsRequest\x1a!.query.v1.ListMyQueryRunsResponse\x12b\n" +
+	"\x0fListMyQueryRuns\x12 .query.v1.ListMyQueryRunsRequest\x1a!.query.v1.ListMyQueryRunsResponse\x12V\n" +
+	"\x0fListReviewQueue\x12 .query.v1.ListReviewQueueRequest\x1a!.query.v1.ListReviewQueueResponse\x12e\n" +
+	"\x14MarkQueryRunReviewed\x12%.query.v1.MarkQueryRunReviewedRequest\x1a&.query.v1.MarkQueryRunReviewedResponse\x12b\n" +
 	"\x13SubmitQueryFeedback\x12$.query.v1.SubmitQueryFeedbackRequest\x1a%.query.v1.SubmitQueryFeedbackResponse\x12z\n" +
 	"\x1bCreateCanonicalQueryExample\x12,.query.v1.CreateCanonicalQueryExampleRequest\x1a-.query.v1.CreateCanonicalQueryExampleResponse\x12w\n" +
 	"\x1aListCanonicalQueryExamples\x12+.query.v1.ListCanonicalQueryExamplesRequest\x1a,.query.v1.ListCanonicalQueryExamplesResponse\x12}\n" +
@@ -1456,67 +1817,83 @@ func file_query_v1_query_proto_rawDescGZIP() []byte {
 	return file_query_v1_query_proto_rawDescData
 }
 
-var file_query_v1_query_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_query_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_query_v1_query_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_query_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_query_v1_query_proto_goTypes = []any{
 	(QueryRunStatus)(0),                          // 0: query.v1.QueryRunStatus
 	(QueryPromptContextSource)(0),                // 1: query.v1.QueryPromptContextSource
 	(QueryFeedbackRating)(0),                     // 2: query.v1.QueryFeedbackRating
-	(*AskQuestionRequest)(nil),                   // 3: query.v1.AskQuestionRequest
-	(*Row)(nil),                                  // 4: query.v1.Row
-	(*AttemptDebug)(nil),                         // 5: query.v1.AttemptDebug
-	(*AskQuestionResponse)(nil),                  // 6: query.v1.AskQuestionResponse
-	(*QueryFeedback)(nil),                        // 7: query.v1.QueryFeedback
-	(*SubmitQueryFeedbackRequest)(nil),           // 8: query.v1.SubmitQueryFeedbackRequest
-	(*SubmitQueryFeedbackResponse)(nil),          // 9: query.v1.SubmitQueryFeedbackResponse
-	(*CanonicalQueryExample)(nil),                // 10: query.v1.CanonicalQueryExample
-	(*CreateCanonicalQueryExampleRequest)(nil),   // 11: query.v1.CreateCanonicalQueryExampleRequest
-	(*CreateCanonicalQueryExampleResponse)(nil),  // 12: query.v1.CreateCanonicalQueryExampleResponse
-	(*ListCanonicalQueryExamplesRequest)(nil),    // 13: query.v1.ListCanonicalQueryExamplesRequest
-	(*ListCanonicalQueryExamplesResponse)(nil),   // 14: query.v1.ListCanonicalQueryExamplesResponse
-	(*ArchiveCanonicalQueryExampleRequest)(nil),  // 15: query.v1.ArchiveCanonicalQueryExampleRequest
-	(*ArchiveCanonicalQueryExampleResponse)(nil), // 16: query.v1.ArchiveCanonicalQueryExampleResponse
-	(*QueryRunHistoryItem)(nil),                  // 17: query.v1.QueryRunHistoryItem
-	(*ListMyQueryRunsRequest)(nil),               // 18: query.v1.ListMyQueryRunsRequest
-	(*ListMyQueryRunsResponse)(nil),              // 19: query.v1.ListMyQueryRunsResponse
-	nil,                                          // 20: query.v1.Row.ValuesEntry
-	(*timestamppb.Timestamp)(nil),                // 21: google.protobuf.Timestamp
+	(ReviewQueueFilter)(0),                       // 3: query.v1.ReviewQueueFilter
+	(*AskQuestionRequest)(nil),                   // 4: query.v1.AskQuestionRequest
+	(*Row)(nil),                                  // 5: query.v1.Row
+	(*AttemptDebug)(nil),                         // 6: query.v1.AttemptDebug
+	(*AskQuestionResponse)(nil),                  // 7: query.v1.AskQuestionResponse
+	(*QueryFeedback)(nil),                        // 8: query.v1.QueryFeedback
+	(*SubmitQueryFeedbackRequest)(nil),           // 9: query.v1.SubmitQueryFeedbackRequest
+	(*SubmitQueryFeedbackResponse)(nil),          // 10: query.v1.SubmitQueryFeedbackResponse
+	(*CanonicalQueryExample)(nil),                // 11: query.v1.CanonicalQueryExample
+	(*CreateCanonicalQueryExampleRequest)(nil),   // 12: query.v1.CreateCanonicalQueryExampleRequest
+	(*CreateCanonicalQueryExampleResponse)(nil),  // 13: query.v1.CreateCanonicalQueryExampleResponse
+	(*ListCanonicalQueryExamplesRequest)(nil),    // 14: query.v1.ListCanonicalQueryExamplesRequest
+	(*ListCanonicalQueryExamplesResponse)(nil),   // 15: query.v1.ListCanonicalQueryExamplesResponse
+	(*ArchiveCanonicalQueryExampleRequest)(nil),  // 16: query.v1.ArchiveCanonicalQueryExampleRequest
+	(*ArchiveCanonicalQueryExampleResponse)(nil), // 17: query.v1.ArchiveCanonicalQueryExampleResponse
+	(*QueryRunHistoryItem)(nil),                  // 18: query.v1.QueryRunHistoryItem
+	(*QueryRunReviewItem)(nil),                   // 19: query.v1.QueryRunReviewItem
+	(*ListMyQueryRunsRequest)(nil),               // 20: query.v1.ListMyQueryRunsRequest
+	(*ListMyQueryRunsResponse)(nil),              // 21: query.v1.ListMyQueryRunsResponse
+	(*ListReviewQueueRequest)(nil),               // 22: query.v1.ListReviewQueueRequest
+	(*ListReviewQueueResponse)(nil),              // 23: query.v1.ListReviewQueueResponse
+	(*MarkQueryRunReviewedRequest)(nil),          // 24: query.v1.MarkQueryRunReviewedRequest
+	(*MarkQueryRunReviewedResponse)(nil),         // 25: query.v1.MarkQueryRunReviewedResponse
+	nil,                                          // 26: query.v1.Row.ValuesEntry
+	(*timestamppb.Timestamp)(nil),                // 27: google.protobuf.Timestamp
 }
 var file_query_v1_query_proto_depIdxs = []int32{
-	20, // 0: query.v1.Row.values:type_name -> query.v1.Row.ValuesEntry
-	4,  // 1: query.v1.AskQuestionResponse.rows:type_name -> query.v1.Row
-	5,  // 2: query.v1.AskQuestionResponse.attempts:type_name -> query.v1.AttemptDebug
+	26, // 0: query.v1.Row.values:type_name -> query.v1.Row.ValuesEntry
+	5,  // 1: query.v1.AskQuestionResponse.rows:type_name -> query.v1.Row
+	6,  // 2: query.v1.AskQuestionResponse.attempts:type_name -> query.v1.AttemptDebug
 	2,  // 3: query.v1.QueryFeedback.rating:type_name -> query.v1.QueryFeedbackRating
-	21, // 4: query.v1.QueryFeedback.created_at:type_name -> google.protobuf.Timestamp
-	21, // 5: query.v1.QueryFeedback.updated_at:type_name -> google.protobuf.Timestamp
+	27, // 4: query.v1.QueryFeedback.created_at:type_name -> google.protobuf.Timestamp
+	27, // 5: query.v1.QueryFeedback.updated_at:type_name -> google.protobuf.Timestamp
 	2,  // 6: query.v1.SubmitQueryFeedbackRequest.rating:type_name -> query.v1.QueryFeedbackRating
-	7,  // 7: query.v1.SubmitQueryFeedbackResponse.feedback:type_name -> query.v1.QueryFeedback
-	21, // 8: query.v1.CanonicalQueryExample.created_at:type_name -> google.protobuf.Timestamp
-	10, // 9: query.v1.CreateCanonicalQueryExampleResponse.example:type_name -> query.v1.CanonicalQueryExample
-	10, // 10: query.v1.ListCanonicalQueryExamplesResponse.examples:type_name -> query.v1.CanonicalQueryExample
+	8,  // 7: query.v1.SubmitQueryFeedbackResponse.feedback:type_name -> query.v1.QueryFeedback
+	27, // 8: query.v1.CanonicalQueryExample.created_at:type_name -> google.protobuf.Timestamp
+	11, // 9: query.v1.CreateCanonicalQueryExampleResponse.example:type_name -> query.v1.CanonicalQueryExample
+	11, // 10: query.v1.ListCanonicalQueryExamplesResponse.examples:type_name -> query.v1.CanonicalQueryExample
 	0,  // 11: query.v1.QueryRunHistoryItem.status:type_name -> query.v1.QueryRunStatus
 	1,  // 12: query.v1.QueryRunHistoryItem.prompt_context_source:type_name -> query.v1.QueryPromptContextSource
-	5,  // 13: query.v1.QueryRunHistoryItem.attempts:type_name -> query.v1.AttemptDebug
-	21, // 14: query.v1.QueryRunHistoryItem.created_at:type_name -> google.protobuf.Timestamp
-	21, // 15: query.v1.QueryRunHistoryItem.completed_at:type_name -> google.protobuf.Timestamp
-	17, // 16: query.v1.ListMyQueryRunsResponse.runs:type_name -> query.v1.QueryRunHistoryItem
-	3,  // 17: query.v1.QueryService.AskQuestion:input_type -> query.v1.AskQuestionRequest
-	18, // 18: query.v1.QueryService.ListMyQueryRuns:input_type -> query.v1.ListMyQueryRunsRequest
-	8,  // 19: query.v1.QueryService.SubmitQueryFeedback:input_type -> query.v1.SubmitQueryFeedbackRequest
-	11, // 20: query.v1.QueryService.CreateCanonicalQueryExample:input_type -> query.v1.CreateCanonicalQueryExampleRequest
-	13, // 21: query.v1.QueryService.ListCanonicalQueryExamples:input_type -> query.v1.ListCanonicalQueryExamplesRequest
-	15, // 22: query.v1.QueryService.ArchiveCanonicalQueryExample:input_type -> query.v1.ArchiveCanonicalQueryExampleRequest
-	6,  // 23: query.v1.QueryService.AskQuestion:output_type -> query.v1.AskQuestionResponse
-	19, // 24: query.v1.QueryService.ListMyQueryRuns:output_type -> query.v1.ListMyQueryRunsResponse
-	9,  // 25: query.v1.QueryService.SubmitQueryFeedback:output_type -> query.v1.SubmitQueryFeedbackResponse
-	12, // 26: query.v1.QueryService.CreateCanonicalQueryExample:output_type -> query.v1.CreateCanonicalQueryExampleResponse
-	14, // 27: query.v1.QueryService.ListCanonicalQueryExamples:output_type -> query.v1.ListCanonicalQueryExamplesResponse
-	16, // 28: query.v1.QueryService.ArchiveCanonicalQueryExample:output_type -> query.v1.ArchiveCanonicalQueryExampleResponse
-	23, // [23:29] is the sub-list for method output_type
-	17, // [17:23] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	6,  // 13: query.v1.QueryRunHistoryItem.attempts:type_name -> query.v1.AttemptDebug
+	27, // 14: query.v1.QueryRunHistoryItem.created_at:type_name -> google.protobuf.Timestamp
+	27, // 15: query.v1.QueryRunHistoryItem.completed_at:type_name -> google.protobuf.Timestamp
+	18, // 16: query.v1.QueryRunReviewItem.run:type_name -> query.v1.QueryRunHistoryItem
+	8,  // 17: query.v1.QueryRunReviewItem.latest_feedback:type_name -> query.v1.QueryFeedback
+	27, // 18: query.v1.QueryRunReviewItem.reviewed_at:type_name -> google.protobuf.Timestamp
+	18, // 19: query.v1.ListMyQueryRunsResponse.runs:type_name -> query.v1.QueryRunHistoryItem
+	3,  // 20: query.v1.ListReviewQueueRequest.filter:type_name -> query.v1.ReviewQueueFilter
+	19, // 21: query.v1.ListReviewQueueResponse.items:type_name -> query.v1.QueryRunReviewItem
+	27, // 22: query.v1.MarkQueryRunReviewedResponse.reviewed_at:type_name -> google.protobuf.Timestamp
+	4,  // 23: query.v1.QueryService.AskQuestion:input_type -> query.v1.AskQuestionRequest
+	20, // 24: query.v1.QueryService.ListMyQueryRuns:input_type -> query.v1.ListMyQueryRunsRequest
+	22, // 25: query.v1.QueryService.ListReviewQueue:input_type -> query.v1.ListReviewQueueRequest
+	24, // 26: query.v1.QueryService.MarkQueryRunReviewed:input_type -> query.v1.MarkQueryRunReviewedRequest
+	9,  // 27: query.v1.QueryService.SubmitQueryFeedback:input_type -> query.v1.SubmitQueryFeedbackRequest
+	12, // 28: query.v1.QueryService.CreateCanonicalQueryExample:input_type -> query.v1.CreateCanonicalQueryExampleRequest
+	14, // 29: query.v1.QueryService.ListCanonicalQueryExamples:input_type -> query.v1.ListCanonicalQueryExamplesRequest
+	16, // 30: query.v1.QueryService.ArchiveCanonicalQueryExample:input_type -> query.v1.ArchiveCanonicalQueryExampleRequest
+	7,  // 31: query.v1.QueryService.AskQuestion:output_type -> query.v1.AskQuestionResponse
+	21, // 32: query.v1.QueryService.ListMyQueryRuns:output_type -> query.v1.ListMyQueryRunsResponse
+	23, // 33: query.v1.QueryService.ListReviewQueue:output_type -> query.v1.ListReviewQueueResponse
+	25, // 34: query.v1.QueryService.MarkQueryRunReviewed:output_type -> query.v1.MarkQueryRunReviewedResponse
+	10, // 35: query.v1.QueryService.SubmitQueryFeedback:output_type -> query.v1.SubmitQueryFeedbackResponse
+	13, // 36: query.v1.QueryService.CreateCanonicalQueryExample:output_type -> query.v1.CreateCanonicalQueryExampleResponse
+	15, // 37: query.v1.QueryService.ListCanonicalQueryExamples:output_type -> query.v1.ListCanonicalQueryExamplesResponse
+	17, // 38: query.v1.QueryService.ArchiveCanonicalQueryExample:output_type -> query.v1.ArchiveCanonicalQueryExampleResponse
+	31, // [31:39] is the sub-list for method output_type
+	23, // [23:31] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_query_v1_query_proto_init() }
@@ -1529,8 +1906,8 @@ func file_query_v1_query_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_query_v1_query_proto_rawDesc), len(file_query_v1_query_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   18,
+			NumEnums:      4,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

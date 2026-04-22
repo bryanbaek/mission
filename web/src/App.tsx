@@ -9,6 +9,7 @@ const ChatPage = lazy(() => import("./pages/ChatPage"));
 const OnboardingHomePage = lazy(() => import("./pages/OnboardingHomePage"));
 const OnboardingStepPage = lazy(() => import("./pages/OnboardingStepPage"));
 const QueryPage = lazy(() => import("./pages/QueryPage"));
+const ReviewPage = lazy(() => import("./pages/ReviewPage"));
 const SemanticLayerPage = lazy(() => import("./pages/SemanticLayerPage"));
 const TenantsPage = lazy(() => import("./pages/TenantsPage"));
 
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="agents" element={<AgentsPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="queries" element={<ChatPage />} />
+              <Route path="review" element={<ReviewPage />} />
               <Route path="queries/debug" element={<QueryPage />} />
               <Route path="semantic-layer" element={<SemanticLayerPage />} />
             </Route>

@@ -50,7 +50,7 @@ var supportedSpecs = []Spec{
 		SemanticLayerModelEnv: "OPENAI_SEMANTIC_LAYER_MODEL",
 		QueryModelEnv:         "OPENAI_QUERY_MODEL",
 		PreflightModelEnv:     "OPENAI_PREFLIGHT_MODEL",
-		DefaultPreflightModel: "gpt-4.1-nano",
+		DefaultPreflightModel: "gpt-5.1-nano",
 		Transport:             TransportOpenAICompatible,
 		StructuredOutputMode:  openaigateway.StructuredOutputJSONSchema,
 		TokenParameterStyle:   openaigateway.TokenParameterMaxCompletionTokens,

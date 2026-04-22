@@ -231,8 +231,8 @@ func TestMigrateResetsHistoryOnMissingVersion(t *testing.T) {
 	if !runner.forceCalled {
 		t.Fatal("Force was not called")
 	}
-	if runner.forceValue != 1 {
-		t.Fatalf("Force version = %d, want 1", runner.forceValue)
+	if runner.forceValue != 2 {
+		t.Fatalf("Force version = %d, want 2", runner.forceValue)
 	}
 	if runner.upCalls != 2 {
 		t.Fatalf("Up calls = %d, want 2", runner.upCalls)
@@ -257,7 +257,7 @@ func TestMigrateReturnsForceError(t *testing.T) {
 	if err == nil {
 		t.Fatal("Migrate returned nil error")
 	}
-	if !strings.Contains(err.Error(), "reset migration history to head version 1") {
+	if !strings.Contains(err.Error(), "reset migration history to head version 2") {
 		t.Fatalf("error = %v, want wrapped force error", err)
 	}
 }

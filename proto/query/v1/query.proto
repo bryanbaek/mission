@@ -81,6 +81,12 @@ message QueryFeedback {
   google.protobuf.Timestamp updated_at = 6;
 }
 
+enum ReviewQueueFilter {
+  REVIEW_QUEUE_FILTER_UNSPECIFIED = 0;
+  REVIEW_QUEUE_FILTER_OPEN = 1;
+  REVIEW_QUEUE_FILTER_ALL_RECENT = 2;
+}
+
 message SubmitQueryFeedbackRequest {
   string tenant_id = 1;
   string query_run_id = 2;
@@ -148,6 +154,14 @@ message QueryRunHistoryItem {
   google.protobuf.Timestamp completed_at = 14;
 }
 
+message QueryRunReviewItem {
+  QueryRunHistoryItem run = 1;
+  bool has_feedback = 2;
+  QueryFeedback latest_feedback = 3;
+  bool has_active_canonical_example = 4;
+  google.protobuf.Timestamp reviewed_at = 5;
+}
+
 message ListMyQueryRunsRequest {
   string tenant_id = 1;
   int32 limit = 2;
@@ -157,9 +171,32 @@ message ListMyQueryRunsResponse {
   repeated QueryRunHistoryItem runs = 1;
 }
 
+message ListReviewQueueRequest {
+  string tenant_id = 1;
+  ReviewQueueFilter filter = 2;
+  int32 limit = 3;
+}
+
+message ListReviewQueueResponse {
+  repeated QueryRunReviewItem items = 1;
+}
+
+message MarkQueryRunReviewedRequest {
+  string tenant_id = 1;
+  string query_run_id = 2;
+}
+
+message MarkQueryRunReviewedResponse {
+  string query_run_id = 1;
+  google.protobuf.Timestamp reviewed_at = 2;
+}
+
 service QueryService {
   rpc AskQuestion(AskQuestionRequest) returns (AskQuestionResponse);
   rpc ListMyQueryRuns(ListMyQueryRunsRequest) returns (ListMyQueryRunsResponse);
+  rpc ListReviewQueue(ListReviewQueueRequest) returns (ListReviewQueueResponse);
+  rpc MarkQueryRunReviewed(MarkQueryRunReviewedRequest)
+      returns (MarkQueryRunReviewedResponse);
   rpc SubmitQueryFeedback(SubmitQueryFeedbackRequest)
       returns (SubmitQueryFeedbackResponse);
   rpc CreateCanonicalQueryExample(CreateCanonicalQueryExampleRequest)

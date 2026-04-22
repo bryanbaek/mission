@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type ReactNode,
   type FormEvent,
 } from "react";
 
@@ -530,12 +531,16 @@ function QueryResultCard({
   );
 }
 
-function PersistentHistoryCard({
+export function StoredQueryRunCard({
   item,
   onRerun,
+  actionSlot,
+  children,
 }: {
   item: QueryRunHistoryItem;
-  onRerun: (question: string) => void;
+  onRerun?: (question: string) => void;
+  actionSlot?: ReactNode;
+  children?: ReactNode;
 }) {
   const { formatDateTime, formatNumber, t } = useI18n();
   const createdAtMillis = timestampToMillis(item.createdAt);
@@ -571,13 +576,16 @@ function PersistentHistoryCard({
           <span className={queryRunStatusChipClass(item.status)}>
             {queryRunStatusLabel(item.status, t)}
           </span>
-          <button
-            type="button"
-            className={styles.subtleButton}
-            onClick={() => onRerun(item.question)}
-          >
-            {t("chat.persistent.rerun")}
-          </button>
+          {actionSlot ?? null}
+          {actionSlot == null && onRerun ? (
+            <button
+              type="button"
+              className={styles.subtleButton}
+              onClick={() => onRerun(item.question)}
+            >
+              {t("chat.persistent.rerun")}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -676,6 +684,8 @@ function PersistentHistoryCard({
           ) : null}
         </div>
       </details>
+
+      {children ? <div className="mt-4">{children}</div> : null}
     </article>
   );
 }
@@ -990,7 +1000,7 @@ export function PersistentHistoryPanel({
       ) : (
         <div className="mt-4 flex flex-col gap-4">
           {runs.map((run) => (
-            <PersistentHistoryCard
+            <StoredQueryRunCard
               key={run.id}
               item={run}
               onRerun={onRerun}

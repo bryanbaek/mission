@@ -267,6 +267,139 @@ func TestTenantQueryRunRepositoryListByTenantAndUser(t *testing.T) {
 	}
 }
 
+func TestTenantQueryRunRepositoryListReviewQueue(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	schemaVersionID := uuid.New()
+	semanticLayerID := uuid.New()
+	completedAt := time.Unix(1_700_001_010, 0).UTC()
+	feedbackCreatedAt := time.Unix(1_700_001_020, 0).UTC()
+	feedbackUpdatedAt := feedbackCreatedAt.Add(30 * time.Second)
+	reviewSignalAt := feedbackUpdatedAt
+
+	rows := &fakeRows{
+		scans: []func(dest ...any) error{
+			func(dest ...any) error {
+				*(dest[0].(*uuid.UUID)) = queryRunID
+				*(dest[1].(*uuid.UUID)) = tenantID
+				*(dest[2].(*uuid.UUID)) = schemaVersionID
+				*(dest[3].(**uuid.UUID)) = &semanticLayerID
+				*(dest[4].(*model.QueryPromptContextSource)) = model.QueryPromptContextSourceApproved
+				*(dest[5].(*string)) = "user_123"
+				*(dest[6].(*string)) = "평균 pH는?"
+				*(dest[7].(*model.QueryRunStatus)) = model.QueryRunStatusFailed
+				*(dest[8].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT bad", Valid: true}
+				*(dest[9].(*dbsql.NullString)) = dbsql.NullString{}
+				*(dest[10].(*[]byte)) = []byte(`[{"sql":"SELECT bad","error":"Unknown column","stage":"execution"}]`)
+				*(dest[11].(*[]byte)) = []byte(`["warning-a"]`)
+				*(dest[12].(*int64)) = 0
+				*(dest[13].(*int64)) = 27
+				*(dest[14].(*dbsql.NullString)) = dbsql.NullString{String: "execution", Valid: true}
+				*(dest[15].(*dbsql.NullString)) = dbsql.NullString{String: "Unknown column", Valid: true}
+				*(dest[16].(*time.Time)) = completedAt.Add(-time.Minute)
+				*(dest[17].(**time.Time)) = &completedAt
+				*(dest[18].(*dbsql.NullString)) = dbsql.NullString{String: "user_456", Valid: true}
+				*(dest[19].(*dbsql.NullString)) = dbsql.NullString{String: string(model.QueryFeedbackRatingDown), Valid: true}
+				*(dest[20].(*dbsql.NullString)) = dbsql.NullString{String: "조인이 잘못됐습니다.", Valid: true}
+				*(dest[21].(*dbsql.NullString)) = dbsql.NullString{String: "SELECT AVG(ph) FROM readings", Valid: true}
+				*(dest[22].(*dbsql.NullTime)) = dbsql.NullTime{Time: feedbackCreatedAt, Valid: true}
+				*(dest[23].(*dbsql.NullTime)) = dbsql.NullTime{Time: feedbackUpdatedAt, Valid: true}
+				*(dest[24].(*bool)) = false
+				*(dest[25].(**time.Time)) = nil
+				*(dest[26].(*time.Time)) = reviewSignalAt
+				return nil
+			},
+		},
+	}
+	repo := &TenantQueryRunRepository{
+		db: &fakeTenantDB{
+			queryFn: func(_ context.Context, sql string, args ...any) (pgx.Rows, error) {
+				if !strings.Contains(sql, "WITH latest_feedback AS") {
+					t.Fatalf("unexpected SQL: %q", sql)
+				}
+				if !strings.Contains(sql, "r.reviewed_at IS NULL") {
+					t.Fatalf("open queue SQL missing review filter: %q", sql)
+				}
+				if !strings.Contains(sql, "active_example.source_query_run_id IS NULL") {
+					t.Fatalf("open queue SQL missing example filter: %q", sql)
+				}
+				if len(args) != 2 || args[0] != tenantID || args[1] != 50 {
+					t.Fatalf("unexpected args: %#v", args)
+				}
+				return rows, nil
+			},
+		},
+	}
+
+	got, err := repo.ListReviewQueue(
+		context.Background(),
+		tenantID,
+		model.ReviewQueueFilterOpen,
+		50,
+	)
+	if err != nil {
+		t.Fatalf("ListReviewQueue returned error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("len(got) = %d, want 1", len(got))
+	}
+	item := got[0]
+	if item.Run.ID != queryRunID || !item.HasFeedback || item.LatestFeedback == nil {
+		t.Fatalf("review item = %+v", item)
+	}
+	if item.LatestFeedback.Rating != model.QueryFeedbackRatingDown {
+		t.Fatalf("latest feedback = %+v", item.LatestFeedback)
+	}
+	if item.HasActiveCanonicalExample {
+		t.Fatalf("HasActiveCanonicalExample = true, want false")
+	}
+	if item.ReviewedAt != nil {
+		t.Fatalf("ReviewedAt = %v, want nil", item.ReviewedAt)
+	}
+	if !item.ReviewSignalAt.Equal(reviewSignalAt) {
+		t.Fatalf("ReviewSignalAt = %v, want %v", item.ReviewSignalAt, reviewSignalAt)
+	}
+}
+
+func TestTenantQueryRunRepositoryMarkReviewed(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	queryRunID := uuid.New()
+	reviewedAt := time.Unix(1_700_001_100, 0).UTC()
+	repo := &TenantQueryRunRepository{
+		db: &fakeTenantDB{
+			execFn: func(_ context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+				if !strings.Contains(sql, "UPDATE tenant_query_runs") {
+					t.Fatalf("unexpected SQL: %q", sql)
+				}
+				if len(args) != 4 {
+					t.Fatalf("args len = %d, want 4", len(args))
+				}
+				if args[0] != tenantID || args[1] != queryRunID {
+					t.Fatalf("unexpected ids: %#v", args)
+				}
+				if args[3] != "owner_123" {
+					t.Fatalf("reviewed_by_user_id = %#v, want owner_123", args[3])
+				}
+				return pgconn.NewCommandTag("UPDATE 1"), nil
+			},
+		},
+	}
+
+	if err := repo.MarkReviewed(
+		context.Background(),
+		tenantID,
+		queryRunID,
+		reviewedAt,
+		"owner_123",
+	); err != nil {
+		t.Fatalf("MarkReviewed returned error: %v", err)
+	}
+}
+
 func TestTenantQueryFeedbackRepositoryUpsert(t *testing.T) {
 	t.Parallel()
 
