@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 	"time"
@@ -35,6 +36,8 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/handler"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
 )
+
+const frontendDistDir = "web/dist"
 
 func main() {
 	if err := run(); err != nil {
@@ -202,6 +205,18 @@ func run() error {
 		onboardingHandler,
 	)
 	agentPath, agentSvc := agentv1connect.NewAgentServiceHandler(agentHandler)
+	frontendRuntimeConfigHandler := handler.NewFrontendRuntimeConfigHandler(
+		handler.FrontendRuntimeConfig{
+			ClerkPublishableKey: cfg.ClerkPublishableKey,
+			SentryDSN:           cfg.FrontendSentryDSN,
+			SentryEnvironment:   cfg.FrontendSentryEnvironment,
+			SentryRelease:       cfg.FrontendSentryRelease,
+		},
+	)
+	frontendHandler, err := loadFrontendHandler(cfg)
+	if err != nil {
+		return err
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -210,6 +225,8 @@ func run() error {
 	r.Use(sentryMiddleware())
 
 	// Public
+	r.Get("/app-config.json", frontendRuntimeConfigHandler.JSON)
+	r.Head("/app-config.json", frontendRuntimeConfigHandler.JSON)
 	r.With(middleware.Timeout(30*time.Second)).
 		Get("/healthz", healthHandler.Healthz)
 
@@ -257,6 +274,7 @@ func run() error {
 		r.Get("/api/debug/agents", debugAgentHandler.ListSessions)
 		r.Post("/api/debug/agents/{sessionID}/ping", debugAgentHandler.PingSession)
 	}
+	registerFrontendRoutes(r, frontendHandler)
 
 	// h2c lets the agent tunnel use HTTP/2 over cleartext TCP (no TLS required
 	// locally). Connect server-streaming requires HTTP/2; without this the
@@ -300,6 +318,40 @@ func run() error {
 	}
 	slog.Info("control-plane stopped")
 	return nil
+}
+
+func loadFrontendHandler(cfg config.Config) (http.Handler, error) {
+	frontendHandler, err := handler.NewFrontendHandler(frontendDistDir)
+	switch {
+	case err == nil:
+		return frontendHandler, nil
+	case errors.Is(err, os.ErrNotExist):
+		if cfg.Env == "production" {
+			return nil, fmt.Errorf(
+				"frontend assets missing at %s: %w",
+				filepath.Join(frontendDistDir, "index.html"),
+				err,
+			)
+		}
+		slog.Warn(
+			"frontend assets missing; SPA routes disabled",
+			"path",
+			filepath.Join(frontendDistDir, "index.html"),
+		)
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("load frontend assets: %w", err)
+	}
+}
+
+func registerFrontendRoutes(r chi.Router, frontend http.Handler) {
+	if frontend == nil {
+		return
+	}
+	r.Get("/", frontend.ServeHTTP)
+	r.Head("/", frontend.ServeHTTP)
+	r.Get("/*", frontend.ServeHTTP)
+	r.Head("/*", frontend.ServeHTTP)
 }
 
 func initSentry(cfg config.Config) error {

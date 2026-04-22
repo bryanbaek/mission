@@ -1,3 +1,10 @@
+FROM node:20-alpine AS web-build
+WORKDIR /src/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web ./
+RUN npm run build
+
 FROM golang:1.25-alpine AS build
 WORKDIR /src
 RUN apk add --no-cache ca-certificates
@@ -8,7 +15,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -trimpath -ldflags="-s -w" -o /out/control-plane ./cmd/control-plane
 
 FROM gcr.io/distroless/static-debian12:nonroot
+WORKDIR /app
 COPY --from=build /out/control-plane /control-plane
+COPY --from=web-build /src/web/dist /app/web/dist
 EXPOSE 8080
 USER nonroot:nonroot
 ENTRYPOINT ["/control-plane"]

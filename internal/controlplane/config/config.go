@@ -9,34 +9,37 @@ import (
 )
 
 type Config struct {
-	Env                     string
-	HTTPPort                int
-	ShutdownTimeout         time.Duration
-	DatabaseURL             string
-	DBMaxConns              int32
-	LogLevel                string
-	ClerkSecretKey          string
-	ClerkPublishableKey     string
-	PublicControlPlaneURL   string
-	AnthropicAPIKey         string
-	OpenAIAPIKey            string
-	DefaultLLMProvider      string
-	SemanticLayerModel      string
-	QueryModel              string
-	EdgeAgentVersion        string
-	EdgeAgentImageRepo      string
-	EdgeAgentImage          string
-	SentryDSN               string
-	SentryEnvironment       string
-	SentryRelease           string
-	AnthropicPreflightModel string
-	OpenAIPreflightModel    string
+	Env                       string
+	HTTPPort                  int
+	ShutdownTimeout           time.Duration
+	DatabaseURL               string
+	DBMaxConns                int32
+	LogLevel                  string
+	ClerkSecretKey            string
+	ClerkPublishableKey       string
+	FrontendSentryDSN         string
+	FrontendSentryEnvironment string
+	FrontendSentryRelease     string
+	PublicControlPlaneURL     string
+	AnthropicAPIKey           string
+	OpenAIAPIKey              string
+	DefaultLLMProvider        string
+	SemanticLayerModel        string
+	QueryModel                string
+	EdgeAgentVersion          string
+	EdgeAgentImageRepo        string
+	EdgeAgentImage            string
+	SentryDSN                 string
+	SentryEnvironment         string
+	SentryRelease             string
+	AnthropicPreflightModel   string
+	OpenAIPreflightModel      string
 }
 
 func Load() (Config, error) {
-	port, err := strconv.Atoi(getenv("HTTP_PORT", "8080"))
+	port, err := loadHTTPPort()
 	if err != nil {
-		return Config{}, fmt.Errorf("invalid HTTP_PORT: %w", err)
+		return Config{}, err
 	}
 	shutdownSecs, err := strconv.Atoi(getenv("SHUTDOWN_TIMEOUT_SECONDS", "10"))
 	if err != nil {
@@ -52,9 +55,16 @@ func Load() (Config, error) {
 		ShutdownTimeout: time.Duration(shutdownSecs) * time.Second,
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		DBMaxConns:      int32(dbMaxConns),
-		LogLevel:                getenv("LOG_LEVEL", "info"),
-		ClerkSecretKey:          os.Getenv("CLERK_SECRET_KEY"),
-		ClerkPublishableKey:     firstNonEmpty(os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"), os.Getenv("CLERK_PUBLISHABLE_KEY")),
+		LogLevel:            getenv("LOG_LEVEL", "info"),
+		ClerkSecretKey:      os.Getenv("CLERK_SECRET_KEY"),
+		ClerkPublishableKey: firstNonEmpty(os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"), os.Getenv("CLERK_PUBLISHABLE_KEY")),
+		FrontendSentryDSN:   firstNonEmpty(os.Getenv("VITE_SENTRY_DSN"), os.Getenv("SENTRY_DSN")),
+		FrontendSentryEnvironment: firstNonEmpty(
+			os.Getenv("VITE_SENTRY_ENVIRONMENT"),
+			os.Getenv("SENTRY_ENVIRONMENT"),
+			getenv("ENV", "development"),
+		),
+		FrontendSentryRelease: firstNonEmpty(os.Getenv("VITE_SENTRY_RELEASE"), os.Getenv("SENTRY_RELEASE")),
 		PublicControlPlaneURL:   strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
 		AnthropicAPIKey:         os.Getenv("ANTHROPIC_API_KEY"),
 		OpenAIAPIKey:            os.Getenv("OPENAI_API_KEY"),
@@ -89,6 +99,18 @@ func Load() (Config, error) {
 		cfg.PublicControlPlaneURL = fmt.Sprintf("http://localhost:%d", cfg.HTTPPort)
 	}
 	return cfg, nil
+}
+
+func loadHTTPPort() (int, error) {
+	raw := strings.TrimSpace(firstNonEmpty(os.Getenv("PORT"), os.Getenv("HTTP_PORT")))
+	if raw == "" {
+		raw = "8080"
+	}
+	port, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0, fmt.Errorf("invalid PORT/HTTP_PORT: %w", err)
+	}
+	return port, nil
 }
 
 func getenv(key, fallback string) string {

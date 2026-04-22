@@ -12,7 +12,9 @@ import { MemoryRouter } from "react-router-dom";
 import ChatPage from "./ChatPage";
 import {
   AskQuestionResponseSchema,
+  QueryPromptContextSource,
   QueryFeedbackRating,
+  QueryRunStatus,
 } from "../gen/query/v1/query_pb";
 import type { Locale } from "../lib/i18n";
 import { QueryClientContext, type QueryClient } from "../lib/queryClient";
@@ -35,6 +37,7 @@ function makeTimestamp(iso: string): Timestamp {
 function renderWithClients(options?: {
   listTenants?: ReturnType<typeof vi.fn>;
   askQuestion?: ReturnType<typeof vi.fn>;
+  listMyQueryRuns?: ReturnType<typeof vi.fn>;
   listCanonicalQueryExamples?: ReturnType<typeof vi.fn>;
   submitQueryFeedback?: ReturnType<typeof vi.fn>;
   createCanonicalQueryExample?: ReturnType<typeof vi.fn>;
@@ -79,6 +82,11 @@ function renderWithClients(options?: {
             stage: "execution",
           },
         ],
+      }),
+    listMyQueryRuns:
+      options?.listMyQueryRuns ??
+      vi.fn().mockResolvedValue({
+        runs: [],
       }),
     listCanonicalQueryExamples:
       options?.listCanonicalQueryExamples ??
@@ -160,6 +168,49 @@ function renderWithClients(options?: {
   );
 }
 
+function makeStoredRun(
+  overrides?: Partial<{
+    id: string;
+    question: string;
+    status: QueryRunStatus;
+    promptContextSource: QueryPromptContextSource;
+    sqlOriginal: string;
+    sqlExecuted: string;
+    rowCount: bigint;
+    elapsedMs: bigint;
+    errorStage: string;
+    errorMessage: string;
+    warnings: string[];
+    attempts: Array<{ sql: string; error: string; stage: string }>;
+    createdAt: Timestamp;
+    completedAt?: Timestamp;
+  }>,
+) {
+  return {
+    id: "stored-run-1",
+    question: "저장된 최근 질문",
+    status: QueryRunStatus.SUCCEEDED,
+    promptContextSource: QueryPromptContextSource.APPROVED,
+    sqlOriginal: "SELECT AVG(ph) FROM readings",
+    sqlExecuted: "SELECT AVG(ph) FROM readings LIMIT 1000",
+    rowCount: 1n,
+    elapsedMs: 22n,
+    errorStage: "",
+    errorMessage: "",
+    warnings: ["승인된 시맨틱 레이어를 사용했습니다."],
+    attempts: [
+      {
+        sql: "SELECT AVG(ph) FROM readings",
+        error: "",
+        stage: "execution",
+      },
+    ],
+    createdAt: makeTimestamp("2026-04-20T10:00:00Z"),
+    completedAt: makeTimestamp("2026-04-20T10:00:05Z"),
+    ...overrides,
+  };
+}
+
 describe("ChatPage", () => {
   beforeEach(() => {
     vi.spyOn(Date, "now").mockReturnValue(1_713_600_000_000);
@@ -175,7 +226,44 @@ describe("ChatPage", () => {
 
     expect(await screen.findByText("에코텍")).toBeInTheDocument();
     expect(
-      screen.getByText(/Send your first question to see the summary/),
+      screen.getByText(/Ask a question to see the live summary/),
+    ).toBeInTheDocument();
+  });
+
+  it("loads persistent history from the server without rendering live rows or summary", async () => {
+    renderWithClients({
+      listMyQueryRuns: vi.fn().mockResolvedValue({
+        runs: [
+          makeStoredRun({
+            question: "저장된 최근 질문",
+            status: QueryRunStatus.FAILED,
+            promptContextSource: QueryPromptContextSource.RAW_SCHEMA,
+            errorStage: "execution",
+            errorMessage: "Unknown column",
+            completedAt: undefined,
+          }),
+        ],
+      }),
+    });
+
+    expect(await screen.findByText("My recent queries")).toBeInTheDocument();
+    expect(await screen.findByText("저장된 최근 질문")).toBeInTheDocument();
+    expect(screen.getByText("Metadata only")).toBeInTheDocument();
+    expect(screen.getByText("Last failure")).toBeInTheDocument();
+    expect(screen.queryByText("Summary (backend response)")).not.toBeInTheDocument();
+    expect(screen.queryByText("Result data")).not.toBeInTheDocument();
+  });
+
+  it("shows persistent-history load errors separately from current-session empty state", async () => {
+    renderWithClients({
+      listMyQueryRuns: vi
+        .fn()
+        .mockRejectedValue(new Error("history load failed")),
+    });
+
+    expect(await screen.findByText("history load failed")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Ask a question to see the live summary/),
     ).toBeInTheDocument();
   });
 
@@ -235,6 +323,64 @@ describe("ChatPage", () => {
     expect(screen.getByText("Executed SQL")).toBeInTheDocument();
   });
 
+  it("reruns a stored query from persistent history", async () => {
+    let resolveAsk:
+      | ((value: {
+          queryRunId: string;
+          sqlOriginal: string;
+          sqlExecuted: string;
+          limitInjected: boolean;
+          columns: string[];
+          rows: Array<{ values: Record<string, string> }>;
+          rowCount: bigint;
+          elapsedMs: bigint;
+          summaryKo: string;
+          warnings: string[];
+          attempts: Array<{ sql: string; error: string; stage: string }>;
+        }) => void)
+      | undefined;
+    const askQuestion = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAsk = resolve;
+        }),
+    );
+
+    renderWithClients({
+      askQuestion,
+      listMyQueryRuns: vi.fn().mockResolvedValue({
+        runs: [makeStoredRun({ question: "저장된 최근 질문" })],
+      }),
+    });
+
+    const textarea = await screen.findByLabelText("Question");
+    fireEvent.click(await screen.findByRole("button", { name: "Rerun" }));
+
+    await waitFor(() =>
+      expect(askQuestion).toHaveBeenCalledWith({
+        tenantId: "tenant-1",
+        question: "저장된 최근 질문",
+      }),
+    );
+    expect(textarea).toHaveValue("저장된 최근 질문");
+
+    resolveAsk?.({
+      queryRunId: "run-rerun-1",
+      sqlOriginal: "SELECT AVG(ph) FROM readings",
+      sqlExecuted: "SELECT AVG(ph) FROM readings",
+      limitInjected: false,
+      columns: ["avg_ph"],
+      rows: [{ values: { avg_ph: "7.20" } }],
+      rowCount: 1n,
+      elapsedMs: 25n,
+      summaryKo: "평균 pH는 7.20입니다.",
+      warnings: [],
+      attempts: [{ sql: "SELECT AVG(ph) FROM readings", error: "", stage: "execution" }],
+    });
+
+    expect(await screen.findByText("평균 pH는 7.20입니다.")).toBeInTheDocument();
+  });
+
   it("surfaces backend attempt details on failed generation", async () => {
     const askQuestion = vi.fn().mockRejectedValue(
       new ConnectError(
@@ -289,6 +435,72 @@ describe("ChatPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Attempt 2 · execution")).toBeInTheDocument();
     expect(screen.getByText("Unknown column 'bad_column'")).toBeInTheDocument();
+  });
+
+  it("refreshes persistent history after a successful question", async () => {
+    const askQuestion = vi.fn().mockResolvedValue({
+      queryRunId: "run-success-history",
+      sqlOriginal: "SELECT AVG(ph) FROM readings",
+      sqlExecuted: "SELECT AVG(ph) FROM readings",
+      limitInjected: false,
+      columns: ["avg_ph"],
+      rows: [{ values: { avg_ph: "7.20" } }],
+      rowCount: 1n,
+      elapsedMs: 20n,
+      summaryKo: "평균 pH는 7.20입니다.",
+      warnings: [],
+      attempts: [{ sql: "SELECT AVG(ph) FROM readings", error: "", stage: "execution" }],
+    });
+    const listMyQueryRuns = vi
+      .fn()
+      .mockResolvedValueOnce({ runs: [] })
+      .mockResolvedValueOnce({
+        runs: [makeStoredRun({ id: "stored-run-success", question: "서버에 저장된 성공 질문" })],
+      });
+
+    renderWithClients({ askQuestion, listMyQueryRuns });
+
+    fireEvent.change(await screen.findByLabelText("Question"), {
+      target: { value: "평균 pH를 보여줘" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask question" }));
+
+    await waitFor(() => expect(listMyQueryRuns).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByText("서버에 저장된 성공 질문"),
+    ).toBeInTheDocument();
+  });
+
+  it("refreshes persistent history after a failed question", async () => {
+    const askQuestion = vi.fn().mockRejectedValue(
+      new ConnectError("query failed", Code.FailedPrecondition),
+    );
+    const listMyQueryRuns = vi
+      .fn()
+      .mockResolvedValueOnce({ runs: [] })
+      .mockResolvedValueOnce({
+        runs: [
+          makeStoredRun({
+            id: "stored-run-failed",
+            question: "서버에 저장된 실패 질문",
+            status: QueryRunStatus.FAILED,
+            errorStage: "execution",
+            errorMessage: "Permission denied",
+          }),
+        ],
+      });
+
+    renderWithClients({ askQuestion, listMyQueryRuns });
+
+    fireEvent.change(await screen.findByLabelText("Question"), {
+      target: { value: "실패하는 질문" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Ask question" }));
+
+    await waitFor(() => expect(listMyQueryRuns).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByText("서버에 저장된 실패 질문"),
+    ).toBeInTheDocument();
   });
 
   it("surfaces tenant loading errors", async () => {

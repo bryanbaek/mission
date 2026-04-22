@@ -23,6 +23,12 @@ type queryServiceController interface {
 		clerkUserID string,
 		question string,
 	) (controller.AskQuestionResult, error)
+	ListMyQueryRuns(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+		limit int32,
+	) (controller.ListMyQueryRunsResult, error)
 	SubmitFeedback(
 		ctx context.Context,
 		tenantID uuid.UUID,
@@ -84,6 +90,37 @@ func (h *QueryHandler) AskQuestion(
 	}
 
 	return connect.NewResponse(askResultToProto(result)), nil
+}
+
+func (h *QueryHandler) ListMyQueryRuns(
+	ctx context.Context,
+	req *connect.Request[queryv1.ListMyQueryRunsRequest],
+) (*connect.Response[queryv1.ListMyQueryRunsResponse], error) {
+	user, ok := auth.FromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(
+			connect.CodeUnauthenticated,
+			errors.New("unauthenticated"),
+		)
+	}
+
+	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := h.ctrl.ListMyQueryRuns(ctx, tenantID, user.ID, req.Msg.Limit)
+	if err != nil {
+		return nil, queryReadError(err)
+	}
+
+	runs := make([]*queryv1.QueryRunHistoryItem, 0, len(result.Runs))
+	for _, run := range result.Runs {
+		runs = append(runs, queryRunHistoryToProto(run))
+	}
+	return connect.NewResponse(&queryv1.ListMyQueryRunsResponse{
+		Runs: runs,
+	}), nil
 }
 
 func (h *QueryHandler) SubmitQueryFeedback(
@@ -251,6 +288,15 @@ func queryAskError(err error, result controller.AskQuestionResult) error {
 	}
 }
 
+func queryReadError(err error) error {
+	switch {
+	case errors.Is(err, controller.ErrQueryAccessDenied):
+		return connect.NewError(connect.CodePermissionDenied, err)
+	default:
+		return connect.NewError(connect.CodeInternal, err)
+	}
+}
+
 func queryMutationError(err error) error {
 	switch {
 	case errors.Is(err, controller.ErrQueryAccessDenied),
@@ -266,6 +312,20 @@ func queryMutationError(err error) error {
 	default:
 		return connect.NewError(connect.CodeInternal, err)
 	}
+}
+
+func attemptsToProto(
+	attempts []controller.AskQuestionAttempt,
+) []*queryv1.AttemptDebug {
+	out := make([]*queryv1.AttemptDebug, 0, len(attempts))
+	for _, attempt := range attempts {
+		out = append(out, &queryv1.AttemptDebug{
+			Sql:   attempt.SQL,
+			Error: attempt.Error,
+			Stage: attempt.Stage,
+		})
+	}
+	return out
 }
 
 func queryErrorWithDetail(
@@ -299,14 +359,6 @@ func askResultToProto(
 		}
 		rows = append(rows, &queryv1.Row{Values: values})
 	}
-	attempts := make([]*queryv1.AttemptDebug, 0, len(result.Attempts))
-	for _, attempt := range result.Attempts {
-		attempts = append(attempts, &queryv1.AttemptDebug{
-			Sql:   attempt.SQL,
-			Error: attempt.Error,
-			Stage: attempt.Stage,
-		})
-	}
 	queryRunID := ""
 	if result.QueryRunID != uuid.Nil {
 		queryRunID = result.QueryRunID.String()
@@ -321,9 +373,47 @@ func askResultToProto(
 		ElapsedMs:     result.ElapsedMS,
 		SummaryKo:     result.SummaryKo,
 		Warnings:      append([]string(nil), result.Warnings...),
-		Attempts:      attempts,
+		Attempts:      attemptsToProto(result.Attempts),
 		QueryRunId:    queryRunID,
 	}
+}
+
+func queryRunHistoryToProto(
+	run model.TenantQueryRun,
+) *queryv1.QueryRunHistoryItem {
+	out := &queryv1.QueryRunHistoryItem{
+		Id:                  run.ID.String(),
+		Question:            run.Question,
+		Status:              queryRunStatusToProto(run.Status),
+		PromptContextSource: queryPromptContextSourceToProto(run.PromptContextSource),
+		SqlOriginal:         run.SQLOriginal,
+		SqlExecuted:         run.SQLExecuted,
+		RowCount:            run.RowCount,
+		ElapsedMs:           run.ElapsedMS,
+		ErrorStage:          run.ErrorStage,
+		ErrorMessage:        run.ErrorMessage,
+		Warnings:            append([]string(nil), run.Warnings...),
+		Attempts:            attemptsToProto(toControllerAttempts(run.Attempts)),
+		CreatedAt:           timestamppb.New(run.CreatedAt),
+	}
+	if run.CompletedAt != nil {
+		out.CompletedAt = timestamppb.New(*run.CompletedAt)
+	}
+	return out
+}
+
+func toControllerAttempts(
+	attempts []model.QueryRunAttempt,
+) []controller.AskQuestionAttempt {
+	out := make([]controller.AskQuestionAttempt, 0, len(attempts))
+	for _, attempt := range attempts {
+		out = append(out, controller.AskQuestionAttempt{
+			SQL:   attempt.SQL,
+			Error: attempt.Error,
+			Stage: attempt.Stage,
+		})
+	}
+	return out
 }
 
 func feedbackToProto(
@@ -376,6 +466,36 @@ func ratingToProto(
 		return queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_DOWN
 	default:
 		return queryv1.QueryFeedbackRating_QUERY_FEEDBACK_RATING_UNSPECIFIED
+	}
+}
+
+func queryRunStatusToProto(
+	status model.QueryRunStatus,
+) queryv1.QueryRunStatus {
+	switch status {
+	case model.QueryRunStatusRunning:
+		return queryv1.QueryRunStatus_QUERY_RUN_STATUS_RUNNING
+	case model.QueryRunStatusSucceeded:
+		return queryv1.QueryRunStatus_QUERY_RUN_STATUS_SUCCEEDED
+	case model.QueryRunStatusFailed:
+		return queryv1.QueryRunStatus_QUERY_RUN_STATUS_FAILED
+	default:
+		return queryv1.QueryRunStatus_QUERY_RUN_STATUS_UNSPECIFIED
+	}
+}
+
+func queryPromptContextSourceToProto(
+	source model.QueryPromptContextSource,
+) queryv1.QueryPromptContextSource {
+	switch source {
+	case model.QueryPromptContextSourceApproved:
+		return queryv1.QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_APPROVED
+	case model.QueryPromptContextSourceDraft:
+		return queryv1.QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_DRAFT
+	case model.QueryPromptContextSourceRawSchema:
+		return queryv1.QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA
+	default:
+		return queryv1.QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED
 	}
 }
 

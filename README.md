@@ -1,6 +1,6 @@
 # Mission
 
-Multi-tenant AI-over-your-database product. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the stack and [DIGITALOCEAN.md](./DIGITALOCEAN.md) for a production deployment guide.
+Multi-tenant AI-over-your-database product. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the stack, [DIGITALOCEAN.md](./DIGITALOCEAN.md) for the DigitalOcean deployment guide, and [GCLOUD.MD](./GCLOUD.MD) for the single-origin Google Cloud Run deployment guide.
 
 ## Prerequisites
 
@@ -94,7 +94,10 @@ Justfile                common commands
 
 ## Deployment
 
-For production deployment on DigitalOcean App Platform, use [DIGITALOCEAN.md](./DIGITALOCEAN.md). It covers the control-plane service, web static site, managed Postgres, ingress rules, and the edge-agent image registry flow.
+For production deployment:
+
+- Use [DIGITALOCEAN.md](./DIGITALOCEAN.md) for the DigitalOcean App Platform topology with a separate static frontend.
+- Use [GCLOUD.MD](./GCLOUD.MD) for the Google Cloud single-origin topology where one Cloud Run service serves both the SPA and the API, backed by Cloud SQL for PostgreSQL.
 
 ## Verify
 

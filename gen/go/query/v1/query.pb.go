@@ -22,6 +22,110 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type QueryRunStatus int32
+
+const (
+	QueryRunStatus_QUERY_RUN_STATUS_UNSPECIFIED QueryRunStatus = 0
+	QueryRunStatus_QUERY_RUN_STATUS_RUNNING     QueryRunStatus = 1
+	QueryRunStatus_QUERY_RUN_STATUS_SUCCEEDED   QueryRunStatus = 2
+	QueryRunStatus_QUERY_RUN_STATUS_FAILED      QueryRunStatus = 3
+)
+
+// Enum value maps for QueryRunStatus.
+var (
+	QueryRunStatus_name = map[int32]string{
+		0: "QUERY_RUN_STATUS_UNSPECIFIED",
+		1: "QUERY_RUN_STATUS_RUNNING",
+		2: "QUERY_RUN_STATUS_SUCCEEDED",
+		3: "QUERY_RUN_STATUS_FAILED",
+	}
+	QueryRunStatus_value = map[string]int32{
+		"QUERY_RUN_STATUS_UNSPECIFIED": 0,
+		"QUERY_RUN_STATUS_RUNNING":     1,
+		"QUERY_RUN_STATUS_SUCCEEDED":   2,
+		"QUERY_RUN_STATUS_FAILED":      3,
+	}
+)
+
+func (x QueryRunStatus) Enum() *QueryRunStatus {
+	p := new(QueryRunStatus)
+	*p = x
+	return p
+}
+
+func (x QueryRunStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (QueryRunStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_query_v1_query_proto_enumTypes[0].Descriptor()
+}
+
+func (QueryRunStatus) Type() protoreflect.EnumType {
+	return &file_query_v1_query_proto_enumTypes[0]
+}
+
+func (x QueryRunStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use QueryRunStatus.Descriptor instead.
+func (QueryRunStatus) EnumDescriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{0}
+}
+
+type QueryPromptContextSource int32
+
+const (
+	QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED QueryPromptContextSource = 0
+	QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_APPROVED    QueryPromptContextSource = 1
+	QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_DRAFT       QueryPromptContextSource = 2
+	QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA  QueryPromptContextSource = 3
+)
+
+// Enum value maps for QueryPromptContextSource.
+var (
+	QueryPromptContextSource_name = map[int32]string{
+		0: "QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED",
+		1: "QUERY_PROMPT_CONTEXT_SOURCE_APPROVED",
+		2: "QUERY_PROMPT_CONTEXT_SOURCE_DRAFT",
+		3: "QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA",
+	}
+	QueryPromptContextSource_value = map[string]int32{
+		"QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED": 0,
+		"QUERY_PROMPT_CONTEXT_SOURCE_APPROVED":    1,
+		"QUERY_PROMPT_CONTEXT_SOURCE_DRAFT":       2,
+		"QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA":  3,
+	}
+)
+
+func (x QueryPromptContextSource) Enum() *QueryPromptContextSource {
+	p := new(QueryPromptContextSource)
+	*p = x
+	return p
+}
+
+func (x QueryPromptContextSource) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (QueryPromptContextSource) Descriptor() protoreflect.EnumDescriptor {
+	return file_query_v1_query_proto_enumTypes[1].Descriptor()
+}
+
+func (QueryPromptContextSource) Type() protoreflect.EnumType {
+	return &file_query_v1_query_proto_enumTypes[1]
+}
+
+func (x QueryPromptContextSource) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use QueryPromptContextSource.Descriptor instead.
+func (QueryPromptContextSource) EnumDescriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{1}
+}
+
 type QueryFeedbackRating int32
 
 const (
@@ -55,11 +159,11 @@ func (x QueryFeedbackRating) String() string {
 }
 
 func (QueryFeedbackRating) Descriptor() protoreflect.EnumDescriptor {
-	return file_query_v1_query_proto_enumTypes[0].Descriptor()
+	return file_query_v1_query_proto_enumTypes[2].Descriptor()
 }
 
 func (QueryFeedbackRating) Type() protoreflect.EnumType {
-	return &file_query_v1_query_proto_enumTypes[0]
+	return &file_query_v1_query_proto_enumTypes[2]
 }
 
 func (x QueryFeedbackRating) Number() protoreflect.EnumNumber {
@@ -68,7 +172,7 @@ func (x QueryFeedbackRating) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use QueryFeedbackRating.Descriptor instead.
 func (QueryFeedbackRating) EnumDescriptor() ([]byte, []int) {
-	return file_query_v1_query_proto_rawDescGZIP(), []int{0}
+	return file_query_v1_query_proto_rawDescGZIP(), []int{2}
 }
 
 // AskQuestionRequest carries a natural-language question from a tenant member.
@@ -968,6 +1072,250 @@ func (*ArchiveCanonicalQueryExampleResponse) Descriptor() ([]byte, []int) {
 	return file_query_v1_query_proto_rawDescGZIP(), []int{13}
 }
 
+type QueryRunHistoryItem struct {
+	state               protoimpl.MessageState   `protogen:"open.v1"`
+	Id                  string                   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Question            string                   `protobuf:"bytes,2,opt,name=question,proto3" json:"question,omitempty"`
+	Status              QueryRunStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=query.v1.QueryRunStatus" json:"status,omitempty"`
+	PromptContextSource QueryPromptContextSource `protobuf:"varint,4,opt,name=prompt_context_source,json=promptContextSource,proto3,enum=query.v1.QueryPromptContextSource" json:"prompt_context_source,omitempty"`
+	SqlOriginal         string                   `protobuf:"bytes,5,opt,name=sql_original,json=sqlOriginal,proto3" json:"sql_original,omitempty"`
+	SqlExecuted         string                   `protobuf:"bytes,6,opt,name=sql_executed,json=sqlExecuted,proto3" json:"sql_executed,omitempty"`
+	RowCount            int64                    `protobuf:"varint,7,opt,name=row_count,json=rowCount,proto3" json:"row_count,omitempty"`
+	ElapsedMs           int64                    `protobuf:"varint,8,opt,name=elapsed_ms,json=elapsedMs,proto3" json:"elapsed_ms,omitempty"`
+	ErrorStage          string                   `protobuf:"bytes,9,opt,name=error_stage,json=errorStage,proto3" json:"error_stage,omitempty"`
+	ErrorMessage        string                   `protobuf:"bytes,10,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	Warnings            []string                 `protobuf:"bytes,11,rep,name=warnings,proto3" json:"warnings,omitempty"`
+	Attempts            []*AttemptDebug          `protobuf:"bytes,12,rep,name=attempts,proto3" json:"attempts,omitempty"`
+	CreatedAt           *timestamppb.Timestamp   `protobuf:"bytes,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CompletedAt         *timestamppb.Timestamp   `protobuf:"bytes,14,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *QueryRunHistoryItem) Reset() {
+	*x = QueryRunHistoryItem{}
+	mi := &file_query_v1_query_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryRunHistoryItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryRunHistoryItem) ProtoMessage() {}
+
+func (x *QueryRunHistoryItem) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryRunHistoryItem.ProtoReflect.Descriptor instead.
+func (*QueryRunHistoryItem) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *QueryRunHistoryItem) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *QueryRunHistoryItem) GetQuestion() string {
+	if x != nil {
+		return x.Question
+	}
+	return ""
+}
+
+func (x *QueryRunHistoryItem) GetStatus() QueryRunStatus {
+	if x != nil {
+		return x.Status
+	}
+	return QueryRunStatus_QUERY_RUN_STATUS_UNSPECIFIED
+}
+
+func (x *QueryRunHistoryItem) GetPromptContextSource() QueryPromptContextSource {
+	if x != nil {
+		return x.PromptContextSource
+	}
+	return QueryPromptContextSource_QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED
+}
+
+func (x *QueryRunHistoryItem) GetSqlOriginal() string {
+	if x != nil {
+		return x.SqlOriginal
+	}
+	return ""
+}
+
+func (x *QueryRunHistoryItem) GetSqlExecuted() string {
+	if x != nil {
+		return x.SqlExecuted
+	}
+	return ""
+}
+
+func (x *QueryRunHistoryItem) GetRowCount() int64 {
+	if x != nil {
+		return x.RowCount
+	}
+	return 0
+}
+
+func (x *QueryRunHistoryItem) GetElapsedMs() int64 {
+	if x != nil {
+		return x.ElapsedMs
+	}
+	return 0
+}
+
+func (x *QueryRunHistoryItem) GetErrorStage() string {
+	if x != nil {
+		return x.ErrorStage
+	}
+	return ""
+}
+
+func (x *QueryRunHistoryItem) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *QueryRunHistoryItem) GetWarnings() []string {
+	if x != nil {
+		return x.Warnings
+	}
+	return nil
+}
+
+func (x *QueryRunHistoryItem) GetAttempts() []*AttemptDebug {
+	if x != nil {
+		return x.Attempts
+	}
+	return nil
+}
+
+func (x *QueryRunHistoryItem) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *QueryRunHistoryItem) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
+type ListMyQueryRunsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMyQueryRunsRequest) Reset() {
+	*x = ListMyQueryRunsRequest{}
+	mi := &file_query_v1_query_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMyQueryRunsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMyQueryRunsRequest) ProtoMessage() {}
+
+func (x *ListMyQueryRunsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMyQueryRunsRequest.ProtoReflect.Descriptor instead.
+func (*ListMyQueryRunsRequest) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListMyQueryRunsRequest) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+func (x *ListMyQueryRunsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListMyQueryRunsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Runs          []*QueryRunHistoryItem `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListMyQueryRunsResponse) Reset() {
+	*x = ListMyQueryRunsResponse{}
+	mi := &file_query_v1_query_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListMyQueryRunsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListMyQueryRunsResponse) ProtoMessage() {}
+
+func (x *ListMyQueryRunsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_query_v1_query_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListMyQueryRunsResponse.ProtoReflect.Descriptor instead.
+func (*ListMyQueryRunsResponse) Descriptor() ([]byte, []int) {
+	return file_query_v1_query_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListMyQueryRunsResponse) GetRuns() []*QueryRunHistoryItem {
+	if x != nil {
+		return x.Runs
+	}
+	return nil
+}
+
 var File_query_v1_query_proto protoreflect.FileDescriptor
 
 const file_query_v1_query_proto_rawDesc = "" +
@@ -1047,13 +1395,48 @@ const file_query_v1_query_proto_rawDesc = "" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1d\n" +
 	"\n" +
 	"example_id\x18\x02 \x01(\tR\texampleId\"&\n" +
-	"$ArchiveCanonicalQueryExampleResponse*z\n" +
+	"$ArchiveCanonicalQueryExampleResponse\"\xdd\x04\n" +
+	"\x13QueryRunHistoryItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
+	"\bquestion\x18\x02 \x01(\tR\bquestion\x120\n" +
+	"\x06status\x18\x03 \x01(\x0e2\x18.query.v1.QueryRunStatusR\x06status\x12V\n" +
+	"\x15prompt_context_source\x18\x04 \x01(\x0e2\".query.v1.QueryPromptContextSourceR\x13promptContextSource\x12!\n" +
+	"\fsql_original\x18\x05 \x01(\tR\vsqlOriginal\x12!\n" +
+	"\fsql_executed\x18\x06 \x01(\tR\vsqlExecuted\x12\x1b\n" +
+	"\trow_count\x18\a \x01(\x03R\browCount\x12\x1d\n" +
+	"\n" +
+	"elapsed_ms\x18\b \x01(\x03R\telapsedMs\x12\x1f\n" +
+	"\verror_stage\x18\t \x01(\tR\n" +
+	"errorStage\x12#\n" +
+	"\rerror_message\x18\n" +
+	" \x01(\tR\ferrorMessage\x12\x1a\n" +
+	"\bwarnings\x18\v \x03(\tR\bwarnings\x122\n" +
+	"\battempts\x18\f \x03(\v2\x16.query.v1.AttemptDebugR\battempts\x129\n" +
+	"\n" +
+	"created_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12=\n" +
+	"\fcompleted_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\"K\n" +
+	"\x16ListMyQueryRunsRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"L\n" +
+	"\x17ListMyQueryRunsResponse\x121\n" +
+	"\x04runs\x18\x01 \x03(\v2\x1d.query.v1.QueryRunHistoryItemR\x04runs*\x8d\x01\n" +
+	"\x0eQueryRunStatus\x12 \n" +
+	"\x1cQUERY_RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18QUERY_RUN_STATUS_RUNNING\x10\x01\x12\x1e\n" +
+	"\x1aQUERY_RUN_STATUS_SUCCEEDED\x10\x02\x12\x1b\n" +
+	"\x17QUERY_RUN_STATUS_FAILED\x10\x03*\xc4\x01\n" +
+	"\x18QueryPromptContextSource\x12+\n" +
+	"'QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED\x10\x00\x12(\n" +
+	"$QUERY_PROMPT_CONTEXT_SOURCE_APPROVED\x10\x01\x12%\n" +
+	"!QUERY_PROMPT_CONTEXT_SOURCE_DRAFT\x10\x02\x12*\n" +
+	"&QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA\x10\x03*z\n" +
 	"\x13QueryFeedbackRating\x12%\n" +
 	"!QUERY_FEEDBACK_RATING_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18QUERY_FEEDBACK_RATING_UP\x10\x01\x12\x1e\n" +
-	"\x1aQUERY_FEEDBACK_RATING_DOWN\x10\x022\xb2\x04\n" +
+	"\x1aQUERY_FEEDBACK_RATING_DOWN\x10\x022\x8a\x05\n" +
 	"\fQueryService\x12J\n" +
-	"\vAskQuestion\x12\x1c.query.v1.AskQuestionRequest\x1a\x1d.query.v1.AskQuestionResponse\x12b\n" +
+	"\vAskQuestion\x12\x1c.query.v1.AskQuestionRequest\x1a\x1d.query.v1.AskQuestionResponse\x12V\n" +
+	"\x0fListMyQueryRuns\x12 .query.v1.ListMyQueryRunsRequest\x1a!.query.v1.ListMyQueryRunsResponse\x12b\n" +
 	"\x13SubmitQueryFeedback\x12$.query.v1.SubmitQueryFeedbackRequest\x1a%.query.v1.SubmitQueryFeedbackResponse\x12z\n" +
 	"\x1bCreateCanonicalQueryExample\x12,.query.v1.CreateCanonicalQueryExampleRequest\x1a-.query.v1.CreateCanonicalQueryExampleResponse\x12w\n" +
 	"\x1aListCanonicalQueryExamples\x12+.query.v1.ListCanonicalQueryExamplesRequest\x1a,.query.v1.ListCanonicalQueryExamplesResponse\x12}\n" +
@@ -1073,54 +1456,67 @@ func file_query_v1_query_proto_rawDescGZIP() []byte {
 	return file_query_v1_query_proto_rawDescData
 }
 
-var file_query_v1_query_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_query_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_query_v1_query_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_query_v1_query_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_query_v1_query_proto_goTypes = []any{
-	(QueryFeedbackRating)(0),                     // 0: query.v1.QueryFeedbackRating
-	(*AskQuestionRequest)(nil),                   // 1: query.v1.AskQuestionRequest
-	(*Row)(nil),                                  // 2: query.v1.Row
-	(*AttemptDebug)(nil),                         // 3: query.v1.AttemptDebug
-	(*AskQuestionResponse)(nil),                  // 4: query.v1.AskQuestionResponse
-	(*QueryFeedback)(nil),                        // 5: query.v1.QueryFeedback
-	(*SubmitQueryFeedbackRequest)(nil),           // 6: query.v1.SubmitQueryFeedbackRequest
-	(*SubmitQueryFeedbackResponse)(nil),          // 7: query.v1.SubmitQueryFeedbackResponse
-	(*CanonicalQueryExample)(nil),                // 8: query.v1.CanonicalQueryExample
-	(*CreateCanonicalQueryExampleRequest)(nil),   // 9: query.v1.CreateCanonicalQueryExampleRequest
-	(*CreateCanonicalQueryExampleResponse)(nil),  // 10: query.v1.CreateCanonicalQueryExampleResponse
-	(*ListCanonicalQueryExamplesRequest)(nil),    // 11: query.v1.ListCanonicalQueryExamplesRequest
-	(*ListCanonicalQueryExamplesResponse)(nil),   // 12: query.v1.ListCanonicalQueryExamplesResponse
-	(*ArchiveCanonicalQueryExampleRequest)(nil),  // 13: query.v1.ArchiveCanonicalQueryExampleRequest
-	(*ArchiveCanonicalQueryExampleResponse)(nil), // 14: query.v1.ArchiveCanonicalQueryExampleResponse
-	nil,                           // 15: query.v1.Row.ValuesEntry
-	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
+	(QueryRunStatus)(0),                          // 0: query.v1.QueryRunStatus
+	(QueryPromptContextSource)(0),                // 1: query.v1.QueryPromptContextSource
+	(QueryFeedbackRating)(0),                     // 2: query.v1.QueryFeedbackRating
+	(*AskQuestionRequest)(nil),                   // 3: query.v1.AskQuestionRequest
+	(*Row)(nil),                                  // 4: query.v1.Row
+	(*AttemptDebug)(nil),                         // 5: query.v1.AttemptDebug
+	(*AskQuestionResponse)(nil),                  // 6: query.v1.AskQuestionResponse
+	(*QueryFeedback)(nil),                        // 7: query.v1.QueryFeedback
+	(*SubmitQueryFeedbackRequest)(nil),           // 8: query.v1.SubmitQueryFeedbackRequest
+	(*SubmitQueryFeedbackResponse)(nil),          // 9: query.v1.SubmitQueryFeedbackResponse
+	(*CanonicalQueryExample)(nil),                // 10: query.v1.CanonicalQueryExample
+	(*CreateCanonicalQueryExampleRequest)(nil),   // 11: query.v1.CreateCanonicalQueryExampleRequest
+	(*CreateCanonicalQueryExampleResponse)(nil),  // 12: query.v1.CreateCanonicalQueryExampleResponse
+	(*ListCanonicalQueryExamplesRequest)(nil),    // 13: query.v1.ListCanonicalQueryExamplesRequest
+	(*ListCanonicalQueryExamplesResponse)(nil),   // 14: query.v1.ListCanonicalQueryExamplesResponse
+	(*ArchiveCanonicalQueryExampleRequest)(nil),  // 15: query.v1.ArchiveCanonicalQueryExampleRequest
+	(*ArchiveCanonicalQueryExampleResponse)(nil), // 16: query.v1.ArchiveCanonicalQueryExampleResponse
+	(*QueryRunHistoryItem)(nil),                  // 17: query.v1.QueryRunHistoryItem
+	(*ListMyQueryRunsRequest)(nil),               // 18: query.v1.ListMyQueryRunsRequest
+	(*ListMyQueryRunsResponse)(nil),              // 19: query.v1.ListMyQueryRunsResponse
+	nil,                                          // 20: query.v1.Row.ValuesEntry
+	(*timestamppb.Timestamp)(nil),                // 21: google.protobuf.Timestamp
 }
 var file_query_v1_query_proto_depIdxs = []int32{
-	15, // 0: query.v1.Row.values:type_name -> query.v1.Row.ValuesEntry
-	2,  // 1: query.v1.AskQuestionResponse.rows:type_name -> query.v1.Row
-	3,  // 2: query.v1.AskQuestionResponse.attempts:type_name -> query.v1.AttemptDebug
-	0,  // 3: query.v1.QueryFeedback.rating:type_name -> query.v1.QueryFeedbackRating
-	16, // 4: query.v1.QueryFeedback.created_at:type_name -> google.protobuf.Timestamp
-	16, // 5: query.v1.QueryFeedback.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 6: query.v1.SubmitQueryFeedbackRequest.rating:type_name -> query.v1.QueryFeedbackRating
-	5,  // 7: query.v1.SubmitQueryFeedbackResponse.feedback:type_name -> query.v1.QueryFeedback
-	16, // 8: query.v1.CanonicalQueryExample.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 9: query.v1.CreateCanonicalQueryExampleResponse.example:type_name -> query.v1.CanonicalQueryExample
-	8,  // 10: query.v1.ListCanonicalQueryExamplesResponse.examples:type_name -> query.v1.CanonicalQueryExample
-	1,  // 11: query.v1.QueryService.AskQuestion:input_type -> query.v1.AskQuestionRequest
-	6,  // 12: query.v1.QueryService.SubmitQueryFeedback:input_type -> query.v1.SubmitQueryFeedbackRequest
-	9,  // 13: query.v1.QueryService.CreateCanonicalQueryExample:input_type -> query.v1.CreateCanonicalQueryExampleRequest
-	11, // 14: query.v1.QueryService.ListCanonicalQueryExamples:input_type -> query.v1.ListCanonicalQueryExamplesRequest
-	13, // 15: query.v1.QueryService.ArchiveCanonicalQueryExample:input_type -> query.v1.ArchiveCanonicalQueryExampleRequest
-	4,  // 16: query.v1.QueryService.AskQuestion:output_type -> query.v1.AskQuestionResponse
-	7,  // 17: query.v1.QueryService.SubmitQueryFeedback:output_type -> query.v1.SubmitQueryFeedbackResponse
-	10, // 18: query.v1.QueryService.CreateCanonicalQueryExample:output_type -> query.v1.CreateCanonicalQueryExampleResponse
-	12, // 19: query.v1.QueryService.ListCanonicalQueryExamples:output_type -> query.v1.ListCanonicalQueryExamplesResponse
-	14, // 20: query.v1.QueryService.ArchiveCanonicalQueryExample:output_type -> query.v1.ArchiveCanonicalQueryExampleResponse
-	16, // [16:21] is the sub-list for method output_type
-	11, // [11:16] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	20, // 0: query.v1.Row.values:type_name -> query.v1.Row.ValuesEntry
+	4,  // 1: query.v1.AskQuestionResponse.rows:type_name -> query.v1.Row
+	5,  // 2: query.v1.AskQuestionResponse.attempts:type_name -> query.v1.AttemptDebug
+	2,  // 3: query.v1.QueryFeedback.rating:type_name -> query.v1.QueryFeedbackRating
+	21, // 4: query.v1.QueryFeedback.created_at:type_name -> google.protobuf.Timestamp
+	21, // 5: query.v1.QueryFeedback.updated_at:type_name -> google.protobuf.Timestamp
+	2,  // 6: query.v1.SubmitQueryFeedbackRequest.rating:type_name -> query.v1.QueryFeedbackRating
+	7,  // 7: query.v1.SubmitQueryFeedbackResponse.feedback:type_name -> query.v1.QueryFeedback
+	21, // 8: query.v1.CanonicalQueryExample.created_at:type_name -> google.protobuf.Timestamp
+	10, // 9: query.v1.CreateCanonicalQueryExampleResponse.example:type_name -> query.v1.CanonicalQueryExample
+	10, // 10: query.v1.ListCanonicalQueryExamplesResponse.examples:type_name -> query.v1.CanonicalQueryExample
+	0,  // 11: query.v1.QueryRunHistoryItem.status:type_name -> query.v1.QueryRunStatus
+	1,  // 12: query.v1.QueryRunHistoryItem.prompt_context_source:type_name -> query.v1.QueryPromptContextSource
+	5,  // 13: query.v1.QueryRunHistoryItem.attempts:type_name -> query.v1.AttemptDebug
+	21, // 14: query.v1.QueryRunHistoryItem.created_at:type_name -> google.protobuf.Timestamp
+	21, // 15: query.v1.QueryRunHistoryItem.completed_at:type_name -> google.protobuf.Timestamp
+	17, // 16: query.v1.ListMyQueryRunsResponse.runs:type_name -> query.v1.QueryRunHistoryItem
+	3,  // 17: query.v1.QueryService.AskQuestion:input_type -> query.v1.AskQuestionRequest
+	18, // 18: query.v1.QueryService.ListMyQueryRuns:input_type -> query.v1.ListMyQueryRunsRequest
+	8,  // 19: query.v1.QueryService.SubmitQueryFeedback:input_type -> query.v1.SubmitQueryFeedbackRequest
+	11, // 20: query.v1.QueryService.CreateCanonicalQueryExample:input_type -> query.v1.CreateCanonicalQueryExampleRequest
+	13, // 21: query.v1.QueryService.ListCanonicalQueryExamples:input_type -> query.v1.ListCanonicalQueryExamplesRequest
+	15, // 22: query.v1.QueryService.ArchiveCanonicalQueryExample:input_type -> query.v1.ArchiveCanonicalQueryExampleRequest
+	6,  // 23: query.v1.QueryService.AskQuestion:output_type -> query.v1.AskQuestionResponse
+	19, // 24: query.v1.QueryService.ListMyQueryRuns:output_type -> query.v1.ListMyQueryRunsResponse
+	9,  // 25: query.v1.QueryService.SubmitQueryFeedback:output_type -> query.v1.SubmitQueryFeedbackResponse
+	12, // 26: query.v1.QueryService.CreateCanonicalQueryExample:output_type -> query.v1.CreateCanonicalQueryExampleResponse
+	14, // 27: query.v1.QueryService.ListCanonicalQueryExamples:output_type -> query.v1.ListCanonicalQueryExamplesResponse
+	16, // 28: query.v1.QueryService.ArchiveCanonicalQueryExample:output_type -> query.v1.ArchiveCanonicalQueryExampleResponse
+	23, // [23:29] is the sub-list for method output_type
+	17, // [17:23] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_query_v1_query_proto_init() }
@@ -1133,8 +1529,8 @@ func file_query_v1_query_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_query_v1_query_proto_rawDesc), len(file_query_v1_query_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   15,
+			NumEnums:      3,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ArchiveCanonicalQueryExampleRequest, ArchiveCanonicalQueryExampleResponse, AskQuestionRequest, AskQuestionResponse, CreateCanonicalQueryExampleRequest, CreateCanonicalQueryExampleResponse, ListCanonicalQueryExamplesRequest, ListCanonicalQueryExamplesResponse, SubmitQueryFeedbackRequest, SubmitQueryFeedbackResponse } from "./query_pb.js";
+import { ArchiveCanonicalQueryExampleRequest, ArchiveCanonicalQueryExampleResponse, AskQuestionRequest, AskQuestionResponse, CreateCanonicalQueryExampleRequest, CreateCanonicalQueryExampleResponse, ListCanonicalQueryExamplesRequest, ListCanonicalQueryExamplesResponse, ListMyQueryRunsRequest, ListMyQueryRunsResponse, SubmitQueryFeedbackRequest, SubmitQueryFeedbackResponse } from "./query_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -19,6 +19,15 @@ export const QueryService = {
       name: "AskQuestion",
       I: AskQuestionRequest,
       O: AskQuestionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc query.v1.QueryService.ListMyQueryRuns
+     */
+    listMyQueryRuns: {
+      name: "ListMyQueryRuns",
+      I: ListMyQueryRunsRequest,
+      O: ListMyQueryRunsResponse,
       kind: MethodKind.Unary,
     },
     /**

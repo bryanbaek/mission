@@ -60,6 +60,7 @@ func (f fakeQueryLayerStore) LatestDraftBySchemaVersion(
 type fakeQueryRunStore struct {
 	createFn            func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error)
 	getFn               func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error)
+	listFn              func(context.Context, uuid.UUID, string, int) ([]model.TenantQueryRun, error)
 	completeSucceededFn func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error)
 	completeFailedFn    func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error)
 }
@@ -80,6 +81,18 @@ func (f fakeQueryRunStore) GetByTenantAndID(
 	tenantID, id uuid.UUID,
 ) (model.TenantQueryRun, error) {
 	return f.getFn(ctx, tenantID, id)
+}
+
+func (f fakeQueryRunStore) ListByTenantAndUser(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	limit int,
+) ([]model.TenantQueryRun, error) {
+	if f.listFn == nil {
+		return nil, errors.New("unexpected ListByTenantAndUser")
+	}
+	return f.listFn(ctx, tenantID, clerkUserID, limit)
 }
 
 func (f fakeQueryRunStore) CompleteSucceeded(
@@ -630,6 +643,158 @@ func TestBuildQueryUserPromptIncludesApprovedExamplesOnce(t *testing.T) {
 	}
 	if !strings.Contains(prompt, "대표 예시") {
 		t.Fatalf("prompt missing example notes: %s", prompt)
+	}
+}
+
+func TestQueryControllerListMyQueryRunsRequiresMembership(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	ctrl := newTestQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{}, repository.ErrNotFound
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{}, errors.New("unexpected LatestByTenant")
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestApprovedBySchemaVersion")
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestDraftBySchemaVersion")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected Create")
+			},
+			getFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected GetByTenantAndID")
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteFailed")
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected SearchActiveByQuestion")
+			},
+		},
+		&fakeQueryAgent{executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+			return AgentExecuteQueryResult{}, errors.New("unexpected ExecuteQuery")
+		}},
+		&fakeQueryCompleter{},
+	)
+
+	_, err := ctrl.ListMyQueryRuns(context.Background(), tenantID, "user_123", 0)
+	if !errors.Is(err, ErrQueryAccessDenied) {
+		t.Fatalf("ListMyQueryRuns error = %v, want ErrQueryAccessDenied", err)
+	}
+}
+
+func TestQueryControllerListMyQueryRunsReturnsPersonalRunsWithDefaultLimit(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	runID := uuid.New()
+	var (
+		gotTenantID   uuid.UUID
+		gotClerkUser  string
+		gotLimit      int
+		returnedRunAt = time.Unix(1_700_002_000, 0).UTC()
+	)
+	ctrl := newTestQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{TenantID: tenantID, Role: model.RoleMember}, nil
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{}, errors.New("unexpected LatestByTenant")
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestApprovedBySchemaVersion")
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("unexpected LatestDraftBySchemaVersion")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected Create")
+			},
+			getFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected GetByTenantAndID")
+			},
+			listFn: func(_ context.Context, tenantID uuid.UUID, clerkUserID string, limit int) ([]model.TenantQueryRun, error) {
+				gotTenantID = tenantID
+				gotClerkUser = clerkUserID
+				gotLimit = limit
+				return []model.TenantQueryRun{{
+					ID:                  runID,
+					TenantID:            tenantID,
+					ClerkUserID:         clerkUserID,
+					Question:            "최근 30일 평균 pH는?",
+					Status:              model.QueryRunStatusSucceeded,
+					PromptContextSource: model.QueryPromptContextSourceApproved,
+					SQLOriginal:         "SELECT AVG(ph) FROM readings",
+					SQLExecuted:         "SELECT AVG(ph) FROM readings LIMIT 1000",
+					Attempts: []model.QueryRunAttempt{{
+						SQL:   "SELECT AVG(ph) FROM readings",
+						Stage: "execution",
+					}},
+					Warnings:  []string{"warning"},
+					RowCount:  1,
+					ElapsedMS: 42,
+					CreatedAt: returnedRunAt,
+				}}, nil
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(context.Context, uuid.UUID, []model.QueryRunAttempt, []string, []uuid.UUID, string, string, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteFailed")
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("unexpected SearchActiveByQuestion")
+			},
+		},
+		&fakeQueryAgent{executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+			return AgentExecuteQueryResult{}, errors.New("unexpected ExecuteQuery")
+		}},
+		&fakeQueryCompleter{},
+	)
+
+	result, err := ctrl.ListMyQueryRuns(context.Background(), tenantID, "user_123", 0)
+	if err != nil {
+		t.Fatalf("ListMyQueryRuns returned error: %v", err)
+	}
+	if gotTenantID != tenantID || gotClerkUser != "user_123" {
+		t.Fatalf("list args = tenant:%s user:%q", gotTenantID, gotClerkUser)
+	}
+	if gotLimit != defaultListMyQueryRunsLimit {
+		t.Fatalf("limit = %d, want %d", gotLimit, defaultListMyQueryRunsLimit)
+	}
+	if len(result.Runs) != 1 || result.Runs[0].ID != runID {
+		t.Fatalf("runs = %+v", result.Runs)
+	}
+	if result.Runs[0].Question != "최근 30일 평균 pH는?" {
+		t.Fatalf("question = %q", result.Runs[0].Question)
 	}
 }
 

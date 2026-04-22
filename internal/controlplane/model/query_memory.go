@@ -44,6 +44,8 @@ type TenantQueryRun struct {
 	Status              QueryRunStatus
 	SQLOriginal         string
 	SQLExecuted         string
+	Attempts            []QueryRunAttempt
+	Warnings            []string
 	RowCount            int64
 	ElapsedMS           int64
 	ErrorStage          string

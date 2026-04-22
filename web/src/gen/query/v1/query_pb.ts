@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file query/v1/query.proto.
  */
 export const file_query_v1_query: GenFile = /*@__PURE__*/
-  fileDesc("ChRxdWVyeS92MS9xdWVyeS5wcm90bxIIcXVlcnkudjEiOQoSQXNrUXVlc3Rpb25SZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIQCghxdWVzdGlvbhgCIAEoCSJfCgNSb3cSKQoGdmFsdWVzGAEgAygLMhkucXVlcnkudjEuUm93LlZhbHVlc0VudHJ5Gi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOQoMQXR0ZW1wdERlYnVnEgsKA3NxbBgBIAEoCRINCgVlcnJvchgCIAEoCRINCgVzdGFnZRgDIAEoCSKUAgoTQXNrUXVlc3Rpb25SZXNwb25zZRIUCgxzcWxfb3JpZ2luYWwYASABKAkSFAoMc3FsX2V4ZWN1dGVkGAIgASgJEhYKDmxpbWl0X2luamVjdGVkGAMgASgIEg8KB2NvbHVtbnMYBCADKAkSGwoEcm93cxgFIAMoCzINLnF1ZXJ5LnYxLlJvdxIRCglyb3dfY291bnQYBiABKAMSEgoKZWxhcHNlZF9tcxgHIAEoAxISCgpzdW1tYXJ5X2tvGAggASgJEhAKCHdhcm5pbmdzGAkgAygJEigKCGF0dGVtcHRzGAogAygLMhYucXVlcnkudjEuQXR0ZW1wdERlYnVnEhQKDHF1ZXJ5X3J1bl9pZBgLIAEoCSLcAQoNUXVlcnlGZWVkYmFjaxIUCgxxdWVyeV9ydW5faWQYASABKAkSLQoGcmF0aW5nGAIgASgOMh0ucXVlcnkudjEuUXVlcnlGZWVkYmFja1JhdGluZxIPCgdjb21tZW50GAMgASgJEhUKDWNvcnJlY3RlZF9zcWwYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAinAEKGlN1Ym1pdFF1ZXJ5RmVlZGJhY2tSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIUCgxxdWVyeV9ydW5faWQYAiABKAkSLQoGcmF0aW5nGAMgASgOMh0ucXVlcnkudjEuUXVlcnlGZWVkYmFja1JhdGluZxIPCgdjb21tZW50GAQgASgJEhUKDWNvcnJlY3RlZF9zcWwYBSABKAkiSAobU3VibWl0UXVlcnlGZWVkYmFja1Jlc3BvbnNlEikKCGZlZWRiYWNrGAEgASgLMhcucXVlcnkudjEuUXVlcnlGZWVkYmFjayK5AQoVQ2Fub25pY2FsUXVlcnlFeGFtcGxlEgoKAmlkGAEgASgJEhsKE3NvdXJjZV9xdWVyeV9ydW5faWQYAiABKAkSGQoRc2NoZW1hX3ZlcnNpb25faWQYAyABKAkSEAoIcXVlc3Rpb24YBCABKAkSCwoDc3FsGAUgASgJEg0KBW5vdGVzGAYgASgJEi4KCmNyZWF0ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInsKIkNyZWF0ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhQKDHF1ZXJ5X3J1bl9pZBgCIAEoCRIQCghxdWVzdGlvbhgDIAEoCRILCgNzcWwYBCABKAkSDQoFbm90ZXMYBSABKAkiVwojQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVzcG9uc2USMAoHZXhhbXBsZRgBIAEoCzIfLnF1ZXJ5LnYxLkNhbm9uaWNhbFF1ZXJ5RXhhbXBsZSI2CiFMaXN0Q2Fub25pY2FsUXVlcnlFeGFtcGxlc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJInIKIkxpc3RDYW5vbmljYWxRdWVyeUV4YW1wbGVzUmVzcG9uc2USMQoIZXhhbXBsZXMYASADKAsyHy5xdWVyeS52MS5DYW5vbmljYWxRdWVyeUV4YW1wbGUSGQoRdmlld2VyX2Nhbl9tYW5hZ2UYAiABKAgiTAojQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhIKCmV4YW1wbGVfaWQYAiABKAkiJgokQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlc3BvbnNlKnoKE1F1ZXJ5RmVlZGJhY2tSYXRpbmcSJQohUVVFUllfRkVFREJBQ0tfUkFUSU5HX1VOU1BFQ0lGSUVEEAASHAoYUVVFUllfRkVFREJBQ0tfUkFUSU5HX1VQEAESHgoaUVVFUllfRkVFREJBQ0tfUkFUSU5HX0RPV04QAjKyBAoMUXVlcnlTZXJ2aWNlEkoKC0Fza1F1ZXN0aW9uEhwucXVlcnkudjEuQXNrUXVlc3Rpb25SZXF1ZXN0Gh0ucXVlcnkudjEuQXNrUXVlc3Rpb25SZXNwb25zZRJiChNTdWJtaXRRdWVyeUZlZWRiYWNrEiQucXVlcnkudjEuU3VibWl0UXVlcnlGZWVkYmFja1JlcXVlc3QaJS5xdWVyeS52MS5TdWJtaXRRdWVyeUZlZWRiYWNrUmVzcG9uc2USegobQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlEiwucXVlcnkudjEuQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVxdWVzdBotLnF1ZXJ5LnYxLkNyZWF0ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlc3BvbnNlEncKGkxpc3RDYW5vbmljYWxRdWVyeUV4YW1wbGVzEisucXVlcnkudjEuTGlzdENhbm9uaWNhbFF1ZXJ5RXhhbXBsZXNSZXF1ZXN0GiwucXVlcnkudjEuTGlzdENhbm9uaWNhbFF1ZXJ5RXhhbXBsZXNSZXNwb25zZRJ9ChxBcmNoaXZlQ2Fub25pY2FsUXVlcnlFeGFtcGxlEi0ucXVlcnkudjEuQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QaLi5xdWVyeS52MS5BcmNoaXZlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVzcG9uc2VCkQEKDGNvbS5xdWVyeS52MUIKUXVlcnlQcm90b1ABWjRnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9xdWVyeS92MTtxdWVyeXYxogIDUVhYqgIIUXVlcnkuVjHKAghRdWVyeVxWMeICFFF1ZXJ5XFYxXEdQQk1ldGFkYXRh6gIJUXVlcnk6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChRxdWVyeS92MS9xdWVyeS5wcm90bxIIcXVlcnkudjEiOQoSQXNrUXVlc3Rpb25SZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIQCghxdWVzdGlvbhgCIAEoCSJfCgNSb3cSKQoGdmFsdWVzGAEgAygLMhkucXVlcnkudjEuUm93LlZhbHVlc0VudHJ5Gi0KC1ZhbHVlc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiOQoMQXR0ZW1wdERlYnVnEgsKA3NxbBgBIAEoCRINCgVlcnJvchgCIAEoCRINCgVzdGFnZRgDIAEoCSKUAgoTQXNrUXVlc3Rpb25SZXNwb25zZRIUCgxzcWxfb3JpZ2luYWwYASABKAkSFAoMc3FsX2V4ZWN1dGVkGAIgASgJEhYKDmxpbWl0X2luamVjdGVkGAMgASgIEg8KB2NvbHVtbnMYBCADKAkSGwoEcm93cxgFIAMoCzINLnF1ZXJ5LnYxLlJvdxIRCglyb3dfY291bnQYBiABKAMSEgoKZWxhcHNlZF9tcxgHIAEoAxISCgpzdW1tYXJ5X2tvGAggASgJEhAKCHdhcm5pbmdzGAkgAygJEigKCGF0dGVtcHRzGAogAygLMhYucXVlcnkudjEuQXR0ZW1wdERlYnVnEhQKDHF1ZXJ5X3J1bl9pZBgLIAEoCSLcAQoNUXVlcnlGZWVkYmFjaxIUCgxxdWVyeV9ydW5faWQYASABKAkSLQoGcmF0aW5nGAIgASgOMh0ucXVlcnkudjEuUXVlcnlGZWVkYmFja1JhdGluZxIPCgdjb21tZW50GAMgASgJEhUKDWNvcnJlY3RlZF9zcWwYBCABKAkSLgoKY3JlYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAinAEKGlN1Ym1pdFF1ZXJ5RmVlZGJhY2tSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIUCgxxdWVyeV9ydW5faWQYAiABKAkSLQoGcmF0aW5nGAMgASgOMh0ucXVlcnkudjEuUXVlcnlGZWVkYmFja1JhdGluZxIPCgdjb21tZW50GAQgASgJEhUKDWNvcnJlY3RlZF9zcWwYBSABKAkiSAobU3VibWl0UXVlcnlGZWVkYmFja1Jlc3BvbnNlEikKCGZlZWRiYWNrGAEgASgLMhcucXVlcnkudjEuUXVlcnlGZWVkYmFjayK5AQoVQ2Fub25pY2FsUXVlcnlFeGFtcGxlEgoKAmlkGAEgASgJEhsKE3NvdXJjZV9xdWVyeV9ydW5faWQYAiABKAkSGQoRc2NoZW1hX3ZlcnNpb25faWQYAyABKAkSEAoIcXVlc3Rpb24YBCABKAkSCwoDc3FsGAUgASgJEg0KBW5vdGVzGAYgASgJEi4KCmNyZWF0ZWRfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInsKIkNyZWF0ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhQKDHF1ZXJ5X3J1bl9pZBgCIAEoCRIQCghxdWVzdGlvbhgDIAEoCRILCgNzcWwYBCABKAkSDQoFbm90ZXMYBSABKAkiVwojQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVzcG9uc2USMAoHZXhhbXBsZRgBIAEoCzIfLnF1ZXJ5LnYxLkNhbm9uaWNhbFF1ZXJ5RXhhbXBsZSI2CiFMaXN0Q2Fub25pY2FsUXVlcnlFeGFtcGxlc1JlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJInIKIkxpc3RDYW5vbmljYWxRdWVyeUV4YW1wbGVzUmVzcG9uc2USMQoIZXhhbXBsZXMYASADKAsyHy5xdWVyeS52MS5DYW5vbmljYWxRdWVyeUV4YW1wbGUSGQoRdmlld2VyX2Nhbl9tYW5hZ2UYAiABKAgiTAojQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QSEQoJdGVuYW50X2lkGAEgASgJEhIKCmV4YW1wbGVfaWQYAiABKAkiJgokQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlc3BvbnNlIr0DChNRdWVyeVJ1bkhpc3RvcnlJdGVtEgoKAmlkGAEgASgJEhAKCHF1ZXN0aW9uGAIgASgJEigKBnN0YXR1cxgDIAEoDjIYLnF1ZXJ5LnYxLlF1ZXJ5UnVuU3RhdHVzEkEKFXByb21wdF9jb250ZXh0X3NvdXJjZRgEIAEoDjIiLnF1ZXJ5LnYxLlF1ZXJ5UHJvbXB0Q29udGV4dFNvdXJjZRIUCgxzcWxfb3JpZ2luYWwYBSABKAkSFAoMc3FsX2V4ZWN1dGVkGAYgASgJEhEKCXJvd19jb3VudBgHIAEoAxISCgplbGFwc2VkX21zGAggASgDEhMKC2Vycm9yX3N0YWdlGAkgASgJEhUKDWVycm9yX21lc3NhZ2UYCiABKAkSEAoId2FybmluZ3MYCyADKAkSKAoIYXR0ZW1wdHMYDCADKAsyFi5xdWVyeS52MS5BdHRlbXB0RGVidWcSLgoKY3JlYXRlZF9hdBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMY29tcGxldGVkX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCI6ChZMaXN0TXlRdWVyeVJ1bnNSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRINCgVsaW1pdBgCIAEoBSJGChdMaXN0TXlRdWVyeVJ1bnNSZXNwb25zZRIrCgRydW5zGAEgAygLMh0ucXVlcnkudjEuUXVlcnlSdW5IaXN0b3J5SXRlbSqNAQoOUXVlcnlSdW5TdGF0dXMSIAocUVVFUllfUlVOX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGFFVRVJZX1JVTl9TVEFUVVNfUlVOTklORxABEh4KGlFVRVJZX1JVTl9TVEFUVVNfU1VDQ0VFREVEEAISGwoXUVVFUllfUlVOX1NUQVRVU19GQUlMRUQQAyrEAQoYUXVlcnlQcm9tcHRDb250ZXh0U291cmNlEisKJ1FVRVJZX1BST01QVF9DT05URVhUX1NPVVJDRV9VTlNQRUNJRklFRBAAEigKJFFVRVJZX1BST01QVF9DT05URVhUX1NPVVJDRV9BUFBST1ZFRBABEiUKIVFVRVJZX1BST01QVF9DT05URVhUX1NPVVJDRV9EUkFGVBACEioKJlFVRVJZX1BST01QVF9DT05URVhUX1NPVVJDRV9SQVdfU0NIRU1BEAMqegoTUXVlcnlGZWVkYmFja1JhdGluZxIlCiFRVUVSWV9GRUVEQkFDS19SQVRJTkdfVU5TUEVDSUZJRUQQABIcChhRVUVSWV9GRUVEQkFDS19SQVRJTkdfVVAQARIeChpRVUVSWV9GRUVEQkFDS19SQVRJTkdfRE9XThACMooFCgxRdWVyeVNlcnZpY2USSgoLQXNrUXVlc3Rpb24SHC5xdWVyeS52MS5Bc2tRdWVzdGlvblJlcXVlc3QaHS5xdWVyeS52MS5Bc2tRdWVzdGlvblJlc3BvbnNlElYKD0xpc3RNeVF1ZXJ5UnVucxIgLnF1ZXJ5LnYxLkxpc3RNeVF1ZXJ5UnVuc1JlcXVlc3QaIS5xdWVyeS52MS5MaXN0TXlRdWVyeVJ1bnNSZXNwb25zZRJiChNTdWJtaXRRdWVyeUZlZWRiYWNrEiQucXVlcnkudjEuU3VibWl0UXVlcnlGZWVkYmFja1JlcXVlc3QaJS5xdWVyeS52MS5TdWJtaXRRdWVyeUZlZWRiYWNrUmVzcG9uc2USegobQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlEiwucXVlcnkudjEuQ3JlYXRlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVxdWVzdBotLnF1ZXJ5LnYxLkNyZWF0ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlc3BvbnNlEncKGkxpc3RDYW5vbmljYWxRdWVyeUV4YW1wbGVzEisucXVlcnkudjEuTGlzdENhbm9uaWNhbFF1ZXJ5RXhhbXBsZXNSZXF1ZXN0GiwucXVlcnkudjEuTGlzdENhbm9uaWNhbFF1ZXJ5RXhhbXBsZXNSZXNwb25zZRJ9ChxBcmNoaXZlQ2Fub25pY2FsUXVlcnlFeGFtcGxlEi0ucXVlcnkudjEuQXJjaGl2ZUNhbm9uaWNhbFF1ZXJ5RXhhbXBsZVJlcXVlc3QaLi5xdWVyeS52MS5BcmNoaXZlQ2Fub25pY2FsUXVlcnlFeGFtcGxlUmVzcG9uc2VCkQEKDGNvbS5xdWVyeS52MUIKUXVlcnlQcm90b1ABWjRnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9xdWVyeS92MTtxdWVyeXYxogIDUVhYqgIIUXVlcnkuVjHKAghRdWVyeVxWMeICFFF1ZXJ5XFYxXEdQQk1ldGFkYXRh6gIJUXVlcnk6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * AskQuestionRequest carries a natural-language question from a tenant member.
@@ -444,6 +444,189 @@ export const ArchiveCanonicalQueryExampleResponseSchema: GenMessage<ArchiveCanon
   messageDesc(file_query_v1_query, 13);
 
 /**
+ * @generated from message query.v1.QueryRunHistoryItem
+ */
+export type QueryRunHistoryItem = Message<"query.v1.QueryRunHistoryItem"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string question = 2;
+   */
+  question: string;
+
+  /**
+   * @generated from field: query.v1.QueryRunStatus status = 3;
+   */
+  status: QueryRunStatus;
+
+  /**
+   * @generated from field: query.v1.QueryPromptContextSource prompt_context_source = 4;
+   */
+  promptContextSource: QueryPromptContextSource;
+
+  /**
+   * @generated from field: string sql_original = 5;
+   */
+  sqlOriginal: string;
+
+  /**
+   * @generated from field: string sql_executed = 6;
+   */
+  sqlExecuted: string;
+
+  /**
+   * @generated from field: int64 row_count = 7;
+   */
+  rowCount: bigint;
+
+  /**
+   * @generated from field: int64 elapsed_ms = 8;
+   */
+  elapsedMs: bigint;
+
+  /**
+   * @generated from field: string error_stage = 9;
+   */
+  errorStage: string;
+
+  /**
+   * @generated from field: string error_message = 10;
+   */
+  errorMessage: string;
+
+  /**
+   * @generated from field: repeated string warnings = 11;
+   */
+  warnings: string[];
+
+  /**
+   * @generated from field: repeated query.v1.AttemptDebug attempts = 12;
+   */
+  attempts: AttemptDebug[];
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_at = 13;
+   */
+  createdAt?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp completed_at = 14;
+   */
+  completedAt?: Timestamp;
+};
+
+/**
+ * Describes the message query.v1.QueryRunHistoryItem.
+ * Use `create(QueryRunHistoryItemSchema)` to create a new message.
+ */
+export const QueryRunHistoryItemSchema: GenMessage<QueryRunHistoryItem> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 14);
+
+/**
+ * @generated from message query.v1.ListMyQueryRunsRequest
+ */
+export type ListMyQueryRunsRequest = Message<"query.v1.ListMyQueryRunsRequest"> & {
+  /**
+   * @generated from field: string tenant_id = 1;
+   */
+  tenantId: string;
+
+  /**
+   * @generated from field: int32 limit = 2;
+   */
+  limit: number;
+};
+
+/**
+ * Describes the message query.v1.ListMyQueryRunsRequest.
+ * Use `create(ListMyQueryRunsRequestSchema)` to create a new message.
+ */
+export const ListMyQueryRunsRequestSchema: GenMessage<ListMyQueryRunsRequest> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 15);
+
+/**
+ * @generated from message query.v1.ListMyQueryRunsResponse
+ */
+export type ListMyQueryRunsResponse = Message<"query.v1.ListMyQueryRunsResponse"> & {
+  /**
+   * @generated from field: repeated query.v1.QueryRunHistoryItem runs = 1;
+   */
+  runs: QueryRunHistoryItem[];
+};
+
+/**
+ * Describes the message query.v1.ListMyQueryRunsResponse.
+ * Use `create(ListMyQueryRunsResponseSchema)` to create a new message.
+ */
+export const ListMyQueryRunsResponseSchema: GenMessage<ListMyQueryRunsResponse> = /*@__PURE__*/
+  messageDesc(file_query_v1_query, 16);
+
+/**
+ * @generated from enum query.v1.QueryRunStatus
+ */
+export enum QueryRunStatus {
+  /**
+   * @generated from enum value: QUERY_RUN_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: QUERY_RUN_STATUS_RUNNING = 1;
+   */
+  RUNNING = 1,
+
+  /**
+   * @generated from enum value: QUERY_RUN_STATUS_SUCCEEDED = 2;
+   */
+  SUCCEEDED = 2,
+
+  /**
+   * @generated from enum value: QUERY_RUN_STATUS_FAILED = 3;
+   */
+  FAILED = 3,
+}
+
+/**
+ * Describes the enum query.v1.QueryRunStatus.
+ */
+export const QueryRunStatusSchema: GenEnum<QueryRunStatus> = /*@__PURE__*/
+  enumDesc(file_query_v1_query, 0);
+
+/**
+ * @generated from enum query.v1.QueryPromptContextSource
+ */
+export enum QueryPromptContextSource {
+  /**
+   * @generated from enum value: QUERY_PROMPT_CONTEXT_SOURCE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: QUERY_PROMPT_CONTEXT_SOURCE_APPROVED = 1;
+   */
+  APPROVED = 1,
+
+  /**
+   * @generated from enum value: QUERY_PROMPT_CONTEXT_SOURCE_DRAFT = 2;
+   */
+  DRAFT = 2,
+
+  /**
+   * @generated from enum value: QUERY_PROMPT_CONTEXT_SOURCE_RAW_SCHEMA = 3;
+   */
+  RAW_SCHEMA = 3,
+}
+
+/**
+ * Describes the enum query.v1.QueryPromptContextSource.
+ */
+export const QueryPromptContextSourceSchema: GenEnum<QueryPromptContextSource> = /*@__PURE__*/
+  enumDesc(file_query_v1_query, 1);
+
+/**
  * @generated from enum query.v1.QueryFeedbackRating
  */
 export enum QueryFeedbackRating {
@@ -467,7 +650,7 @@ export enum QueryFeedbackRating {
  * Describes the enum query.v1.QueryFeedbackRating.
  */
 export const QueryFeedbackRatingSchema: GenEnum<QueryFeedbackRating> = /*@__PURE__*/
-  enumDesc(file_query_v1_query, 0);
+  enumDesc(file_query_v1_query, 2);
 
 /**
  * @generated from service query.v1.QueryService
@@ -480,6 +663,14 @@ export const QueryService: GenService<{
     methodKind: "unary";
     input: typeof AskQuestionRequestSchema;
     output: typeof AskQuestionResponseSchema;
+  },
+  /**
+   * @generated from rpc query.v1.QueryService.ListMyQueryRuns
+   */
+  listMyQueryRuns: {
+    methodKind: "unary";
+    input: typeof ListMyQueryRunsRequestSchema;
+    output: typeof ListMyQueryRunsResponseSchema;
   },
   /**
    * @generated from rpc query.v1.QueryService.SubmitQueryFeedback
