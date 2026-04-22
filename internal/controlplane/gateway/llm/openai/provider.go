@@ -2,8 +2,11 @@ package openai
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -56,20 +59,32 @@ func (p *Provider) Complete(
 	req llm.CompletionRequest,
 ) (llm.CompletionResponse, error) {
 	if p.apiKey == "" {
-		return llm.CompletionResponse{}, fmt.Errorf("openai api key is not configured")
+		return llm.CompletionResponse{}, llm.NewProviderError(
+			p.Name(),
+			fmt.Errorf("openai api key is not configured"),
+		)
+	}
+	if strings.TrimSpace(req.Model) == "" {
+		return llm.CompletionResponse{}, llm.NewProviderError(
+			p.Name(),
+			fmt.Errorf("openai model is not configured"),
+		)
 	}
 
 	params, err := buildChatCompletionParams(req)
 	if err != nil {
-		return llm.CompletionResponse{}, err
+		return llm.CompletionResponse{}, llm.NewProviderError(p.Name(), err)
 	}
 
 	resp, err := p.client.Chat.Completions.New(ctx, params)
 	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("send openai request: %w", err)
+		return llm.CompletionResponse{}, classifyOpenAIError(err)
 	}
 	if len(resp.Choices) == 0 {
-		return llm.CompletionResponse{}, fmt.Errorf("openai response contained no choices")
+		return llm.CompletionResponse{}, llm.NewProviderError(
+			p.Name(),
+			fmt.Errorf("openai response contained no choices"),
+		)
 	}
 
 	return llm.CompletionResponse{
@@ -83,6 +98,38 @@ func (p *Provider) Complete(
 			OutputTokens: int(resp.Usage.CompletionTokens),
 		},
 	}, nil
+}
+
+func classifyOpenAIError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, context.Canceled):
+		return llm.NewProviderError("openai", err)
+	case errors.Is(err, context.DeadlineExceeded):
+		return llm.NewTransientProviderError("openai", err)
+	}
+
+	var apiErr *openai.Error
+	if errors.As(err, &apiErr) {
+		if apiErr.StatusCode == http.StatusTooManyRequests ||
+			apiErr.StatusCode >= http.StatusInternalServerError {
+			return llm.NewTransientProviderError("openai", err)
+		}
+		return llm.NewProviderError("openai", err)
+	}
+
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return llm.NewTransientProviderError("openai", err)
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return llm.NewTransientProviderError("openai", err)
+	}
+
+	return llm.NewProviderError("openai", err)
 }
 
 func buildChatCompletionParams(

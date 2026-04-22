@@ -13,6 +13,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/semantic/v1/semanticv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 )
 
@@ -237,6 +238,11 @@ func semanticLayerError(err error) error {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	case errors.Is(err, controller.ErrSemanticLayerArchived):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case llm.IsUnavailableError(err):
+		return connect.NewError(
+			connect.CodeUnavailable,
+			publicLLMUnavailableError(),
+		)
 	default:
 		return connect.NewError(connect.CodeInternal, err)
 	}

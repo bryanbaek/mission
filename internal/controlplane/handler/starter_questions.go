@@ -12,6 +12,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/starter/v1/starterv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 )
 
@@ -109,6 +110,11 @@ func starterQuestionsError(err error) error {
 		return connect.NewError(connect.CodePermissionDenied, err)
 	case errors.Is(err, controller.ErrStarterQuestionsNoLayer):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case llm.IsUnavailableError(err):
+		return connect.NewError(
+			connect.CodeUnavailable,
+			publicLLMUnavailableError(),
+		)
 	default:
 		return connect.NewError(connect.CodeInternal, err)
 	}

@@ -80,9 +80,10 @@ type semanticLayerCompleter interface {
 }
 
 type SemanticLayerControllerConfig struct {
-	Now       func() time.Time
-	Model     string
-	MaxTokens int
+	Now            func() time.Time
+	Model          string
+	ProviderModels map[string]string
+	MaxTokens      int
 }
 
 type SemanticLayerRecord struct {
@@ -104,13 +105,14 @@ type DraftSemanticLayerResult struct {
 }
 
 type SemanticLayerController struct {
-	tenants   semanticLayerMembershipChecker
-	schemas   semanticLayerSchemaStore
-	layers    semanticLayerStore
-	completer semanticLayerCompleter
-	now       func() time.Time
-	model     string
-	maxTokens int
+	tenants        semanticLayerMembershipChecker
+	schemas        semanticLayerSchemaStore
+	layers         semanticLayerStore
+	completer      semanticLayerCompleter
+	now            func() time.Time
+	model          string
+	providerModels map[string]string
+	maxTokens      int
 }
 
 func NewSemanticLayerController(
@@ -128,18 +130,20 @@ func NewSemanticLayerController(
 	if modelName == "" {
 		modelName = "claude-sonnet-4-6"
 	}
+	providerModels := llm.CloneProviderModels(cfg.ProviderModels)
 	maxTokens := cfg.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 16_384
 	}
 	return &SemanticLayerController{
-		tenants:   tenants,
-		schemas:   schemas,
-		layers:    layers,
-		completer: completer,
-		now:       now,
-		model:     modelName,
-		maxTokens: maxTokens,
+		tenants:        tenants,
+		schemas:        schemas,
+		layers:         layers,
+		completer:      completer,
+		now:            now,
+		model:          modelName,
+		providerModels: providerModels,
+		maxTokens:      maxTokens,
 	}
 }
 
@@ -239,8 +243,9 @@ func (c *SemanticLayerController) Draft(
 			Role:          "user",
 			CachedContent: buildSemanticLayerUserPrompt(schemaVersion.Blob),
 		}},
-		Model:     c.model,
-		MaxTokens: c.maxTokens,
+		Model:          c.model,
+		ProviderModels: llm.CloneProviderModels(c.providerModels),
+		MaxTokens:      c.maxTokens,
 		OutputFormat: &llm.OutputFormat{
 			Name:   "semantic_layer_content",
 			Schema: semanticLayerOutputSchema(),

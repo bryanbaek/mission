@@ -3,11 +3,14 @@ package openai
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
+	openaisdk "github.com/openai/openai-go/v3"
 )
 
 func TestProviderCompleteUsesSDKAndLegacyEndpointBaseURL(t *testing.T) {
@@ -123,5 +126,74 @@ func TestProviderCompleteUsesSDKAndLegacyEndpointBaseURL(t *testing.T) {
 	}
 	if resp.Usage.InputTokens != 11 || resp.Usage.OutputTokens != 7 {
 		t.Fatalf("Usage = %+v, want prompt=11 completion=7", resp.Usage)
+	}
+}
+
+func TestClassifyOpenAIErrorMarksTransientFailures(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name      string
+		err       error
+		transient bool
+	}{
+		{
+			name:      "rate limit",
+			err:       &openaisdk.Error{StatusCode: http.StatusTooManyRequests},
+			transient: true,
+		},
+		{
+			name:      "server error",
+			err:       &openaisdk.Error{StatusCode: http.StatusBadGateway},
+			transient: true,
+		},
+		{
+			name: "transport error",
+			err: &url.Error{
+				Op:  "Post",
+				URL: "https://api.openai.com/v1/chat/completions",
+				Err: errors.New("dial tcp timeout"),
+			},
+			transient: true,
+		},
+		{
+			name:      "bad request",
+			err:       &openaisdk.Error{StatusCode: http.StatusBadRequest},
+			transient: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := classifyOpenAIError(tc.err)
+			if got := llm.IsTransientProviderError(err); got != tc.transient {
+				t.Fatalf("IsTransientProviderError(%v) = %v, want %v", tc.err, got, tc.transient)
+			}
+		})
+	}
+}
+
+func TestProviderCompleteRejectsMissingConfig(t *testing.T) {
+	t.Parallel()
+
+	provider := New(Config{})
+	_, err := provider.Complete(context.Background(), llm.CompletionRequest{
+		Model: "gpt-4.1",
+	})
+	if err == nil {
+		t.Fatal("Complete returned nil error without API key")
+	}
+	if llm.IsTransientProviderError(err) {
+		t.Fatalf("err = %v, want non-transient config error", err)
+	}
+
+	provider = New(Config{APIKey: "test-key"})
+	_, err = provider.Complete(context.Background(), llm.CompletionRequest{})
+	if err == nil {
+		t.Fatal("Complete returned nil error without model")
+	}
+	if llm.IsTransientProviderError(err) {
+		t.Fatalf("err = %v, want non-transient model error", err)
 	}
 }

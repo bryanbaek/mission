@@ -12,6 +12,7 @@ import (
 	starterv1 "github.com/bryanbaek/mission/gen/go/starter/v1"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 )
 
@@ -142,4 +143,28 @@ func TestStarterQuestionsHandlerMapsResultToProto(t *testing.T) {
 	if resp.Msg.GeneratedAt == nil || resp.Msg.GeneratedAt.AsTime() != generatedAt {
 		t.Fatalf("generated_at = %v, want %v", resp.Msg.GeneratedAt, generatedAt)
 	}
+}
+
+func TestStarterQuestionsHandlerMapsLLMUnavailableToUnavailable(t *testing.T) {
+	t.Parallel()
+
+	handler := NewStarterQuestionsHandler(fakeStarterQuestionsController{
+		listFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+			return controller.StarterQuestionsListResult{}, llm.NewUnavailableError(
+				[]string{"anthropic", "openai"},
+				errors.New("provider outage"),
+			)
+		},
+		regenerateFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+			return controller.StarterQuestionsListResult{}, errors.New("unexpected Regenerate call")
+		},
+	})
+
+	_, err := handler.List(
+		starterQuestionsHandlerContext(),
+		connect.NewRequest(&starterv1.ListStarterQuestionsRequest{
+			TenantId: uuid.NewString(),
+		}),
+	)
+	requireConnectCode(t, err, connect.CodeUnavailable)
 }

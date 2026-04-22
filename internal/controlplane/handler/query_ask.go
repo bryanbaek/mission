@@ -13,6 +13,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/query/v1/queryv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 )
 
@@ -283,6 +284,12 @@ func queryAskError(err error, result controller.AskQuestionResult) error {
 		return queryErrorWithDetail(connect.CodeFailedPrecondition, err, result)
 	case errors.Is(err, controller.ErrQueryAllAttemptsFailed):
 		return queryErrorWithDetail(connect.CodeFailedPrecondition, err, result)
+	case llm.IsUnavailableError(err):
+		return queryErrorWithDetail(
+			connect.CodeUnavailable,
+			publicLLMUnavailableError(),
+			result,
+		)
 	default:
 		return queryErrorWithDetail(connect.CodeInternal, err, result)
 	}

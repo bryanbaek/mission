@@ -39,7 +39,11 @@ func restorePoolSeams(t *testing.T) {
 func TestNewPoolReturnsParseError(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewPool(context.Background(), "://bad-url", 10)
+	_, err := NewPool(context.Background(), "://bad-url", PoolConfig{
+		MaxConns:          4,
+		MinConns:          1,
+		HealthCheckPeriod: 30 * time.Second,
+	})
 	if err == nil {
 		t.Fatal("NewPool returned nil error for invalid URL")
 	}
@@ -90,18 +94,32 @@ func TestNewPoolConfiguresPoolAndPings(t *testing.T) {
 		return dummyPool, client, nil
 	}
 
-	pool, err := NewPool(context.Background(), "postgres://mission:mission@localhost:5432/mission", 10)
+	pool, err := NewPool(
+		context.Background(),
+		"postgres://mission:mission@localhost:5432/mission",
+		PoolConfig{
+			MaxConns:          4,
+			MinConns:          1,
+			HealthCheckPeriod: 30 * time.Second,
+		},
+	)
 	if err != nil {
 		t.Fatalf("NewPool returned error: %v", err)
 	}
 	if pool != dummyPool {
 		t.Fatal("NewPool returned unexpected pool pointer")
 	}
-	if cfg.MaxConns != 10 {
-		t.Fatalf("MaxConns = %d, want 10", cfg.MaxConns)
+	if cfg.MaxConns != 4 {
+		t.Fatalf("MaxConns = %d, want 4", cfg.MaxConns)
 	}
 	if cfg.MinConns != 1 {
 		t.Fatalf("MinConns = %d, want 1", cfg.MinConns)
+	}
+	if cfg.HealthCheckPeriod != 30*time.Second {
+		t.Fatalf(
+			"HealthCheckPeriod = %s, want 30s",
+			cfg.HealthCheckPeriod,
+		)
 	}
 	if cfg.MaxConnLifetime != time.Hour {
 		t.Fatalf("MaxConnLifetime = %s, want 1h", cfg.MaxConnLifetime)
@@ -133,7 +151,15 @@ func TestNewPoolReturnsCreateError(t *testing.T) {
 		return nil, nil, errors.New("create failed")
 	}
 
-	_, err := NewPool(context.Background(), "postgres://mission", 10)
+	_, err := NewPool(
+		context.Background(),
+		"postgres://mission",
+		PoolConfig{
+			MaxConns:          4,
+			MinConns:          1,
+			HealthCheckPeriod: 30 * time.Second,
+		},
+	)
 	if err == nil {
 		t.Fatal("NewPool returned nil error")
 	}
@@ -154,7 +180,15 @@ func TestNewPoolClosesPoolWhenPingFails(t *testing.T) {
 		return new(pgxpool.Pool), client, nil
 	}
 
-	pool, err := NewPool(context.Background(), "postgres://mission", 10)
+	pool, err := NewPool(
+		context.Background(),
+		"postgres://mission",
+		PoolConfig{
+			MaxConns:          4,
+			MinConns:          1,
+			HealthCheckPeriod: 30 * time.Second,
+		},
+	)
 	if err == nil {
 		t.Fatal("NewPool returned nil error")
 	}
@@ -166,5 +200,65 @@ func TestNewPoolClosesPoolWhenPingFails(t *testing.T) {
 	}
 	if !client.closed {
 		t.Fatal("pool was not closed after ping failure")
+	}
+}
+
+func TestNewPoolRejectsInvalidPoolConfig(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name    string
+		cfg     PoolConfig
+		wantErr string
+	}{
+		{
+			name: "max must be positive",
+			cfg: PoolConfig{
+				MaxConns:          0,
+				MinConns:          0,
+				HealthCheckPeriod: 30 * time.Second,
+			},
+			wantErr: "max conns must be greater than 0",
+		},
+		{
+			name: "min cannot be negative",
+			cfg: PoolConfig{
+				MaxConns:          4,
+				MinConns:          -1,
+				HealthCheckPeriod: 30 * time.Second,
+			},
+			wantErr: "min conns must be greater than or equal to 0",
+		},
+		{
+			name: "min cannot exceed max",
+			cfg: PoolConfig{
+				MaxConns:          2,
+				MinConns:          3,
+				HealthCheckPeriod: 30 * time.Second,
+			},
+			wantErr: "min conns must be less than or equal to max conns",
+		},
+		{
+			name: "health check period must be positive",
+			cfg: PoolConfig{
+				MaxConns:          4,
+				MinConns:          1,
+				HealthCheckPeriod: 0,
+			},
+			wantErr: "health check period must be greater than 0",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := NewPool(context.Background(), "postgres://mission", tc.cfg)
+			if err == nil {
+				t.Fatal("NewPool returned nil error")
+			}
+			if err.Error() != tc.wantErr {
+				t.Fatalf("err = %q, want %q", err.Error(), tc.wantErr)
+			}
+		})
 	}
 }

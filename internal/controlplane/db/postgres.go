@@ -17,6 +17,12 @@ type poolPinger interface {
 
 var parsePoolConfig = pgxpool.ParseConfig
 
+type PoolConfig struct {
+	MaxConns          int32
+	MinConns          int32
+	HealthCheckPeriod time.Duration
+}
+
 func defaultNewPoolWithConfig(
 	ctx context.Context,
 	cfg *pgxpool.Config,
@@ -30,13 +36,30 @@ func defaultNewPoolWithConfig(
 
 var newPoolWithConfig = defaultNewPoolWithConfig
 
-func NewPool(ctx context.Context, databaseURL string, maxConns int32) (*pgxpool.Pool, error) {
+func NewPool(
+	ctx context.Context,
+	databaseURL string,
+	poolConfig PoolConfig,
+) (*pgxpool.Pool, error) {
 	cfg, err := parsePoolConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
 	}
-	cfg.MaxConns = maxConns
-	cfg.MinConns = 1
+	if poolConfig.MaxConns <= 0 {
+		return nil, fmt.Errorf("max conns must be greater than 0")
+	}
+	if poolConfig.MinConns < 0 {
+		return nil, fmt.Errorf("min conns must be greater than or equal to 0")
+	}
+	if poolConfig.MinConns > poolConfig.MaxConns {
+		return nil, fmt.Errorf("min conns must be less than or equal to max conns")
+	}
+	if poolConfig.HealthCheckPeriod <= 0 {
+		return nil, fmt.Errorf("health check period must be greater than 0")
+	}
+	cfg.MaxConns = poolConfig.MaxConns
+	cfg.MinConns = poolConfig.MinConns
+	cfg.HealthCheckPeriod = poolConfig.HealthCheckPeriod
 	cfg.MaxConnLifetime = time.Hour
 	cfg.MaxConnIdleTime = 30 * time.Minute
 	cfg.AfterConnect = func(_ context.Context, conn *pgx.Conn) error {

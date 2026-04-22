@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/bryanbaek/mission/internal/edgeagent/introspect"
 	"github.com/bryanbaek/mission/internal/queryerror"
@@ -349,34 +350,35 @@ func (s *AgentService) runSession(ctx context.Context) (bool, error) {
 		s.hostname,
 	)
 
-	heartbeatErrCh := make(chan error, 1)
-	go func() {
-		heartbeatErrCh <- s.runHeartbeatLoop(sessionCtx)
-	}()
-
-	for stream.Receive() {
-		if err := s.handleCommand(sessionCtx, stream.Message()); err != nil {
-			cancel()
-			heartbeatErr := <-heartbeatErrCh
-			if heartbeatErr != nil {
-				return true, heartbeatErr
+	group, groupCtx := errgroup.WithContext(sessionCtx)
+	group.Go(func() error {
+		defer cancel()
+		return s.runHeartbeatLoop(groupCtx)
+	})
+	group.Go(func() error {
+		defer cancel()
+		for stream.Receive() {
+			if err := s.handleCommand(groupCtx, stream.Message()); err != nil {
+				return err
 			}
-			return true, err
 		}
-	}
+		if err := stream.Err(); err != nil {
+			return err
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return errors.New("command stream closed")
+	})
 
-	cancel()
-	heartbeatErr := <-heartbeatErrCh
-	if err := stream.Err(); err != nil {
-		return true, err
-	}
-	if heartbeatErr != nil && !isContextErr(heartbeatErr) {
-		return true, heartbeatErr
-	}
+	err = group.Wait()
 	if ctx.Err() != nil {
 		return true, ctx.Err()
 	}
-	return true, errors.New("command stream closed")
+	if err != nil {
+		return true, err
+	}
+	return true, nil
 }
 
 func (s *AgentService) runHeartbeatLoop(ctx context.Context) error {
@@ -669,10 +671,6 @@ func (s *AgentService) jitter(base time.Duration) time.Duration {
 		return base
 	}
 	return base + time.Duration(s.rand.Int63n(int64(jitterWindow)))
-}
-
-func isContextErr(err error) bool {
-	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 func sleepContext(ctx context.Context, delay time.Duration) error {

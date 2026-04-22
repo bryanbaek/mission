@@ -3,15 +3,21 @@
 // subpackages. A router (added in 1.2+) selects a provider per tenant.
 package llm
 
-import "context"
+import (
+	"context"
+	"strings"
+)
+
+const UserUnavailableMessage = "language model service is temporarily unavailable; please try again shortly"
 
 type CompletionRequest struct {
-	System       string
-	Messages     []Message
-	Model        string
-	MaxTokens    int
-	OutputFormat *OutputFormat
-	CacheControl *CacheControl
+	System         string
+	Messages       []Message
+	Model          string
+	ProviderModels map[string]string
+	MaxTokens      int
+	OutputFormat   *OutputFormat
+	CacheControl   *CacheControl
 }
 
 type Message struct {
@@ -52,4 +58,31 @@ type Provider interface {
 		ctx context.Context,
 		req CompletionRequest,
 	) (CompletionResponse, error)
+}
+
+func (r CompletionRequest) ModelForProvider(providerName string) string {
+	if override := strings.TrimSpace(r.ProviderModels[providerName]); override != "" {
+		return override
+	}
+	return strings.TrimSpace(r.Model)
+}
+
+func CloneProviderModels(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		trimmedKey := strings.TrimSpace(key)
+		if trimmedKey == "" {
+			continue
+		}
+		if trimmedValue := strings.TrimSpace(value); trimmedValue != "" {
+			out[trimmedKey] = trimmedValue
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }

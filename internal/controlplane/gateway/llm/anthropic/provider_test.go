@@ -3,10 +3,13 @@ package anthropic
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
+	anthropicsdk "github.com/anthropics/anthropic-sdk-go"
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 )
 
@@ -50,8 +53,8 @@ func TestProviderCompleteCachedContentBuildsMultiBlockUserMessage(t *testing.T) 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]any{
 			"id": "msg_456", "type": "message", "role": "assistant",
-			"model": "claude-sonnet-4-6",
-			"content": []map[string]any{{"type": "text", "text": "ok"}},
+			"model":       "claude-sonnet-4-6",
+			"content":     []map[string]any{{"type": "text", "text": "ok"}},
 			"stop_reason": "end_turn", "stop_sequence": nil,
 			"usage": map[string]any{"input_tokens": 1, "output_tokens": 1,
 				"cache_creation_input_tokens": 0, "cache_read_input_tokens": 0},
@@ -200,5 +203,74 @@ func TestProviderCompleteUsesSDKAndLegacyEndpointBaseURL(t *testing.T) {
 	}
 	if resp.Usage.CacheCreationInputTokens != 2 || resp.Usage.CacheReadInputTokens != 5 {
 		t.Fatalf("Usage cache = %+v, want create=2 read=5", resp.Usage)
+	}
+}
+
+func TestClassifyAnthropicErrorMarksTransientFailures(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name      string
+		err       error
+		transient bool
+	}{
+		{
+			name:      "rate limit",
+			err:       &anthropicsdk.Error{StatusCode: http.StatusTooManyRequests},
+			transient: true,
+		},
+		{
+			name:      "server error",
+			err:       &anthropicsdk.Error{StatusCode: http.StatusServiceUnavailable},
+			transient: true,
+		},
+		{
+			name: "transport error",
+			err: &url.Error{
+				Op:  "Post",
+				URL: "https://api.anthropic.com/v1/messages",
+				Err: errors.New("dial tcp timeout"),
+			},
+			transient: true,
+		},
+		{
+			name:      "bad request",
+			err:       &anthropicsdk.Error{StatusCode: http.StatusBadRequest},
+			transient: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := classifyAnthropicError(tc.err)
+			if got := llm.IsTransientProviderError(err); got != tc.transient {
+				t.Fatalf("IsTransientProviderError(%v) = %v, want %v", tc.err, got, tc.transient)
+			}
+		})
+	}
+}
+
+func TestProviderCompleteRejectsMissingConfig(t *testing.T) {
+	t.Parallel()
+
+	provider := New(Config{})
+	_, err := provider.Complete(context.Background(), llm.CompletionRequest{
+		Model: "claude-sonnet-4-6",
+	})
+	if err == nil {
+		t.Fatal("Complete returned nil error without API key")
+	}
+	if llm.IsTransientProviderError(err) {
+		t.Fatalf("err = %v, want non-transient config error", err)
+	}
+
+	provider = New(Config{APIKey: "test-key"})
+	_, err = provider.Complete(context.Background(), llm.CompletionRequest{})
+	if err == nil {
+		t.Fatal("Complete returned nil error without model")
+	}
+	if llm.IsTransientProviderError(err) {
+		t.Fatalf("err = %v, want non-transient model error", err)
 	}
 }

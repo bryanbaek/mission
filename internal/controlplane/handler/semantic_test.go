@@ -253,3 +253,34 @@ func TestSemanticLayerHandlerDraftResponseIncludesUsageAndKoreanContent(t *testi
 		t.Fatalf("usage provider/model = %+v", resp.Msg.Usage)
 	}
 }
+
+func TestSemanticLayerHandlerMapsLLMUnavailableToUnavailable(t *testing.T) {
+	t.Parallel()
+
+	handler := NewSemanticLayerHandler(fakeSemanticLayerController{
+		getFn: func(context.Context, uuid.UUID, string) (controller.GetSemanticLayerResult, error) {
+			return controller.GetSemanticLayerResult{}, errors.New("unexpected Get call")
+		},
+		draftFn: func(context.Context, uuid.UUID, string, uuid.UUID) (controller.DraftSemanticLayerResult, error) {
+			return controller.DraftSemanticLayerResult{}, llm.NewUnavailableError(
+				[]string{"anthropic"},
+				errors.New("provider outage"),
+			)
+		},
+		updateFn: func(context.Context, uuid.UUID, string, uuid.UUID, model.SemanticLayerContent) (controller.SemanticLayerRecord, error) {
+			return controller.SemanticLayerRecord{}, errors.New("unexpected Update call")
+		},
+		approveFn: func(context.Context, uuid.UUID, string, uuid.UUID) (controller.SemanticLayerRecord, error) {
+			return controller.SemanticLayerRecord{}, errors.New("unexpected Approve call")
+		},
+	})
+
+	_, err := handler.DraftSemanticLayer(
+		semanticHandlerContext(),
+		connect.NewRequest(&semanticv1.DraftSemanticLayerRequest{
+			TenantId:        uuid.NewString(),
+			SchemaVersionId: uuid.NewString(),
+		}),
+	)
+	requireConnectCode(t, err, connect.CodeUnavailable)
+}

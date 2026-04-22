@@ -295,7 +295,7 @@ func (isolationFakeCompleter) Complete(
 	_ context.Context,
 	req llm.CompletionRequest,
 ) (llm.CompletionResponse, error) {
-	prompt := req.Messages[0].Content
+	prompt := req.Messages[0].CachedContent + req.Messages[0].Content
 	if req.OutputFormat != nil {
 		switch {
 		case strings.Contains(prompt, "\"customers\""):

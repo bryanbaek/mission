@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	"github.com/bryanbaek/mission/gen/go/onboarding/v1/onboardingv1connect"
@@ -28,7 +29,6 @@ import (
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/config"
-	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/db"
 	llmgateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
@@ -36,6 +36,7 @@ import (
 	openaigateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm/openai"
 	"github.com/bryanbaek/mission/internal/controlplane/handler"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
+	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 )
 
 const frontendDistDir = "web/dist"
@@ -76,7 +77,11 @@ func run() error {
 	}
 	defer sentry.Flush(2 * time.Second)
 
-	pool, err := db.NewPool(ctx, cfg.DatabaseURL, cfg.DBMaxConns)
+	pool, err := db.NewPool(ctx, cfg.DatabaseURL, db.PoolConfig{
+		MaxConns:          cfg.DBMaxConns,
+		MinConns:          cfg.DBMinConns,
+		HealthCheckPeriod: cfg.DBHealthCheckPeriod,
+	})
 	if err != nil {
 		return fmt.Errorf("connect db: %w", err)
 	}
@@ -125,13 +130,22 @@ func run() error {
 		)
 	}
 	llmRouter := llmgateway.NewRouter(cfg.DefaultLLMProvider, llmProviders...)
+	semanticProviderModels := providerModelMap(
+		cfg.AnthropicSemanticLayerModel,
+		cfg.OpenAISemanticLayerModel,
+	)
+	queryProviderModels := providerModelMap(
+		cfg.AnthropicQueryModel,
+		cfg.OpenAIQueryModel,
+	)
 	semanticLayerCtrl := controller.NewSemanticLayerController(
 		tenantCtrl,
 		schemaRepo,
 		semanticLayerRepo,
 		llmRouter,
 		controller.SemanticLayerControllerConfig{
-			Model: cfg.SemanticLayerModel,
+			Model:          cfg.SemanticLayerModel,
+			ProviderModels: semanticProviderModels,
 		},
 	)
 	queryCtrl := controller.NewQueryController(
@@ -144,7 +158,9 @@ func run() error {
 		agentSessions,
 		llmRouter,
 		controller.QueryControllerConfig{
-			Model: cfg.QueryModel,
+			Model:                 cfg.QueryModel,
+			ProviderModels:        queryProviderModels,
+			SummaryProviderModels: queryProviderModels,
 		},
 	)
 	starterQuestionsCtrl := controller.NewStarterQuestionsController(
@@ -153,7 +169,8 @@ func run() error {
 		starterQuestionsRepo,
 		llmRouter,
 		controller.StarterQuestionsControllerConfig{
-			Model: cfg.QueryModel,
+			Model:          cfg.QueryModel,
+			ProviderModels: queryProviderModels,
 		},
 	)
 	onboardingCtrl := controller.NewOnboardingController(
@@ -296,35 +313,43 @@ func run() error {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	serverErr := make(chan error, 1)
-	go func() {
+	g, groupCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
 		slog.Info("control-plane listening", "addr", srv.Addr, "env", cfg.Env)
 		if err := srv.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			serverErr <- err
-		}
-		close(serverErr)
-	}()
-
-	select {
-	case <-ctx.Done():
-		slog.Info("shutdown signal received")
-	case err := <-serverErr:
-		if err != nil {
 			return fmt.Errorf("server: %w", err)
 		}
-	}
-
-	shutdownCtx, shutdownCancel := context.WithTimeout(
-		context.Background(),
-		cfg.ShutdownTimeout,
-	)
-	defer shutdownCancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("shutdown: %w", err)
+		return nil
+	})
+	g.Go(func() error {
+		<-groupCtx.Done()
+		if ctx.Err() != nil {
+			slog.Info("shutdown signal received")
+		}
+		shutdownCtx, shutdownCancel := context.WithTimeout(
+			context.Background(),
+			cfg.ShutdownTimeout,
+		)
+		defer shutdownCancel()
+		if err := srv.Shutdown(shutdownCtx); err != nil &&
+			!errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("shutdown: %w", err)
+		}
+		return nil
+	})
+	if err := g.Wait(); err != nil {
+		return err
 	}
 	slog.Info("control-plane stopped")
 	return nil
+}
+
+func providerModelMap(anthropicModel, openAIModel string) map[string]string {
+	return llmgateway.CloneProviderModels(map[string]string{
+		"anthropic": anthropicModel,
+		"openai":    openAIModel,
+	})
 }
 
 func loadFrontendHandler(cfg config.Config) (http.Handler, error) {

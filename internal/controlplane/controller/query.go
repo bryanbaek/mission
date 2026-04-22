@@ -173,14 +173,16 @@ type queryCompleter interface {
 // QueryControllerConfig configures a QueryController. Zero values fall back
 // to sensible defaults.
 type QueryControllerConfig struct {
-	Now                  func() time.Time
-	Model                string
-	MaxTokens            int
-	SummaryModel         string
-	SummaryMaxTokens     int
-	MaxSummaryRows       int
-	MaxRetrievedExamples int
-	MaxCanonicalExamples int
+	Now                   func() time.Time
+	Model                 string
+	ProviderModels        map[string]string
+	MaxTokens             int
+	SummaryModel          string
+	SummaryProviderModels map[string]string
+	SummaryMaxTokens      int
+	MaxSummaryRows        int
+	MaxRetrievedExamples  int
+	MaxCanonicalExamples  int
 }
 
 // AskQuestionAttempt records one pass through the SQL-generation pipeline.
@@ -223,22 +225,24 @@ type ListMyQueryRunsResult struct {
 // canonical-example retrieval, LLM SQL generation, sqlguard validation,
 // edge-agent execution, and Korean summarization.
 type QueryController struct {
-	tenants              queryMembershipCheckerCtl
-	schemas              querySchemaStoreCtl
-	layers               querySemanticLayerStoreCtl
-	runs                 queryRunStoreCtl
-	feedback             queryFeedbackStoreCtl
-	examples             queryCanonicalExampleStoreCtl
-	agent                queryAgentExecutor
-	completer            queryCompleter
-	now                  func() time.Time
-	model                string
-	maxTokens            int
-	summaryModel         string
-	summaryMaxTokens     int
-	maxSummaryRows       int
-	maxRetrievedExamples int
-	maxCanonicalExamples int
+	tenants               queryMembershipCheckerCtl
+	schemas               querySchemaStoreCtl
+	layers                querySemanticLayerStoreCtl
+	runs                  queryRunStoreCtl
+	feedback              queryFeedbackStoreCtl
+	examples              queryCanonicalExampleStoreCtl
+	agent                 queryAgentExecutor
+	completer             queryCompleter
+	now                   func() time.Time
+	model                 string
+	providerModels        map[string]string
+	maxTokens             int
+	summaryModel          string
+	summaryProviderModels map[string]string
+	summaryMaxTokens      int
+	maxSummaryRows        int
+	maxRetrievedExamples  int
+	maxCanonicalExamples  int
 }
 
 func NewQueryController(
@@ -260,6 +264,7 @@ func NewQueryController(
 	if modelName == "" {
 		modelName = "claude-sonnet-4-6"
 	}
+	providerModels := llm.CloneProviderModels(cfg.ProviderModels)
 	maxTokens := cfg.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 4_096
@@ -267,6 +272,10 @@ func NewQueryController(
 	summaryModel := strings.TrimSpace(cfg.SummaryModel)
 	if summaryModel == "" {
 		summaryModel = modelName
+	}
+	summaryProviderModels := llm.CloneProviderModels(cfg.SummaryProviderModels)
+	if len(summaryProviderModels) == 0 {
+		summaryProviderModels = llm.CloneProviderModels(providerModels)
 	}
 	summaryMaxTokens := cfg.SummaryMaxTokens
 	if summaryMaxTokens <= 0 {
@@ -285,22 +294,24 @@ func NewQueryController(
 		maxCanonicalExamples = defaultCanonicalExampleLimit
 	}
 	return &QueryController{
-		tenants:              tenants,
-		schemas:              schemas,
-		layers:               layers,
-		runs:                 runs,
-		feedback:             feedback,
-		examples:             examples,
-		agent:                agent,
-		completer:            completer,
-		now:                  now,
-		model:                modelName,
-		maxTokens:            maxTokens,
-		summaryModel:         summaryModel,
-		summaryMaxTokens:     summaryMaxTokens,
-		maxSummaryRows:       maxSummaryRows,
-		maxRetrievedExamples: maxRetrievedExamples,
-		maxCanonicalExamples: maxCanonicalExamples,
+		tenants:               tenants,
+		schemas:               schemas,
+		layers:                layers,
+		runs:                  runs,
+		feedback:              feedback,
+		examples:              examples,
+		agent:                 agent,
+		completer:             completer,
+		now:                   now,
+		model:                 modelName,
+		providerModels:        providerModels,
+		maxTokens:             maxTokens,
+		summaryModel:          summaryModel,
+		summaryProviderModels: summaryProviderModels,
+		summaryMaxTokens:      summaryMaxTokens,
+		maxSummaryRows:        maxSummaryRows,
+		maxRetrievedExamples:  maxRetrievedExamples,
+		maxCanonicalExamples:  maxCanonicalExamples,
 	}
 }
 
@@ -1002,8 +1013,9 @@ func (c *QueryController) generateSQL(
 			CachedContent: cached,
 			Content:       dynamic,
 		}},
-		Model:     c.model,
-		MaxTokens: c.maxTokens,
+		Model:          c.model,
+		ProviderModels: llm.CloneProviderModels(c.providerModels),
+		MaxTokens:      c.maxTokens,
 		OutputFormat: &llm.OutputFormat{
 			Name:   "text_to_sql",
 			Schema: querySQLOutputSchema(),
@@ -1050,8 +1062,9 @@ func (c *QueryController) summarize(
 			Role:    "user",
 			Content: userPrompt,
 		}},
-		Model:     c.summaryModel,
-		MaxTokens: c.summaryMaxTokens,
+		Model:          c.summaryModel,
+		ProviderModels: llm.CloneProviderModels(c.summaryProviderModels),
+		MaxTokens:      c.summaryMaxTokens,
 	})
 	if err != nil {
 		return "", err

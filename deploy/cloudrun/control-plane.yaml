@@ -30,6 +30,12 @@ spec:
               value: info
             - name: DATABASE_URL
               value: postgres://DB_USER:DB_PASSWORD@CLOUD_SQL_PRIVATE_IP:5432/DB_NAME?sslmode=disable
+            - name: DB_MAX_CONNS
+              value: "4"
+            - name: DB_MIN_CONNS
+              value: "1"
+            - name: DB_HEALTH_CHECK_PERIOD_SECONDS
+              value: "30"
             - name: CLERK_SECRET_KEY
               value: CLERK_SECRET_KEY
             - name: PUBLIC_CONTROL_PLANE_URL
@@ -40,6 +46,14 @@ spec:
               value: claude-sonnet-4-6
             - name: QUERY_MODEL
               value: claude-sonnet-4-6
+            - name: ANTHROPIC_SEMANTIC_LAYER_MODEL
+              value: claude-sonnet-4-6
+            - name: OPENAI_SEMANTIC_LAYER_MODEL
+              value: gpt-4.1
+            - name: ANTHROPIC_QUERY_MODEL
+              value: claude-sonnet-4-6
+            - name: OPENAI_QUERY_MODEL
+              value: gpt-4.1
             - name: EDGE_AGENT_IMAGE
               value: REGION-docker.pkg.dev/PROJECT_ID/mission/edge-agent:TAG
             - name: SENTRY_DSN

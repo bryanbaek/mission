@@ -55,9 +55,10 @@ type starterQuestionsStore interface {
 }
 
 type StarterQuestionsControllerConfig struct {
-	Now       func() time.Time
-	Model     string
-	MaxTokens int
+	Now            func() time.Time
+	Model          string
+	ProviderModels map[string]string
+	MaxTokens      int
 }
 
 type StarterQuestionsListResult struct {
@@ -67,13 +68,14 @@ type StarterQuestionsListResult struct {
 }
 
 type StarterQuestionsController struct {
-	layers    starterQuestionsLayerStore
-	questions starterQuestionsStore
-	tenants   starterQuestionsMembershipChecker
-	completer llm.Provider
-	model     string
-	maxTokens int
-	now       func() time.Time
+	layers         starterQuestionsLayerStore
+	questions      starterQuestionsStore
+	tenants        starterQuestionsMembershipChecker
+	completer      llm.Provider
+	model          string
+	providerModels map[string]string
+	maxTokens      int
+	now            func() time.Time
 }
 
 type starterQuestionsOutput struct {
@@ -101,18 +103,20 @@ func NewStarterQuestionsController(
 	if modelName == "" {
 		modelName = "claude-sonnet-4-6"
 	}
+	providerModels := llm.CloneProviderModels(cfg.ProviderModels)
 	maxTokens := cfg.MaxTokens
 	if maxTokens <= 0 {
 		maxTokens = 2_048
 	}
 	return &StarterQuestionsController{
-		layers:    layers,
-		questions: questions,
-		tenants:   tenants,
-		completer: completer,
-		model:     modelName,
-		maxTokens: maxTokens,
-		now:       now,
+		layers:         layers,
+		questions:      questions,
+		tenants:        tenants,
+		completer:      completer,
+		model:          modelName,
+		providerModels: providerModels,
+		maxTokens:      maxTokens,
+		now:            now,
 	}
 }
 
@@ -239,8 +243,9 @@ func (c *StarterQuestionsController) generate(
 				Role:    "user",
 				Content: userPrompt,
 			}},
-			Model:     c.model,
-			MaxTokens: c.maxTokens,
+			Model:          c.model,
+			ProviderModels: llm.CloneProviderModels(c.providerModels),
+			MaxTokens:      c.maxTokens,
 			OutputFormat: &llm.OutputFormat{
 				Name:   "starter_questions",
 				Schema: starterQuestionsOutputSchema(),

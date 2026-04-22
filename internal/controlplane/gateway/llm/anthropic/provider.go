@@ -2,8 +2,11 @@ package anthropic
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -55,17 +58,26 @@ func (p *Provider) Complete(
 	req llm.CompletionRequest,
 ) (llm.CompletionResponse, error) {
 	if p.apiKey == "" {
-		return llm.CompletionResponse{}, fmt.Errorf("anthropic api key is not configured")
+		return llm.CompletionResponse{}, llm.NewProviderError(
+			p.Name(),
+			fmt.Errorf("anthropic api key is not configured"),
+		)
+	}
+	if strings.TrimSpace(req.Model) == "" {
+		return llm.CompletionResponse{}, llm.NewProviderError(
+			p.Name(),
+			fmt.Errorf("anthropic model is not configured"),
+		)
 	}
 
 	params, err := buildMessageParams(req)
 	if err != nil {
-		return llm.CompletionResponse{}, err
+		return llm.CompletionResponse{}, llm.NewProviderError(p.Name(), err)
 	}
 
 	resp, err := p.client.Messages.New(ctx, params)
 	if err != nil {
-		return llm.CompletionResponse{}, fmt.Errorf("send anthropic request: %w", err)
+		return llm.CompletionResponse{}, classifyAnthropicError(err)
 	}
 
 	var parts []string
@@ -88,6 +100,38 @@ func (p *Provider) Complete(
 			CacheReadInputTokens:     int(resp.Usage.CacheReadInputTokens),
 		},
 	}, nil
+}
+
+func classifyAnthropicError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, context.Canceled):
+		return llm.NewProviderError("anthropic", err)
+	case errors.Is(err, context.DeadlineExceeded):
+		return llm.NewTransientProviderError("anthropic", err)
+	}
+
+	var apiErr *anthropic.Error
+	if errors.As(err, &apiErr) {
+		if apiErr.StatusCode == http.StatusTooManyRequests ||
+			apiErr.StatusCode >= http.StatusInternalServerError {
+			return llm.NewTransientProviderError("anthropic", err)
+		}
+		return llm.NewProviderError("anthropic", err)
+	}
+
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		return llm.NewTransientProviderError("anthropic", err)
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return llm.NewTransientProviderError("anthropic", err)
+	}
+
+	return llm.NewProviderError("anthropic", err)
 }
 
 func buildMessageParams(

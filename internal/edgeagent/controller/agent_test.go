@@ -37,6 +37,23 @@ func (s *fakeCommandStream) Err() error {
 	return s.err
 }
 
+type contextCommandStream struct {
+	ctx context.Context
+}
+
+func (s *contextCommandStream) Receive() bool {
+	<-s.ctx.Done()
+	return false
+}
+
+func (s *contextCommandStream) Message() ControlMessage {
+	return ControlMessage{}
+}
+
+func (s *contextCommandStream) Err() error {
+	return s.ctx.Err()
+}
+
 type fakeControlPlaneClient struct {
 	openFn         func(context.Context, OpenCommandStreamRequest) (CommandStream, error)
 	beatFn         func(context.Context, HeartbeatRequest) error
@@ -360,6 +377,52 @@ func TestAgentServiceRunSessionAndRun(t *testing.T) {
 	}
 	if sleepCalls != 1 {
 		t.Fatalf("sleepCalls = %d, want 1", sleepCalls)
+	}
+}
+
+func TestAgentServiceRunExitsOnParentContextCancellation(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_700_000_000, 0).UTC()
+	service, err := NewAgentService(
+		fakeControlPlaneClient{
+			openFn: func(
+				ctx context.Context,
+				_ OpenCommandStreamRequest,
+			) (CommandStream, error) {
+				return &contextCommandStream{ctx: ctx}, nil
+			},
+			beatFn: func(context.Context, HeartbeatRequest) error { return nil },
+		},
+		AgentServiceConfig{
+			Hostname:          "host-a",
+			HeartbeatInterval: time.Hour,
+			Logger:            discardLogger(),
+			Now: func() time.Time {
+				return now
+			},
+			Rand: rand.New(rand.NewSource(1)),
+		},
+	)
+	if err != nil {
+		t.Fatalf("NewAgentService returned error: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		done <- service.Run(ctx)
+	}()
+
+	cancel()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run returned error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for Run to exit after context cancellation")
 	}
 }
 

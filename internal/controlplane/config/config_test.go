@@ -17,9 +17,15 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("PUBLIC_CONTROL_PLANE_URL", "")
 	t.Setenv("SHUTDOWN_TIMEOUT_SECONDS", "")
 	t.Setenv("DB_MAX_CONNS", "")
+	t.Setenv("DB_MIN_CONNS", "")
+	t.Setenv("DB_HEALTH_CHECK_PERIOD_SECONDS", "")
 	t.Setenv("VITE_SENTRY_DSN", "")
 	t.Setenv("VITE_SENTRY_ENVIRONMENT", "")
 	t.Setenv("VITE_SENTRY_RELEASE", "")
+	t.Setenv("ANTHROPIC_SEMANTIC_LAYER_MODEL", "")
+	t.Setenv("OPENAI_SEMANTIC_LAYER_MODEL", "")
+	t.Setenv("ANTHROPIC_QUERY_MODEL", "")
+	t.Setenv("OPENAI_QUERY_MODEL", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -50,8 +56,17 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.ShutdownTimeout != 10*time.Second {
 		t.Fatalf("ShutdownTimeout = %s, want 10s", cfg.ShutdownTimeout)
 	}
-	if cfg.DBMaxConns != 10 {
-		t.Fatalf("DBMaxConns = %d, want 10", cfg.DBMaxConns)
+	if cfg.DBMaxConns != 4 {
+		t.Fatalf("DBMaxConns = %d, want 4", cfg.DBMaxConns)
+	}
+	if cfg.DBMinConns != 1 {
+		t.Fatalf("DBMinConns = %d, want 1", cfg.DBMinConns)
+	}
+	if cfg.DBHealthCheckPeriod != 30*time.Second {
+		t.Fatalf(
+			"DBHealthCheckPeriod = %s, want 30s",
+			cfg.DBHealthCheckPeriod,
+		)
 	}
 	if cfg.FrontendSentryEnvironment != "development" {
 		t.Fatalf("FrontendSentryEnvironment = %q, want development", cfg.FrontendSentryEnvironment)
@@ -164,6 +179,94 @@ func TestLoadRequiresPublicControlPlaneURLInProduction(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("Load returned nil error without PUBLIC_CONTROL_PLANE_URL in production")
+	}
+}
+
+func TestLoadUsesProviderSpecificModels(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("ANTHROPIC_SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6")
+	t.Setenv("OPENAI_SEMANTIC_LAYER_MODEL", "gpt-4.1")
+	t.Setenv("ANTHROPIC_QUERY_MODEL", "claude-haiku-4")
+	t.Setenv("OPENAI_QUERY_MODEL", "gpt-4.1-mini")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.AnthropicSemanticLayerModel != "claude-sonnet-4-6" {
+		t.Fatalf(
+			"AnthropicSemanticLayerModel = %q",
+			cfg.AnthropicSemanticLayerModel,
+		)
+	}
+	if cfg.OpenAISemanticLayerModel != "gpt-4.1" {
+		t.Fatalf(
+			"OpenAISemanticLayerModel = %q",
+			cfg.OpenAISemanticLayerModel,
+		)
+	}
+	if cfg.AnthropicQueryModel != "claude-haiku-4" {
+		t.Fatalf("AnthropicQueryModel = %q", cfg.AnthropicQueryModel)
+	}
+	if cfg.OpenAIQueryModel != "gpt-4.1-mini" {
+		t.Fatalf("OpenAIQueryModel = %q", cfg.OpenAIQueryModel)
+	}
+}
+
+func TestLoadRejectsInvalidDBPoolConfig(t *testing.T) {
+	testCases := []struct {
+		name    string
+		max     string
+		min     string
+		health  string
+		wantErr string
+	}{
+		{
+			name:    "max must be positive",
+			max:     "0",
+			min:     "0",
+			health:  "30",
+			wantErr: "DB_MAX_CONNS must be greater than 0",
+		},
+		{
+			name:    "min cannot be negative",
+			max:     "4",
+			min:     "-1",
+			health:  "30",
+			wantErr: "DB_MIN_CONNS must be greater than or equal to 0",
+		},
+		{
+			name:    "min cannot exceed max",
+			max:     "2",
+			min:     "3",
+			health:  "30",
+			wantErr: "DB_MIN_CONNS must be less than or equal to DB_MAX_CONNS",
+		},
+		{
+			name:    "health check must be positive",
+			max:     "4",
+			min:     "1",
+			health:  "0",
+			wantErr: "DB_HEALTH_CHECK_PERIOD_SECONDS must be greater than 0",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+			t.Setenv("DB_MAX_CONNS", tc.max)
+			t.Setenv("DB_MIN_CONNS", tc.min)
+			t.Setenv("DB_HEALTH_CHECK_PERIOD_SECONDS", tc.health)
+
+			_, err := Load()
+			if err == nil {
+				t.Fatal("Load returned nil error")
+			}
+			if err.Error() != tc.wantErr {
+				t.Fatalf("err = %q, want %q", err.Error(), tc.wantErr)
+			}
+		})
 	}
 }
 

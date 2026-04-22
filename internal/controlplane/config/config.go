@@ -9,31 +9,37 @@ import (
 )
 
 type Config struct {
-	Env                       string
-	HTTPPort                  int
-	ShutdownTimeout           time.Duration
-	DatabaseURL               string
-	DBMaxConns                int32
-	LogLevel                  string
-	ClerkSecretKey            string
-	ClerkPublishableKey       string
-	FrontendSentryDSN         string
-	FrontendSentryEnvironment string
-	FrontendSentryRelease     string
-	PublicControlPlaneURL     string
-	AnthropicAPIKey           string
-	OpenAIAPIKey              string
-	DefaultLLMProvider        string
-	SemanticLayerModel        string
-	QueryModel                string
-	EdgeAgentVersion          string
-	EdgeAgentImageRepo        string
-	EdgeAgentImage            string
-	SentryDSN                 string
-	SentryEnvironment         string
-	SentryRelease             string
-	AnthropicPreflightModel   string
-	OpenAIPreflightModel      string
+	Env                         string
+	HTTPPort                    int
+	ShutdownTimeout             time.Duration
+	DatabaseURL                 string
+	DBMaxConns                  int32
+	DBMinConns                  int32
+	DBHealthCheckPeriod         time.Duration
+	LogLevel                    string
+	ClerkSecretKey              string
+	ClerkPublishableKey         string
+	FrontendSentryDSN           string
+	FrontendSentryEnvironment   string
+	FrontendSentryRelease       string
+	PublicControlPlaneURL       string
+	AnthropicAPIKey             string
+	OpenAIAPIKey                string
+	DefaultLLMProvider          string
+	SemanticLayerModel          string
+	QueryModel                  string
+	AnthropicSemanticLayerModel string
+	OpenAISemanticLayerModel    string
+	AnthropicQueryModel         string
+	OpenAIQueryModel            string
+	EdgeAgentVersion            string
+	EdgeAgentImageRepo          string
+	EdgeAgentImage              string
+	SentryDSN                   string
+	SentryEnvironment           string
+	SentryRelease               string
+	AnthropicPreflightModel     string
+	OpenAIPreflightModel        string
 }
 
 func Load() (Config, error) {
@@ -45,9 +51,36 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid SHUTDOWN_TIMEOUT_SECONDS: %w", err)
 	}
-	dbMaxConns, err := strconv.Atoi(getenv("DB_MAX_CONNS", "10"))
+	dbMaxConns, err := strconv.Atoi(getenv("DB_MAX_CONNS", "4"))
 	if err != nil {
 		return Config{}, fmt.Errorf("invalid DB_MAX_CONNS: %w", err)
+	}
+	dbMinConns, err := strconv.Atoi(getenv("DB_MIN_CONNS", "1"))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid DB_MIN_CONNS: %w", err)
+	}
+	dbHealthCheckPeriodSecs, err := strconv.Atoi(
+		getenv("DB_HEALTH_CHECK_PERIOD_SECONDS", "30"),
+	)
+	if err != nil {
+		return Config{}, fmt.Errorf(
+			"invalid DB_HEALTH_CHECK_PERIOD_SECONDS: %w",
+			err,
+		)
+	}
+	if dbMaxConns <= 0 {
+		return Config{}, fmt.Errorf("DB_MAX_CONNS must be greater than 0")
+	}
+	if dbMinConns < 0 {
+		return Config{}, fmt.Errorf("DB_MIN_CONNS must be greater than or equal to 0")
+	}
+	if dbMinConns > dbMaxConns {
+		return Config{}, fmt.Errorf("DB_MIN_CONNS must be less than or equal to DB_MAX_CONNS")
+	}
+	if dbHealthCheckPeriodSecs <= 0 {
+		return Config{}, fmt.Errorf(
+			"DB_HEALTH_CHECK_PERIOD_SECONDS must be greater than 0",
+		)
 	}
 	cfg := Config{
 		Env:             getenv("ENV", "development"),
@@ -55,29 +88,60 @@ func Load() (Config, error) {
 		ShutdownTimeout: time.Duration(shutdownSecs) * time.Second,
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		DBMaxConns:      int32(dbMaxConns),
-		LogLevel:            getenv("LOG_LEVEL", "info"),
-		ClerkSecretKey:      os.Getenv("CLERK_SECRET_KEY"),
-		ClerkPublishableKey: firstNonEmpty(os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"), os.Getenv("CLERK_PUBLISHABLE_KEY")),
-		FrontendSentryDSN:   firstNonEmpty(os.Getenv("VITE_SENTRY_DSN"), os.Getenv("SENTRY_DSN")),
+		DBMinConns:      int32(dbMinConns),
+		DBHealthCheckPeriod: time.Duration(
+			dbHealthCheckPeriodSecs,
+		) * time.Second,
+		LogLevel:       getenv("LOG_LEVEL", "info"),
+		ClerkSecretKey: os.Getenv("CLERK_SECRET_KEY"),
+		ClerkPublishableKey: firstNonEmpty(
+			os.Getenv("VITE_CLERK_PUBLISHABLE_KEY"),
+			os.Getenv("CLERK_PUBLISHABLE_KEY"),
+		),
+		FrontendSentryDSN: firstNonEmpty(
+			os.Getenv("VITE_SENTRY_DSN"),
+			os.Getenv("SENTRY_DSN"),
+		),
 		FrontendSentryEnvironment: firstNonEmpty(
 			os.Getenv("VITE_SENTRY_ENVIRONMENT"),
 			os.Getenv("SENTRY_ENVIRONMENT"),
 			getenv("ENV", "development"),
 		),
-		FrontendSentryRelease: firstNonEmpty(os.Getenv("VITE_SENTRY_RELEASE"), os.Getenv("SENTRY_RELEASE")),
-		PublicControlPlaneURL:   strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
-		AnthropicAPIKey:         os.Getenv("ANTHROPIC_API_KEY"),
-		OpenAIAPIKey:            os.Getenv("OPENAI_API_KEY"),
-		DefaultLLMProvider:      getenv("DEFAULT_LLM_PROVIDER", "anthropic"),
-		SemanticLayerModel:      getenv("SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6"),
-		QueryModel:              getenv("QUERY_MODEL", "claude-sonnet-4-6"),
-		EdgeAgentVersion:        getenv("EDGE_AGENT_VERSION", "v0.1.0"),
-		EdgeAgentImageRepo:      getenv("EDGE_AGENT_IMAGE_REPOSITORY", "registry.digitalocean.com/mission/edge-agent"),
-		SentryDSN:               os.Getenv("SENTRY_DSN"),
-		SentryEnvironment:       getenv("SENTRY_ENVIRONMENT", getenv("ENV", "development")),
-		SentryRelease:           os.Getenv("SENTRY_RELEASE"),
-		AnthropicPreflightModel: getenv("ANTHROPIC_PREFLIGHT_MODEL", "claude-3-5-haiku-latest"),
-		OpenAIPreflightModel:    getenv("OPENAI_PREFLIGHT_MODEL", "gpt-4.1-nano"),
+		FrontendSentryRelease: firstNonEmpty(
+			os.Getenv("VITE_SENTRY_RELEASE"),
+			os.Getenv("SENTRY_RELEASE"),
+		),
+		PublicControlPlaneURL: strings.TrimSpace(os.Getenv("PUBLIC_CONTROL_PLANE_URL")),
+		AnthropicAPIKey:       os.Getenv("ANTHROPIC_API_KEY"),
+		OpenAIAPIKey:          os.Getenv("OPENAI_API_KEY"),
+		DefaultLLMProvider:    getenv("DEFAULT_LLM_PROVIDER", "anthropic"),
+		SemanticLayerModel:    getenv("SEMANTIC_LAYER_MODEL", "claude-sonnet-4-6"),
+		QueryModel:            getenv("QUERY_MODEL", "claude-sonnet-4-6"),
+		AnthropicSemanticLayerModel: strings.TrimSpace(
+			os.Getenv("ANTHROPIC_SEMANTIC_LAYER_MODEL"),
+		),
+		OpenAISemanticLayerModel: strings.TrimSpace(
+			os.Getenv("OPENAI_SEMANTIC_LAYER_MODEL"),
+		),
+		AnthropicQueryModel: strings.TrimSpace(
+			os.Getenv("ANTHROPIC_QUERY_MODEL"),
+		),
+		OpenAIQueryModel: strings.TrimSpace(
+			os.Getenv("OPENAI_QUERY_MODEL"),
+		),
+		EdgeAgentVersion: getenv("EDGE_AGENT_VERSION", "v0.1.0"),
+		EdgeAgentImageRepo: getenv(
+			"EDGE_AGENT_IMAGE_REPOSITORY",
+			"registry.digitalocean.com/mission/edge-agent",
+		),
+		SentryDSN:         os.Getenv("SENTRY_DSN"),
+		SentryEnvironment: getenv("SENTRY_ENVIRONMENT", getenv("ENV", "development")),
+		SentryRelease:     os.Getenv("SENTRY_RELEASE"),
+		AnthropicPreflightModel: getenv(
+			"ANTHROPIC_PREFLIGHT_MODEL",
+			"claude-3-5-haiku-latest",
+		),
+		OpenAIPreflightModel: getenv("OPENAI_PREFLIGHT_MODEL", "gpt-4.1-nano"),
 	}
 	cfg.EdgeAgentImage = resolveEdgeAgentImage(
 		os.Getenv("EDGE_AGENT_IMAGE"),

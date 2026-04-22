@@ -12,6 +12,7 @@ import (
 	queryv1 "github.com/bryanbaek/mission/gen/go/query/v1"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 )
 
@@ -224,6 +225,30 @@ func TestQueryHandlerAttachesTerminalFailureDetails(t *testing.T) {
 	if detail.QueryRunId != queryRunID.String() {
 		t.Fatalf("query_run_id detail = %q, want %s", detail.QueryRunId, queryRunID)
 	}
+}
+
+func TestQueryHandlerMapsLLMUnavailableToUnavailable(t *testing.T) {
+	t.Parallel()
+
+	handler := NewQueryHandler(fakeQueryController{
+		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+			return controller.AskQuestionResult{
+					Warnings: []string{"llm retry exhausted"},
+				}, llm.NewUnavailableError(
+					[]string{"anthropic", "openai"},
+					errors.New("provider outage"),
+				)
+		},
+	})
+
+	_, err := handler.AskQuestion(
+		queryHandlerContext(),
+		connect.NewRequest(&queryv1.AskQuestionRequest{
+			TenantId: uuid.NewString(),
+			Question: "질문",
+		}),
+	)
+	requireConnectCode(t, err, connect.CodeUnavailable)
 }
 
 func TestQueryHandlerListMyQueryRunsMapsResultToProto(t *testing.T) {
