@@ -440,12 +440,12 @@ func TestQueryControllerAskQuestionPersistsSuccessfulRun(t *testing.T) {
 	if len(completer.calls) == 0 {
 		t.Fatal("expected completer to be called")
 	}
-	prompt := completer.calls[0].Messages[0].Content
-	if strings.Count(prompt, "## 승인된 예시 쿼리") != 1 {
-		t.Fatalf("prompt should include approved examples block once, got:\n%s", prompt)
+	cached := completer.calls[0].Messages[0].CachedContent
+	if strings.Count(cached, "## 승인된 예시 쿼리") != 1 {
+		t.Fatalf("cached prompt should include approved examples block once, got:\n%s", cached)
 	}
-	if !strings.Contains(prompt, "기본 집계 예시") {
-		t.Fatalf("prompt missing example notes: %s", prompt)
+	if !strings.Contains(cached, "기본 집계 예시") {
+		t.Fatalf("cached prompt missing example notes: %s", cached)
 	}
 }
 
@@ -622,7 +622,7 @@ func TestBuildQueryUserPromptIncludesApprovedExamplesOnce(t *testing.T) {
 	t.Parallel()
 
 	rawSchema, _ := queryTestSchema()
-	prompt := buildQueryUserPrompt(
+	cached, _ := buildQueryUserPrompt(
 		"평균 pH는?",
 		queryPromptContext{
 			schemaRaw: rawSchema,
@@ -638,11 +638,11 @@ func TestBuildQueryUserPromptIncludesApprovedExamplesOnce(t *testing.T) {
 		"",
 	)
 
-	if strings.Count(prompt, "## 승인된 예시 쿼리") != 1 {
-		t.Fatalf("prompt should include approved examples block once, got:\n%s", prompt)
+	if strings.Count(cached, "## 승인된 예시 쿼리") != 1 {
+		t.Fatalf("cached prompt should include approved examples block once, got:\n%s", cached)
 	}
-	if !strings.Contains(prompt, "대표 예시") {
-		t.Fatalf("prompt missing example notes: %s", prompt)
+	if !strings.Contains(cached, "대표 예시") {
+		t.Fatalf("cached prompt missing example notes: %s", cached)
 	}
 }
 

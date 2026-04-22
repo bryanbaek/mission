@@ -15,8 +15,9 @@ type CompletionRequest struct {
 }
 
 type Message struct {
-	Role    string // "user" | "assistant"
-	Content string
+	Role          string // "user" | "assistant"
+	Content       string // dynamic part (question, retry info)
+	CachedContent string // static part (schema, semantic layer, examples); Anthropic only
 }
 
 type OutputFormat struct {
