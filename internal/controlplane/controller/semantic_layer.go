@@ -238,7 +238,8 @@ func (c *SemanticLayerController) Draft(
 	}
 
 	completion, err := c.completer.Complete(ctx, llm.CompletionRequest{
-		System: semanticLayerSystemPrompt,
+		Operation: "semantic_layer.draft",
+		System:    semanticLayerSystemPrompt,
 		Messages: []llm.Message{{
 			Role:          "user",
 			CachedContent: buildSemanticLayerUserPrompt(schemaVersion.Blob),

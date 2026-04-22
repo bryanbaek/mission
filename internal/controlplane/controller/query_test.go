@@ -440,6 +440,15 @@ func TestQueryControllerAskQuestionPersistsSuccessfulRun(t *testing.T) {
 	if len(completer.calls) == 0 {
 		t.Fatal("expected completer to be called")
 	}
+	if len(completer.calls) != 2 {
+		t.Fatalf("completer calls = %d, want 2", len(completer.calls))
+	}
+	if completer.calls[0].Operation != "query.generate_sql" {
+		t.Fatalf("generation operation = %q, want query.generate_sql", completer.calls[0].Operation)
+	}
+	if completer.calls[1].Operation != "query.summarize" {
+		t.Fatalf("summary operation = %q, want query.summarize", completer.calls[1].Operation)
+	}
 	cached := completer.calls[0].Messages[0].CachedContent
 	if strings.Count(cached, "## 승인된 예시 쿼리") != 1 {
 		t.Fatalf("cached prompt should include approved examples block once, got:\n%s", cached)

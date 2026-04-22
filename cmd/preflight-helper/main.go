@@ -126,6 +126,7 @@ func pingProvider(provider, apiKey, model, baseURL string) error {
 	}
 
 	_, err = providerClient.Complete(ctx, llm.CompletionRequest{
+		Operation: "preflight.anthropic_ping",
 		Model:     model,
 		MaxTokens: 1,
 		Messages: []llm.Message{{

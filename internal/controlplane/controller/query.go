@@ -1199,7 +1199,8 @@ func (c *QueryController) generateSQL(
 	)
 
 	resp, err := c.completer.Complete(ctx, llm.CompletionRequest{
-		System: querySystemPrompt,
+		Operation: "query.generate_sql",
+		System:    querySystemPrompt,
 		Messages: []llm.Message{{
 			Role:          "user",
 			CachedContent: cached,
@@ -1249,7 +1250,8 @@ func (c *QueryController) summarize(
 	)
 
 	resp, err := c.completer.Complete(ctx, llm.CompletionRequest{
-		System: querySummarySystemPrompt,
+		Operation: "query.summarize",
+		System:    querySummarySystemPrompt,
 		Messages: []llm.Message{{
 			Role:    "user",
 			Content: userPrompt,

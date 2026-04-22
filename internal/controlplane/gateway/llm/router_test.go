@@ -1,10 +1,16 @@
 package llm
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 )
 
 type scriptedProvider struct {
@@ -229,4 +235,82 @@ func TestRouterReturnsUnavailableWhenAllProvidersAreTransientlyFailing(t *testin
 	if unavailableErr.Providers[0] != "anthropic" || unavailableErr.Providers[1] != "openai" {
 		t.Fatalf("providers = %#v, want [anthropic openai]", unavailableErr.Providers)
 	}
+}
+
+func TestRouterLogsOperationOnCompleteAndFailover(t *testing.T) {
+	t.Parallel()
+
+	anthropic := &scriptedProvider{
+		name: "anthropic",
+		fn: func(context.Context, CompletionRequest) (CompletionResponse, error) {
+			return CompletionResponse{}, NewTransientProviderError(
+				"anthropic",
+				errors.New("upstream unavailable"),
+			)
+		},
+	}
+	openai := &scriptedProvider{
+		name: "openai",
+		fn: func(_ context.Context, req CompletionRequest) (CompletionResponse, error) {
+			return CompletionResponse{
+				Content: "ok",
+				Model:   req.Model,
+			}, nil
+		},
+	}
+
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	ctx := reqlog.WithLogger(context.Background(), logger)
+
+	router := NewRouter("anthropic", anthropic, openai)
+	_, err := router.Complete(ctx, CompletionRequest{
+		Operation: "query.generate_sql",
+		Model:     "generic-model",
+		ProviderModels: map[string]string{
+			"anthropic": "claude-sonnet-4-6",
+			"openai":    "gpt-4.1",
+		},
+	})
+	if err != nil {
+		t.Fatalf("Complete returned error: %v", err)
+	}
+
+	entries := decodeLogEntries(t, logs.String())
+	for _, msg := range []string{"llm.complete.failed", "llm.failover", "llm.complete"} {
+		entry := findLogEntry(t, entries, msg)
+		if got := entry["operation"]; got != "query.generate_sql" {
+			t.Fatalf("%s operation = %#v, want query.generate_sql", msg, got)
+		}
+	}
+}
+
+func decodeLogEntries(t *testing.T, raw string) []map[string]any {
+	t.Helper()
+
+	lines := strings.Split(strings.TrimSpace(raw), "\n")
+	out := make([]map[string]any, 0, len(lines))
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		var entry map[string]any
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Fatalf("json.Unmarshal(%q) returned error: %v", line, err)
+		}
+		out = append(out, entry)
+	}
+	return out
+}
+
+func findLogEntry(t *testing.T, entries []map[string]any, msg string) map[string]any {
+	t.Helper()
+
+	for _, entry := range entries {
+		if entry["msg"] == msg {
+			return entry
+		}
+	}
+	t.Fatalf("log entry %q not found in %#v", msg, entries)
+	return nil
 }

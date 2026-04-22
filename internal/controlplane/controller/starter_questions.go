@@ -232,16 +232,13 @@ func (c *StarterQuestionsController) generate(
 	validationFeedback := ""
 
 	for attempt := 0; attempt < 2; attempt++ {
-		userPrompt := basePrompt
-		if validationFeedback != "" {
-			userPrompt += "\n\n직전 출력 검증 실패:\n" + validationFeedback + "\n위 오류를 반영해 전체 10개를 다시 작성하세요."
-		}
-
 		completion, err := c.completer.Complete(ctx, llm.CompletionRequest{
-			System: starterQuestionsSystemPrompt,
+			Operation: "starter_questions.generate",
+			System:    starterQuestionsSystemPrompt,
 			Messages: []llm.Message{{
-				Role:    "user",
-				Content: userPrompt,
+				Role:          "user",
+				CachedContent: basePrompt,
+				Content:       buildStarterQuestionsRetryPrompt(validationFeedback),
 			}},
 			Model:          c.model,
 			ProviderModels: llm.CloneProviderModels(c.providerModels),

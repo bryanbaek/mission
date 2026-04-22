@@ -39,6 +39,14 @@ func buildStarterQuestionsUserPrompt(
 `) + "\n" + string(body)
 }
 
+func buildStarterQuestionsRetryPrompt(validationFeedback string) string {
+	validationFeedback = strings.TrimSpace(validationFeedback)
+	if validationFeedback == "" {
+		return ""
+	}
+	return "\n\n직전 출력 검증 실패:\n" + validationFeedback + "\n위 오류를 반영해 전체 10개를 다시 작성하세요."
+}
+
 func starterQuestionsOutputSchema() map[string]any {
 	stringSchema := map[string]any{"type": "string"}
 	return map[string]any{

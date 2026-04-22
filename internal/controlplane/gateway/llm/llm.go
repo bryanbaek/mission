@@ -13,6 +13,7 @@ const UserUnavailableMessage = "language model service is temporarily unavailabl
 type CompletionRequest struct {
 	System         string
 	Messages       []Message
+	Operation      string
 	Model          string
 	ProviderModels map[string]string
 	MaxTokens      int

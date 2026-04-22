@@ -55,6 +55,7 @@ func (r *Router) Complete(
 	}
 
 	logger := reqlog.Logger(ctx)
+	operation := strings.TrimSpace(req.Operation)
 	attemptedProviders := make([]string, 0, len(candidates))
 	var lastErr error
 
@@ -64,7 +65,7 @@ func (r *Router) Complete(
 		if err := breaker.beforeCall(); err != nil {
 			attemptedProviders = append(attemptedProviders, providerName)
 			lastErr = err
-			r.logFailover(ctx, logger, providerName, candidates, index, err)
+			r.logFailover(ctx, logger, operation, providerName, candidates, index, err)
 			continue
 		}
 
@@ -91,17 +92,19 @@ func (r *Router) Complete(
 			attemptedProviders = append(attemptedProviders, providerName)
 			lastErr = err
 			logger.WarnContext(ctx, "llm.complete.failed",
+				"operation", operation,
 				"provider", providerName,
 				"duration_ms", durationMS,
 				"err", err,
 			)
-			r.logFailover(ctx, logger, providerName, candidates, index, err)
+			r.logFailover(ctx, logger, operation, providerName, candidates, index, err)
 			continue
 		}
 		if resp.Provider == "" {
 			resp.Provider = provider.Name()
 		}
 		logger.InfoContext(ctx, "llm.complete",
+			"operation", operation,
 			"provider", resp.Provider,
 			"model", resp.Model,
 			"duration_ms", durationMS,
@@ -144,6 +147,7 @@ func (r *Router) orderedProviders() []string {
 func (r *Router) logFailover(
 	ctx context.Context,
 	logger *slog.Logger,
+	operation string,
 	providerName string,
 	candidates []string,
 	index int,
@@ -153,6 +157,7 @@ func (r *Router) logFailover(
 		return
 	}
 	logger.WarnContext(ctx, "llm.failover",
+		"operation", operation,
 		"provider", providerName,
 		"next_provider", candidates[index+1],
 		"err", err,

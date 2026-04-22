@@ -416,8 +416,14 @@ func TestStarterQuestionsControllerListGeneratesAndPersistsWhenEmpty(t *testing.
 	if req.CacheControl == nil || req.CacheControl.TTL != "1h" {
 		t.Fatalf("cache control = %+v", req.CacheControl)
 	}
-	if !strings.Contains(req.Messages[0].Content, "시맨틱 레이어 JSON") {
-		t.Fatalf("user prompt = %q", req.Messages[0].Content)
+	if req.Operation != "starter_questions.generate" {
+		t.Fatalf("operation = %q, want starter_questions.generate", req.Operation)
+	}
+	if !strings.Contains(req.Messages[0].CachedContent, "시맨틱 레이어 JSON") {
+		t.Fatalf("cached user prompt = %q", req.Messages[0].CachedContent)
+	}
+	if req.Messages[0].Content != "" {
+		t.Fatalf("dynamic user prompt = %q, want empty", req.Messages[0].Content)
 	}
 }
 
@@ -479,11 +485,24 @@ func TestStarterQuestionsControllerRegenerateRetriesAfterValidationFailure(t *te
 	if len(completer.calls) != 2 {
 		t.Fatalf("LLM calls = %d, want 2", len(completer.calls))
 	}
+	basePrompt := buildStarterQuestionsUserPrompt(starterSemanticLayerContent())
+	if completer.calls[0].Operation != "starter_questions.generate" || completer.calls[1].Operation != "starter_questions.generate" {
+		t.Fatalf("operations = [%q %q], want starter_questions.generate", completer.calls[0].Operation, completer.calls[1].Operation)
+	}
+	if completer.calls[0].Messages[0].CachedContent != basePrompt {
+		t.Fatalf("first cached prompt mismatch:\n%s", completer.calls[0].Messages[0].CachedContent)
+	}
+	if completer.calls[1].Messages[0].CachedContent != basePrompt {
+		t.Fatalf("retry cached prompt mismatch:\n%s", completer.calls[1].Messages[0].CachedContent)
+	}
+	if completer.calls[0].Messages[0].Content != "" {
+		t.Fatalf("first dynamic prompt = %q, want empty", completer.calls[0].Messages[0].Content)
+	}
 	if !strings.Contains(completer.calls[1].Messages[0].Content, "직전 출력 검증 실패") {
-		t.Fatalf("retry prompt = %q", completer.calls[1].Messages[0].Content)
+		t.Fatalf("retry dynamic prompt = %q", completer.calls[1].Messages[0].Content)
 	}
 	if !strings.Contains(completer.calls[1].Messages[0].Content, "distinct categories") {
-		t.Fatalf("retry prompt missing validation feedback: %q", completer.calls[1].Messages[0].Content)
+		t.Fatalf("retry dynamic prompt missing validation feedback: %q", completer.calls[1].Messages[0].Content)
 	}
 }
 

@@ -512,6 +512,9 @@ func TestSemanticLayerControllerDraftBuildsStructuredRequestAndPersistsContent(t
 	if completer.gotRequest.Model != "deepseek-chat" {
 		t.Fatalf("model = %q, want deepseek-chat", completer.gotRequest.Model)
 	}
+	if completer.gotRequest.Operation != "semantic_layer.draft" {
+		t.Fatalf("operation = %q, want semantic_layer.draft", completer.gotRequest.Operation)
+	}
 	if completer.gotRequest.OutputFormat == nil || completer.gotRequest.OutputFormat.Schema == nil {
 		t.Fatal("expected structured output schema")
 	}
