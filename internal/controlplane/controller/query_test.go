@@ -618,6 +618,207 @@ func TestQueryControllerAskQuestionFallsBackToTenantWideExamples(t *testing.T) {
 	}
 }
 
+func TestQueryControllerAskQuestionFailsRunWhenExampleLookupFails(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	schemaVersionID := uuid.New()
+	queryRunID := uuid.New()
+	schemaRaw, _ := queryTestSchema()
+	approved := queryTestSemanticLayer(
+		t,
+		tenantID,
+		schemaVersionID,
+		model.SemanticLayerStatusApproved,
+	)
+	var failedStage string
+
+	ctrl := newTestQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{TenantID: tenantID, Role: model.RoleMember}, nil
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{
+				ID:       schemaVersionID,
+				TenantID: tenantID,
+				Blob:     schemaRaw,
+			}, nil
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return approved, nil
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("should not call draft")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{
+					ID:              queryRunID,
+					TenantID:        tenantID,
+					SchemaVersionID: schemaVersionID,
+				}, nil
+			},
+			getFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected GetByTenantAndID")
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(_ context.Context, id uuid.UUID, attempts []model.QueryRunAttempt, _ []string, retrievedExampleIDs []uuid.UUID, errorStage, errorMessage string, _ time.Time) (model.TenantQueryRun, error) {
+				if id != queryRunID {
+					t.Fatalf("run id = %s, want %s", id, queryRunID)
+				}
+				if len(attempts) != 0 {
+					t.Fatalf("attempts = %+v, want no attempts", attempts)
+				}
+				if len(retrievedExampleIDs) != 0 {
+					t.Fatalf("retrievedExampleIDs = %+v, want empty", retrievedExampleIDs)
+				}
+				if !strings.Contains(errorMessage, "example lookup failed") {
+					t.Fatalf("error message = %q", errorMessage)
+				}
+				failedStage = errorStage
+				return model.TenantQueryRun{ID: id}, nil
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, errors.New("example lookup failed")
+			},
+		},
+		&fakeQueryAgent{
+			executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+				return AgentExecuteQueryResult{}, errors.New("unexpected ExecuteQuery")
+			},
+		},
+		&fakeQueryCompleter{},
+	)
+
+	got, err := ctrl.AskQuestion(
+		context.Background(),
+		tenantID,
+		"user_1",
+		"승인된 예시를 찾아줘",
+	)
+	if err == nil || !strings.Contains(err.Error(), "search canonical examples") {
+		t.Fatalf("AskQuestion error = %v, want canonical-example lookup error", err)
+	}
+	if got.QueryRunID != queryRunID {
+		t.Fatalf("QueryRunID = %s, want %s", got.QueryRunID, queryRunID)
+	}
+	if failedStage != "generation" {
+		t.Fatalf("failed stage = %q, want generation", failedStage)
+	}
+}
+
+func TestQueryControllerAskQuestionReturnsAgentOffline(t *testing.T) {
+	t.Parallel()
+
+	tenantID := uuid.New()
+	schemaVersionID := uuid.New()
+	queryRunID := uuid.New()
+	schemaRaw, _ := queryTestSchema()
+	approved := queryTestSemanticLayer(
+		t,
+		tenantID,
+		schemaVersionID,
+		model.SemanticLayerStatusApproved,
+	)
+	var failedStage string
+
+	ctrl := newTestQueryController(
+		fakeQueryMembership{ensureFn: func(context.Context, uuid.UUID, string) (model.TenantUser, error) {
+			return model.TenantUser{TenantID: tenantID, Role: model.RoleMember}, nil
+		}},
+		fakeQuerySchemaStore{latestFn: func(context.Context, uuid.UUID) (model.TenantSchemaVersion, error) {
+			return model.TenantSchemaVersion{
+				ID:       schemaVersionID,
+				TenantID: tenantID,
+				Blob:     schemaRaw,
+			}, nil
+		}},
+		fakeQueryLayerStore{
+			approvedFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return approved, nil
+			},
+			draftFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantSemanticLayer, error) {
+				return model.TenantSemanticLayer{}, errors.New("should not call draft")
+			},
+		},
+		fakeQueryRunStore{
+			createFn: func(context.Context, uuid.UUID, uuid.UUID, *uuid.UUID, model.QueryPromptContextSource, string, string) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{
+					ID:              queryRunID,
+					TenantID:        tenantID,
+					SchemaVersionID: schemaVersionID,
+				}, nil
+			},
+			getFn: func(context.Context, uuid.UUID, uuid.UUID) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected GetByTenantAndID")
+			},
+			completeSucceededFn: func(context.Context, uuid.UUID, string, string, []model.QueryRunAttempt, []string, int64, int64, []uuid.UUID, time.Time) (model.TenantQueryRun, error) {
+				return model.TenantQueryRun{}, errors.New("unexpected CompleteSucceeded")
+			},
+			completeFailedFn: func(_ context.Context, id uuid.UUID, attempts []model.QueryRunAttempt, _ []string, _ []uuid.UUID, errorStage, errorMessage string, _ time.Time) (model.TenantQueryRun, error) {
+				if id != queryRunID {
+					t.Fatalf("run id = %s, want %s", id, queryRunID)
+				}
+				if len(attempts) != 1 || attempts[0].Stage != "execution" {
+					t.Fatalf("attempts = %+v, want execution attempt", attempts)
+				}
+				if errorMessage != ErrTenantNotConnected.Error() {
+					t.Fatalf("error message = %q, want %q", errorMessage, ErrTenantNotConnected.Error())
+				}
+				failedStage = errorStage
+				return model.TenantQueryRun{ID: id}, nil
+			},
+		},
+		fakeQueryFeedbackStore{
+			upsertFn: func(context.Context, uuid.UUID, string, model.QueryFeedbackRating, string, string, time.Time) (model.TenantQueryFeedback, error) {
+				return model.TenantQueryFeedback{}, errors.New("unexpected Upsert")
+			},
+		},
+		&fakeQueryExampleStore{
+			searchFn: func(context.Context, uuid.UUID, string, int, *uuid.UUID) ([]model.TenantCanonicalQueryExample, error) {
+				return nil, nil
+			},
+		},
+		&fakeQueryAgent{
+			executeFn: func(context.Context, uuid.UUID, string) (AgentExecuteQueryResult, error) {
+				return AgentExecuteQueryResult{}, ErrTenantNotConnected
+			},
+		},
+		&fakeQueryCompleter{
+			responses: []llm.CompletionResponse{
+				completionJSON(t, "SELECT AVG(ph) FROM mission_app.readings"),
+			},
+		},
+	)
+
+	got, err := ctrl.AskQuestion(
+		context.Background(),
+		tenantID,
+		"user_1",
+		"에이전트가 연결되지 않았나요?",
+	)
+	if !errors.Is(err, ErrQueryAgentOffline) {
+		t.Fatalf("AskQuestion error = %v, want ErrQueryAgentOffline", err)
+	}
+	if got.QueryRunID != queryRunID {
+		t.Fatalf("QueryRunID = %s, want %s", got.QueryRunID, queryRunID)
+	}
+	if failedStage != "execution" {
+		t.Fatalf("failed stage = %q, want execution", failedStage)
+	}
+}
+
 func TestBuildQueryUserPromptIncludesApprovedExamplesOnce(t *testing.T) {
 	t.Parallel()
 

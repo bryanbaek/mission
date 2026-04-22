@@ -105,5 +105,5 @@ For production deployment:
 curl http://localhost:8080/healthz
 # {"status":"ok","database":"ok"}
 
-go test ./...
+go test ./cmd/... ./internal/...
 ```

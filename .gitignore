@@ -18,7 +18,9 @@ bin/
 
 # Frontend
 node_modules/
+web/coverage/
 web/dist/
+web/tsconfig.tsbuildinfo
 
 # Editor
 .vscode/

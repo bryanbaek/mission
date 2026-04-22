@@ -221,6 +221,26 @@ type ListMyQueryRunsResult struct {
 	Runs []model.TenantQueryRun
 }
 
+type queryPromptContextResult struct {
+	promptCtx queryPromptContext
+	warnings  []string
+	err       error
+}
+
+type queryRetrievedExamplesResult struct {
+	examples []model.TenantCanonicalQueryExample
+	err      error
+}
+
+type preparedAskQuestion struct {
+	result              AskQuestionResult
+	run                 model.TenantQueryRun
+	promptCtx           queryPromptContext
+	warnings            []string
+	retrievedExamples   []model.TenantCanonicalQueryExample
+	retrievedExampleIDs []uuid.UUID
+}
+
 // QueryController orchestrates the NL-to-SQL pipeline: semantic-layer lookup,
 // canonical-example retrieval, LLM SQL generation, sqlguard validation,
 // edge-agent execution, and Korean summarization.
@@ -323,37 +343,9 @@ func (c *QueryController) AskQuestion(
 	question string,
 ) (AskQuestionResult, error) {
 	pipelineStart := time.Now()
-	question = strings.TrimSpace(question)
-	if question == "" {
-		return AskQuestionResult{}, ErrQueryEmptyQuestion
-	}
-
-	if _, err := c.tenants.EnsureMembership(ctx, tenantID, clerkUserID); err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return AskQuestionResult{}, ErrQueryAccessDenied
-		}
-		return AskQuestionResult{}, err
-	}
-
-	latestSchema, err := c.schemas.LatestByTenant(ctx, tenantID)
-	if errors.Is(err, repository.ErrNotFound) {
-		return AskQuestionResult{}, ErrQueryNoSchema
-	}
-	if err != nil {
-		return AskQuestionResult{}, err
-	}
-
-	promptCtx, warnings, err := c.resolvePromptContext(ctx, tenantID, latestSchema)
-	if err != nil {
-		return AskQuestionResult{}, err
-	}
-
-	run, err := c.runs.Create(
+	question, latestSchema, err := c.validateAskQuestionRequest(
 		ctx,
 		tenantID,
-		latestSchema.ID,
-		promptCtx.semanticLayerID,
-		promptCtx.source,
 		clerkUserID,
 		question,
 	)
@@ -361,34 +353,179 @@ func (c *QueryController) AskQuestion(
 		return AskQuestionResult{}, err
 	}
 
-	result := AskQuestionResult{
-		QueryRunID: run.ID,
-		Warnings:   append([]string(nil), warnings...),
+	prepared, err := c.prepareAskQuestion(
+		ctx,
+		tenantID,
+		clerkUserID,
+		question,
+		latestSchema,
+	)
+	if err != nil {
+		return prepared.result, err
 	}
 
-	retrievedExamples, err := c.resolveRetrievedExamples(
+	return c.executeAskQuestionPipeline(
+		ctx,
+		pipelineStart,
+		tenantID,
+		question,
+		prepared,
+	)
+}
+
+func (c *QueryController) validateAskQuestionRequest(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	question string,
+) (string, model.TenantSchemaVersion, error) {
+	question = strings.TrimSpace(question)
+	if question == "" {
+		return "", model.TenantSchemaVersion{}, ErrQueryEmptyQuestion
+	}
+
+	if _, err := c.tenants.EnsureMembership(ctx, tenantID, clerkUserID); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return "", model.TenantSchemaVersion{}, ErrQueryAccessDenied
+		}
+		return "", model.TenantSchemaVersion{}, err
+	}
+
+	latestSchema, err := c.schemas.LatestByTenant(ctx, tenantID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return "", model.TenantSchemaVersion{}, ErrQueryNoSchema
+	}
+	if err != nil {
+		return "", model.TenantSchemaVersion{}, err
+	}
+
+	return question, latestSchema, nil
+}
+
+func (c *QueryController) prepareAskQuestion(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	clerkUserID string,
+	question string,
+	latestSchema model.TenantSchemaVersion,
+) (preparedAskQuestion, error) {
+	promptCtxCh, retrievedExamplesCh := c.startAskQuestionPreparation(
+		ctx,
+		tenantID,
+		latestSchema,
+		question,
+	)
+
+	promptCtxResult := <-promptCtxCh
+	if promptCtxResult.err != nil {
+		return preparedAskQuestion{}, promptCtxResult.err
+	}
+
+	run, err := c.runs.Create(
 		ctx,
 		tenantID,
 		latestSchema.ID,
+		promptCtxResult.promptCtx.semanticLayerID,
+		promptCtxResult.promptCtx.source,
+		clerkUserID,
 		question,
 	)
 	if err != nil {
-		result, completeErr := c.completeFailedQueryRun(
-			ctx,
-			result,
-			nil,
-			warnings,
-			nil,
-			"generation",
-			fmt.Sprintf("search canonical examples: %v", err),
-		)
-		if completeErr != nil {
-			return result, completeErr
-		}
-		return result, fmt.Errorf("search canonical examples: %w", err)
+		return preparedAskQuestion{}, err
 	}
-	retrievedExampleIDs := canonicalExampleIDs(retrievedExamples)
 
+	prepared := preparedAskQuestion{
+		result: AskQuestionResult{
+			QueryRunID: run.ID,
+			Warnings:   append([]string(nil), promptCtxResult.warnings...),
+		},
+		run:       run,
+		promptCtx: promptCtxResult.promptCtx,
+		warnings:  append([]string(nil), promptCtxResult.warnings...),
+	}
+
+	retrievedExamplesResult := <-retrievedExamplesCh
+	if retrievedExamplesResult.err != nil {
+		return prepared, c.failPreparation(
+			ctx,
+			prepared,
+			fmt.Sprintf(
+				"search canonical examples: %v",
+				retrievedExamplesResult.err,
+			),
+			fmt.Errorf(
+				"search canonical examples: %w",
+				retrievedExamplesResult.err,
+			),
+		)
+	}
+
+	prepared.retrievedExamples = retrievedExamplesResult.examples
+	prepared.retrievedExampleIDs = canonicalExampleIDs(
+		retrievedExamplesResult.examples,
+	)
+	return prepared, nil
+}
+
+func (c *QueryController) startAskQuestionPreparation(
+	ctx context.Context,
+	tenantID uuid.UUID,
+	latestSchema model.TenantSchemaVersion,
+	question string,
+) (
+	<-chan queryPromptContextResult,
+	<-chan queryRetrievedExamplesResult,
+) {
+	promptCtxCh := make(chan queryPromptContextResult, 1)
+	retrievedExamplesCh := make(chan queryRetrievedExamplesResult, 1)
+
+	go func() {
+		promptCtx, warnings, err := c.resolvePromptContext(
+			ctx,
+			tenantID,
+			latestSchema,
+		)
+		promptCtxCh <- queryPromptContextResult{
+			promptCtx: promptCtx,
+			warnings:  warnings,
+			err:       err,
+		}
+	}()
+
+	go func() {
+		start := time.Now()
+		examples, err := c.resolveRetrievedExamples(
+			ctx,
+			tenantID,
+			latestSchema.ID,
+			question,
+		)
+		attrs := []any{
+			"duration_ms", time.Since(start).Milliseconds(),
+			"tenant_id", tenantID,
+			"schema_version_id", latestSchema.ID,
+			"count", len(examples),
+		}
+		if err != nil {
+			attrs = append(attrs, "error", err.Error())
+		}
+		reqlog.Logger(ctx).InfoContext(ctx, "query.retrieve_examples", attrs...)
+		retrievedExamplesCh <- queryRetrievedExamplesResult{
+			examples: examples,
+			err:      err,
+		}
+	}()
+
+	return promptCtxCh, retrievedExamplesCh
+}
+
+func (c *QueryController) executeAskQuestionPipeline(
+	ctx context.Context,
+	pipelineStart time.Time,
+	tenantID uuid.UUID,
+	question string,
+	prepared preparedAskQuestion,
+) (AskQuestionResult, error) {
 	attempts := make([]AskQuestionAttempt, 0, 2)
 	const maxAttempts = 2
 	var (
@@ -401,8 +538,8 @@ func (c *QueryController) AskQuestion(
 		generated, err := c.generateSQL(
 			ctx,
 			question,
-			promptCtx,
-			retrievedExamples,
+			prepared.promptCtx,
+			prepared.retrievedExamples,
 			priorSQL,
 			priorError,
 		)
@@ -418,20 +555,14 @@ func (c *QueryController) AskQuestion(
 				Stage: "generation",
 				Error: err.Error(),
 			})
-			result.Attempts = append([]AskQuestionAttempt(nil), attempts...)
-			result, completeErr := c.completeFailedQueryRun(
+			return c.failAskQuestion(
 				ctx,
-				result,
+				prepared,
 				attempts,
-				warnings,
-				retrievedExampleIDs,
 				"generation",
 				err.Error(),
+				fmt.Errorf("generate sql: %w", err),
 			)
-			if completeErr != nil {
-				return result, completeErr
-			}
-			return result, fmt.Errorf("generate sql: %w", err)
 		}
 
 		guardResult, guardErr := sqlguard.Validate(generated.SQL)
@@ -484,38 +615,28 @@ func (c *QueryController) AskQuestion(
 				Stage: "execution",
 				Error: err.Error(),
 			})
-			result.Attempts = append([]AskQuestionAttempt(nil), attempts...)
 			switch {
 			case errors.Is(err, ErrTenantNotConnected),
 				errors.Is(err, ErrSessionNotActive),
 				errors.Is(err, ErrCommandRejected):
-				result, completeErr := c.completeFailedQueryRun(
+				return c.failAskQuestion(
 					ctx,
-					result,
+					prepared,
 					attempts,
-					warnings,
-					retrievedExampleIDs,
 					"execution",
 					err.Error(),
+					ErrQueryAgentOffline,
 				)
-				if completeErr != nil {
-					return result, completeErr
-				}
-				return result, ErrQueryAgentOffline
+			default:
+				return c.failAskQuestion(
+					ctx,
+					prepared,
+					attempts,
+					"execution",
+					err.Error(),
+					fmt.Errorf("execute query: %w", err),
+				)
 			}
-			result, completeErr := c.completeFailedQueryRun(
-				ctx,
-				result,
-				attempts,
-				warnings,
-				retrievedExampleIDs,
-				"execution",
-				err.Error(),
-			)
-			if completeErr != nil {
-				return result, completeErr
-			}
-			return result, fmt.Errorf("execute query: %w", err)
 		}
 		if execResult.Error != "" {
 			execError := formatExecutionError(execResult)
@@ -525,20 +646,14 @@ func (c *QueryController) AskQuestion(
 				Error: execError,
 			})
 			if execResult.ErrorCode == queryerror.CodePermissionDenied {
-				result.Attempts = append([]AskQuestionAttempt(nil), attempts...)
-				result, completeErr := c.completeFailedQueryRun(
+				return c.failAskQuestion(
 					ctx,
-					result,
+					prepared,
 					attempts,
-					warnings,
-					retrievedExampleIDs,
 					"execution",
 					execError,
+					ErrQueryAllAttemptsFailed,
 				)
-				if completeErr != nil {
-					return result, completeErr
-				}
-				return result, ErrQueryAllAttemptsFailed
 			}
 			priorSQL = generated.SQL
 			priorError = execError
@@ -550,73 +665,150 @@ func (c *QueryController) AskQuestion(
 			Stage: "execution",
 		})
 
-		summary, summaryErr := c.summarize(ctx, question, guardResult.RewrittenSQL, execResult)
-		if summaryErr != nil {
-			warnings = append(
-				warnings,
-				fmt.Sprintf("요약 생성에 실패했습니다: %v", summaryErr),
-			)
-		}
-		if guardResult.LimitInjected {
-			warnings = append(
-				warnings,
-				fmt.Sprintf(
-					"안전을 위해 LIMIT %d을(를) 자동 적용했습니다.",
-					sqlguard.DefaultRowLimit,
-				),
-			)
-		}
-
-		result = AskQuestionResult{
-			QueryRunID:    run.ID,
-			SQLOriginal:   generated.SQL,
-			SQLExecuted:   guardResult.RewrittenSQL,
-			LimitInjected: guardResult.LimitInjected,
-			Columns:       execResult.Columns,
-			Rows:          execResult.Rows,
-			RowCount:      int64(len(execResult.Rows)),
-			ElapsedMS:     execResult.ElapsedMS,
-			SummaryKo:     summary,
-			Warnings:      append([]string(nil), warnings...),
-			Attempts:      append([]AskQuestionAttempt(nil), attempts...),
-		}
-
-		if _, err := c.runs.CompleteSucceeded(
+		return c.completeSuccessfulAskQuestion(
 			ctx,
-			run.ID,
-			result.SQLOriginal,
-			result.SQLExecuted,
-			toModelAttempts(attempts),
-			warnings,
-			result.RowCount,
-			result.ElapsedMS,
-			retrievedExampleIDs,
-			c.now().UTC(),
-		); err != nil {
-			return result, fmt.Errorf("complete query run: %w", err)
-		}
-		reqlog.Logger(ctx).InfoContext(ctx, "query.pipeline",
-			"duration_ms", time.Since(pipelineStart).Milliseconds(),
-			"attempts", len(attempts),
-			"tenant_id", tenantID,
+			pipelineStart,
+			tenantID,
+			question,
+			prepared,
+			generated.SQL,
+			guardResult,
+			execResult,
+			attempts,
 		)
-		return result, nil
 	}
 
-	result.Attempts = append([]AskQuestionAttempt(nil), attempts...)
-	result, completeErr := c.completeFailedQueryRun(
+	return c.failAskQuestion(
 		ctx,
-		result,
+		prepared,
 		attempts,
-		warnings,
-		retrievedExampleIDs,
 		errorStageFromAttempts(attempts),
 		lastAttemptError(attempts),
+		ErrQueryAllAttemptsFailed,
+	)
+}
+
+func (c *QueryController) completeSuccessfulAskQuestion(
+	ctx context.Context,
+	pipelineStart time.Time,
+	tenantID uuid.UUID,
+	question string,
+	prepared preparedAskQuestion,
+	sqlOriginal string,
+	guardResult sqlguard.Result,
+	execResult AgentExecuteQueryResult,
+	attempts []AskQuestionAttempt,
+) (AskQuestionResult, error) {
+	warnings := append([]string(nil), prepared.warnings...)
+	summaryStart := time.Now()
+	summary, summaryErr := c.summarize(
+		ctx,
+		question,
+		guardResult.RewrittenSQL,
+		execResult,
+	)
+	summaryAttrs := []any{
+		"duration_ms", time.Since(summaryStart).Milliseconds(),
+		"tenant_id", tenantID,
+		"row_count", len(execResult.Rows),
+	}
+	if summaryErr != nil {
+		summaryAttrs = append(summaryAttrs, "error", summaryErr.Error())
+		warnings = append(
+			warnings,
+			fmt.Sprintf("요약 생성에 실패했습니다: %v", summaryErr),
+		)
+	}
+	reqlog.Logger(ctx).InfoContext(ctx, "query.summarize", summaryAttrs...)
+
+	if guardResult.LimitInjected {
+		warnings = append(
+			warnings,
+			fmt.Sprintf(
+				"안전을 위해 LIMIT %d을(를) 자동 적용했습니다.",
+				sqlguard.DefaultRowLimit,
+			),
+		)
+	}
+
+	result := AskQuestionResult{
+		QueryRunID:    prepared.run.ID,
+		SQLOriginal:   sqlOriginal,
+		SQLExecuted:   guardResult.RewrittenSQL,
+		LimitInjected: guardResult.LimitInjected,
+		Columns:       execResult.Columns,
+		Rows:          execResult.Rows,
+		RowCount:      int64(len(execResult.Rows)),
+		ElapsedMS:     execResult.ElapsedMS,
+		SummaryKo:     summary,
+		Warnings:      append([]string(nil), warnings...),
+		Attempts:      append([]AskQuestionAttempt(nil), attempts...),
+	}
+
+	if _, err := c.runs.CompleteSucceeded(
+		ctx,
+		prepared.run.ID,
+		result.SQLOriginal,
+		result.SQLExecuted,
+		toModelAttempts(attempts),
+		warnings,
+		result.RowCount,
+		result.ElapsedMS,
+		prepared.retrievedExampleIDs,
+		c.now().UTC(),
+	); err != nil {
+		return result, fmt.Errorf("complete query run: %w", err)
+	}
+	reqlog.Logger(ctx).InfoContext(ctx, "query.pipeline",
+		"duration_ms", time.Since(pipelineStart).Milliseconds(),
+		"attempts", len(attempts),
+		"tenant_id", tenantID,
+	)
+	return result, nil
+}
+
+func (c *QueryController) failPreparation(
+	ctx context.Context,
+	prepared preparedAskQuestion,
+	errorMessage string,
+	returnErr error,
+) error {
+	_, completeErr := c.completeFailedQueryRun(
+		ctx,
+		prepared.result,
+		nil,
+		prepared.warnings,
+		nil,
+		"generation",
+		errorMessage,
+	)
+	if completeErr != nil {
+		return completeErr
+	}
+	return returnErr
+}
+
+func (c *QueryController) failAskQuestion(
+	ctx context.Context,
+	prepared preparedAskQuestion,
+	attempts []AskQuestionAttempt,
+	errorStage, errorMessage string,
+	returnErr error,
+) (AskQuestionResult, error) {
+	prepared.result.Attempts = append([]AskQuestionAttempt(nil), attempts...)
+	result, completeErr := c.completeFailedQueryRun(
+		ctx,
+		prepared.result,
+		attempts,
+		prepared.warnings,
+		prepared.retrievedExampleIDs,
+		errorStage,
+		errorMessage,
 	)
 	if completeErr != nil {
 		return result, completeErr
 	}
-	return result, ErrQueryAllAttemptsFailed
+	return result, returnErr
 }
 
 func (c *QueryController) SubmitFeedback(
