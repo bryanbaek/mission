@@ -13,6 +13,7 @@ import (
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
+	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 	"github.com/bryanbaek/mission/internal/queryerror"
 	"github.com/bryanbaek/mission/internal/sqlguard"
 )
@@ -310,6 +311,7 @@ func (c *QueryController) AskQuestion(
 	clerkUserID string,
 	question string,
 ) (AskQuestionResult, error) {
+	pipelineStart := time.Now()
 	question = strings.TrimSpace(question)
 	if question == "" {
 		return AskQuestionResult{}, ErrQueryEmptyQuestion
@@ -384,6 +386,7 @@ func (c *QueryController) AskQuestion(
 	)
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
+		genStart := time.Now()
 		generated, err := c.generateSQL(
 			ctx,
 			question,
@@ -392,6 +395,13 @@ func (c *QueryController) AskQuestion(
 			priorSQL,
 			priorError,
 		)
+		if err == nil {
+			reqlog.Logger(ctx).InfoContext(ctx, "query.generate_sql",
+				"duration_ms", time.Since(genStart).Milliseconds(),
+				"attempt", attempt+1,
+				"tenant_id", tenantID,
+			)
+		}
 		if err != nil {
 			attempts = append(attempts, AskQuestionAttempt{
 				Stage: "generation",
@@ -443,11 +453,20 @@ func (c *QueryController) AskQuestion(
 			continue
 		}
 
+		execStart := time.Now()
 		execResult, err := c.agent.ExecuteQuery(
 			ctx,
 			tenantID,
 			guardResult.RewrittenSQL,
 		)
+		if err == nil && execResult.Error == "" {
+			reqlog.Logger(ctx).InfoContext(ctx, "query.execute",
+				"duration_ms", time.Since(execStart).Milliseconds(),
+				"sql_elapsed_ms", execResult.ElapsedMS,
+				"row_count", len(execResult.Rows),
+				"tenant_id", tenantID,
+			)
+		}
 		if err != nil {
 			attempts = append(attempts, AskQuestionAttempt{
 				SQL:   guardResult.RewrittenSQL,
@@ -565,6 +584,11 @@ func (c *QueryController) AskQuestion(
 		); err != nil {
 			return result, fmt.Errorf("complete query run: %w", err)
 		}
+		reqlog.Logger(ctx).InfoContext(ctx, "query.pipeline",
+			"duration_ms", time.Since(pipelineStart).Milliseconds(),
+			"attempts", len(attempts),
+			"tenant_id", tenantID,
+		)
 		return result, nil
 	}
 
@@ -963,7 +987,7 @@ func (c *QueryController) generateSQL(
 	examples []model.TenantCanonicalQueryExample,
 	priorSQL, priorError string,
 ) (generatedSQL, error) {
-	userPrompt := buildQueryUserPrompt(
+	cached, dynamic := buildQueryUserPrompt(
 		question,
 		promptCtx,
 		examples,
@@ -974,8 +998,9 @@ func (c *QueryController) generateSQL(
 	resp, err := c.completer.Complete(ctx, llm.CompletionRequest{
 		System: querySystemPrompt,
 		Messages: []llm.Message{{
-			Role:    "user",
-			Content: userPrompt,
+			Role:          "user",
+			CachedContent: cached,
+			Content:       dynamic,
 		}},
 		Model:     c.model,
 		MaxTokens: c.maxTokens,
@@ -1052,63 +1077,51 @@ func formatExecutionError(result AgentExecuteQueryResult) string {
 	}
 }
 
+// buildQueryUserPrompt splits the LLM user prompt into two parts for
+// Anthropic prompt caching: cachedContent (semi-static schema context) and
+// dynamicContent (per-query question and retry info).
 func buildQueryUserPrompt(
 	question string,
 	promptCtx queryPromptContext,
 	examples []model.TenantCanonicalQueryExample,
 	priorSQL, priorError string,
-) string {
-	var builder strings.Builder
-
-	builder.WriteString("## 사용자 질문\n")
-	builder.WriteString(question)
-	builder.WriteString("\n\n")
+) (cachedContent, dynamicContent string) {
+	var cached strings.Builder
 
 	if len(examples) > 0 {
-		builder.WriteString("## 승인된 예시 쿼리\n")
+		cached.WriteString("## 승인된 예시 쿼리\n")
 		for index, example := range examples {
-			fmt.Fprintf(&builder, "### 예시 %d\n", index+1)
-			builder.WriteString("질문: ")
-			builder.WriteString(example.Question)
-			builder.WriteString("\n")
+			fmt.Fprintf(&cached, "### 예시 %d\n", index+1)
+			cached.WriteString("질문: ")
+			cached.WriteString(example.Question)
+			cached.WriteString("\n")
 			if strings.TrimSpace(example.Notes) != "" {
-				builder.WriteString("노트: ")
-				builder.WriteString(example.Notes)
-				builder.WriteString("\n")
+				cached.WriteString("노트: ")
+				cached.WriteString(example.Notes)
+				cached.WriteString("\n")
 			}
-			builder.WriteString("SQL:\n```sql\n")
-			builder.WriteString(example.SQL)
-			builder.WriteString("\n```\n\n")
+			cached.WriteString("SQL:\n```sql\n")
+			cached.WriteString(example.SQL)
+			cached.WriteString("\n```\n\n")
 		}
 	}
 
 	if promptCtx.semanticLayer != nil {
-		builder.WriteString("## 시맨틱 레이어 (")
-		builder.WriteString(string(promptCtx.source))
-		builder.WriteString(")\n")
+		cached.WriteString("## 시맨틱 레이어 (")
+		cached.WriteString(string(promptCtx.source))
+		cached.WriteString(")\n")
 		payload, err := json.MarshalIndent(promptCtx.semanticLayer, "", "  ")
 		if err == nil {
-			builder.Write(payload)
+			cached.Write(payload)
 		}
-		builder.WriteString("\n\n")
+		cached.WriteString("\n\n")
 	}
 
-	builder.WriteString("## 원본 MySQL 스키마\n")
-	builder.Write(promptCtx.schemaRaw)
-	builder.WriteString("\n\n")
+	cached.WriteString("## 원본 MySQL 스키마\n")
+	cached.Write(promptCtx.schemaRaw)
+	cached.WriteString("\n\n")
 
-	if priorSQL != "" {
-		builder.WriteString("## 이전 시도 실패\n")
-		builder.WriteString("아래 SQL을 생성했지만 검증 또는 실행에 실패했습니다. ")
-		builder.WriteString("원인을 고려하여 수정된 SQL을 다시 만들어 주세요.\n\n")
-		builder.WriteString("이전 SQL:\n```sql\n")
-		builder.WriteString(priorSQL)
-		builder.WriteString("\n```\n\n실패 사유:\n")
-		builder.WriteString(priorError)
-		builder.WriteString("\n\n")
-	}
-
-	builder.WriteString(strings.TrimSpace(`
+	cached.WriteString(strings.TrimSpace(`
 ## 지시 사항
 - 위 스키마, 시맨틱 레이어, 승인된 예시 쿼리만 근거로 SQL을 작성합니다.
 - 읽기 전용 SELECT (또는 WITH / SHOW)만 사용합니다.
@@ -1120,7 +1133,24 @@ func buildQueryUserPrompt(
 - notes 필드에는 추정한 부분이나 사용자가 알아야 할 주의 사항을 한국어로 적습니다.
 `))
 
-	return builder.String()
+	var dynamic strings.Builder
+
+	dynamic.WriteString("## 사용자 질문\n")
+	dynamic.WriteString(question)
+	dynamic.WriteString("\n\n")
+
+	if priorSQL != "" {
+		dynamic.WriteString("## 이전 시도 실패\n")
+		dynamic.WriteString("아래 SQL을 생성했지만 검증 또는 실행에 실패했습니다. ")
+		dynamic.WriteString("원인을 고려하여 수정된 SQL을 다시 만들어 주세요.\n\n")
+		dynamic.WriteString("이전 SQL:\n```sql\n")
+		dynamic.WriteString(priorSQL)
+		dynamic.WriteString("\n```\n\n실패 사유:\n")
+		dynamic.WriteString(priorError)
+		dynamic.WriteString("\n\n")
+	}
+
+	return cached.String(), dynamic.String()
 }
 
 func buildSummaryUserPrompt(

@@ -236,10 +236,8 @@ func (c *SemanticLayerController) Draft(
 	completion, err := c.completer.Complete(ctx, llm.CompletionRequest{
 		System: semanticLayerSystemPrompt,
 		Messages: []llm.Message{{
-			Role: "user",
-			Content: buildSemanticLayerUserPrompt(
-				schemaVersion.Blob,
-			),
+			Role:          "user",
+			CachedContent: buildSemanticLayerUserPrompt(schemaVersion.Blob),
 		}},
 		Model:     c.model,
 		MaxTokens: c.maxTokens,

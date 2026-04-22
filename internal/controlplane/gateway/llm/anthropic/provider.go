@@ -99,15 +99,44 @@ func buildMessageParams(
 		Messages:  make([]anthropic.MessageParam, 0, len(req.Messages)),
 	}
 	if system := strings.TrimSpace(req.System); system != "" {
-		params.System = []anthropic.TextBlockParam{{Text: system}}
+		block := anthropic.TextBlockParam{Text: system}
+		if req.CacheControl != nil {
+			cc, err := buildCacheControl(req.CacheControl)
+			if err != nil {
+				return anthropic.MessageNewParams{}, err
+			}
+			block.CacheControl = cc
+		}
+		params.System = []anthropic.TextBlockParam{block}
 	}
 	for _, msg := range req.Messages {
 		switch msg.Role {
 		case "user":
-			params.Messages = append(
-				params.Messages,
-				anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content)),
-			)
+			if cachedText := strings.TrimSpace(msg.CachedContent); cachedText != "" {
+				cachedBlock := anthropic.TextBlockParam{Text: cachedText}
+				if req.CacheControl != nil {
+					cc, err := buildCacheControl(req.CacheControl)
+					if err != nil {
+						return anthropic.MessageNewParams{}, err
+					}
+					cachedBlock.CacheControl = cc
+				}
+				blocks := []anthropic.ContentBlockParamUnion{
+					{OfText: &cachedBlock},
+				}
+				if dynamicText := strings.TrimSpace(msg.Content); dynamicText != "" {
+					blocks = append(blocks, anthropic.NewTextBlock(dynamicText))
+				}
+				params.Messages = append(
+					params.Messages,
+					anthropic.NewUserMessage(blocks...),
+				)
+			} else {
+				params.Messages = append(
+					params.Messages,
+					anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content)),
+				)
+			}
 		case "assistant":
 			params.Messages = append(
 				params.Messages,
@@ -119,13 +148,6 @@ func buildMessageParams(
 				msg.Role,
 			)
 		}
-	}
-	if req.CacheControl != nil {
-		cacheControl, err := buildCacheControl(req.CacheControl)
-		if err != nil {
-			return anthropic.MessageNewParams{}, err
-		}
-		params.CacheControl = cacheControl
 	}
 	if req.OutputFormat != nil {
 		params.OutputConfig = anthropic.OutputConfigParam{

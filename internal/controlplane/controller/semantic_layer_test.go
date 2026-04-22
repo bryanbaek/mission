@@ -521,7 +521,7 @@ func TestSemanticLayerControllerDraftBuildsStructuredRequestAndPersistsContent(t
 	if len(completer.gotRequest.Messages) != 1 {
 		t.Fatalf("message count = %d, want 1", len(completer.gotRequest.Messages))
 	}
-	if gotPrompt := completer.gotRequest.Messages[0].Content; gotPrompt != buildSemanticLayerUserPrompt(schemaBlob) {
+	if gotPrompt := completer.gotRequest.Messages[0].CachedContent; gotPrompt != buildSemanticLayerUserPrompt(schemaBlob) {
 		t.Fatalf("user prompt mismatch:\n%s", gotPrompt)
 	}
 	if len(persisted.Tables) != len(schema.Tables) {

@@ -28,6 +28,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/config"
+	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/db"
 	llmgateway "github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
@@ -220,6 +221,12 @@ func run() error {
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			l := slog.Default().With("request_id", middleware.GetReqID(r.Context()))
+			next.ServeHTTP(w, r.WithContext(reqlog.WithLogger(r.Context(), l)))
+		})
+	})
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(sentryMiddleware())

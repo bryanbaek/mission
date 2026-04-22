@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/bryanbaek/mission/internal/controlplane/reqlog"
 )
 
 type Router struct {
@@ -47,12 +50,24 @@ func (r *Router) Complete(
 			providerName,
 		)
 	}
+	start := time.Now()
 	resp, err := provider.Complete(ctx, req)
+	durationMS := time.Since(start).Milliseconds()
+
 	if err != nil {
 		return CompletionResponse{}, err
 	}
 	if resp.Provider == "" {
 		resp.Provider = provider.Name()
 	}
+	reqlog.Logger(ctx).InfoContext(ctx, "llm.complete",
+		"provider", resp.Provider,
+		"model", resp.Model,
+		"duration_ms", durationMS,
+		"input_tokens", resp.Usage.InputTokens,
+		"output_tokens", resp.Usage.OutputTokens,
+		"cache_creation_tokens", resp.Usage.CacheCreationInputTokens,
+		"cache_read_tokens", resp.Usage.CacheReadInputTokens,
+	)
 	return resp, nil
 }
