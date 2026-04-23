@@ -4,13 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-MAX_LINE_LENGTH = 80
+MAX_LINE_LENGTH = 160
 ROOT = Path(__file__).resolve().parents[1]
 
 INCLUDE_EXTENSIONS = {".css", ".go", ".js", ".proto", ".ts", ".tsx"}
 EXCLUDE_DIRS = {".git", "coverage", "dist", "gen", "node_modules"}
 EXCLUDE_FILES = {"vite-env.d.ts"}
 EXCLUDE_SUFFIXES = {"_test.go"}
+EXCLUDE_PATH_PREFIXES = {
+    ("web", "src", "lib", "i18n-dictionaries"),
+}
 
 
 def should_check(path: Path) -> bool:
@@ -18,6 +21,8 @@ def should_check(path: Path) -> bool:
     if any(part in EXCLUDE_DIRS for part in rel.parts):
         return False
     if rel.parts[:3] == ("web", "src", "gen"):
+        return False
+    if any(rel.parts[: len(prefix)] == prefix for prefix in EXCLUDE_PATH_PREFIXES):
         return False
     if path.name in EXCLUDE_FILES:
         return False

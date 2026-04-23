@@ -838,7 +838,14 @@ func buildDockerRunCommand(
 	installSlug, controlPlaneURL, tenantToken, agentVersion, edgeAgentImage string,
 ) string {
 	return fmt.Sprintf(
-		"docker run -d --name %s-agent \\\n  --restart unless-stopped \\\n  -e CONTROL_PLANE_URL=%s \\\n  -e TENANT_TOKEN=%s \\\n  -e AGENT_VERSION=%s \\\n  -v /etc/%s-agent:/etc/agent \\\n  -v /var/lib/%s-agent:/var/lib/agent \\\n  %s",
+		"docker run -d --name %s-agent \\\n"+
+			"  --restart unless-stopped \\\n"+
+			"  -e CONTROL_PLANE_URL=%s \\\n"+
+			"  -e TENANT_TOKEN=%s \\\n"+
+			"  -e AGENT_VERSION=%s \\\n"+
+			"  -v /etc/%s-agent:/etc/agent \\\n"+
+			"  -v /var/lib/%s-agent:/var/lib/agent \\\n"+
+			"  %s",
 		installSlug,
 		controlPlaneURL,
 		tenantToken,

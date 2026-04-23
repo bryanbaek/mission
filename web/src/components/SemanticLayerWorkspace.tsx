@@ -183,9 +183,11 @@ export default function SemanticLayerWorkspace() {
       });
       await loadSemanticLayer(selectedID);
       setSuccess(t("semantic.success.draftCreated"));
-      if (draftResp.usage) {
+      const usage = draftResp.usage;
+      if (usage) {
         setNotice(
-          `${t("semantic.notice.cacheUsage")}: ${draftResp.usage.provider} / ${draftResp.usage.model} · cache_read_input_tokens=${draftResp.usage.cacheReadInputTokens}`,
+          `${t("semantic.notice.cacheUsage")}: ${usage.provider} / ${usage.model}` +
+            ` · cache_read_input_tokens=${usage.cacheReadInputTokens}`,
         );
       }
     } catch (err) {

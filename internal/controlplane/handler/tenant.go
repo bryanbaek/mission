@@ -5,12 +5,10 @@ import (
 	"errors"
 
 	"connectrpc.com/connect"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	tenantv1 "github.com/bryanbaek/mission/gen/go/tenant/v1"
 	"github.com/bryanbaek/mission/gen/go/tenant/v1/tenantv1connect"
-	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
@@ -29,12 +27,9 @@ func (h *TenantHandler) CreateTenant(
 	ctx context.Context,
 	req *connect.Request[tenantv1.CreateTenantRequest],
 ) (*connect.Response[tenantv1.CreateTenantResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	t, err := h.ctrl.Create(ctx, user.ID, req.Msg.Slug, req.Msg.Name)
@@ -50,12 +45,9 @@ func (h *TenantHandler) ListTenants(
 	ctx context.Context,
 	_ *connect.Request[tenantv1.ListTenantsRequest],
 ) (*connect.Response[tenantv1.ListTenantsResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	tenants, err := h.ctrl.ListForUser(ctx, user.ID)
@@ -73,20 +65,14 @@ func (h *TenantHandler) IssueAgentToken(
 	ctx context.Context,
 	req *connect.Request[tenantv1.IssueAgentTokenRequest],
 ) (*connect.Response[tenantv1.IssueAgentTokenResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
 
 	if _, err := h.ctrl.EnsureMembership(ctx, tenantID, user.ID); err != nil {
@@ -107,20 +93,14 @@ func (h *TenantHandler) ListAgentTokens(
 	ctx context.Context,
 	req *connect.Request[tenantv1.ListAgentTokensRequest],
 ) (*connect.Response[tenantv1.ListAgentTokensResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
 
 	if _, err := h.ctrl.EnsureMembership(ctx, tenantID, user.ID); err != nil {
@@ -142,27 +122,18 @@ func (h *TenantHandler) RevokeAgentToken(
 	ctx context.Context,
 	req *connect.Request[tenantv1.RevokeAgentTokenRequest],
 ) (*connect.Response[tenantv1.RevokeAgentTokenResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
-	tokenID, err := uuid.Parse(req.Msg.TokenId)
+	tokenID, err := parseConnectUUID(req.Msg.TokenId, "token_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid token_id"),
-		)
+		return nil, err
 	}
 
 	if _, err := h.ctrl.EnsureMembership(ctx, tenantID, user.ID); err != nil {

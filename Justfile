@@ -16,6 +16,7 @@ test:
 lint:
     golangci-lint run ./...
     cd web && npm run lint
+    python3 scripts/check_line_length.py
 
 vet:
     go vet ./...

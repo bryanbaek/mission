@@ -11,7 +11,6 @@ import (
 
 	queryv1 "github.com/bryanbaek/mission/gen/go/query/v1"
 	"github.com/bryanbaek/mission/gen/go/query/v1/queryv1connect"
-	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
@@ -85,15 +84,12 @@ func (h *QueryHandler) AskQuestion(
 	ctx context.Context,
 	req *connect.Request[queryv1.AskQuestionRequest],
 ) (*connect.Response[queryv1.AskQuestionResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
 		return nil, err
 	}
@@ -110,15 +106,12 @@ func (h *QueryHandler) ListMyQueryRuns(
 	ctx context.Context,
 	req *connect.Request[queryv1.ListMyQueryRunsRequest],
 ) (*connect.Response[queryv1.ListMyQueryRunsResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
 		return nil, err
 	}
@@ -141,15 +134,12 @@ func (h *QueryHandler) ListReviewQueue(
 	ctx context.Context,
 	req *connect.Request[queryv1.ListReviewQueueRequest],
 ) (*connect.Response[queryv1.ListReviewQueueResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
 		return nil, err
 	}
@@ -178,19 +168,16 @@ func (h *QueryHandler) MarkQueryRunReviewed(
 	ctx context.Context,
 	req *connect.Request[queryv1.MarkQueryRunReviewedRequest],
 ) (*connect.Response[queryv1.MarkQueryRunReviewedResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
-	}
-
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	user, err := requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-	queryRunID, err := parseUUIDArg(req.Msg.QueryRunId, "query_run_id")
+
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+	queryRunID, err := parseConnectUUID(req.Msg.QueryRunId, "query_run_id")
 	if err != nil {
 		return nil, err
 	}
@@ -215,19 +202,16 @@ func (h *QueryHandler) SubmitQueryFeedback(
 	ctx context.Context,
 	req *connect.Request[queryv1.SubmitQueryFeedbackRequest],
 ) (*connect.Response[queryv1.SubmitQueryFeedbackResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
-	}
-
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	user, err := requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-	queryRunID, err := parseUUIDArg(req.Msg.QueryRunId, "query_run_id")
+
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+	queryRunID, err := parseConnectUUID(req.Msg.QueryRunId, "query_run_id")
 	if err != nil {
 		return nil, err
 	}
@@ -254,19 +238,16 @@ func (h *QueryHandler) CreateCanonicalQueryExample(
 	ctx context.Context,
 	req *connect.Request[queryv1.CreateCanonicalQueryExampleRequest],
 ) (*connect.Response[queryv1.CreateCanonicalQueryExampleResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
-	}
-
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	user, err := requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-	queryRunID, err := parseUUIDArg(req.Msg.QueryRunId, "query_run_id")
+
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+	queryRunID, err := parseConnectUUID(req.Msg.QueryRunId, "query_run_id")
 	if err != nil {
 		return nil, err
 	}
@@ -293,15 +274,12 @@ func (h *QueryHandler) ListCanonicalQueryExamples(
 	ctx context.Context,
 	req *connect.Request[queryv1.ListCanonicalQueryExamplesRequest],
 ) (*connect.Response[queryv1.ListCanonicalQueryExamplesResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
 		return nil, err
 	}
@@ -325,19 +303,16 @@ func (h *QueryHandler) ArchiveCanonicalQueryExample(
 	ctx context.Context,
 	req *connect.Request[queryv1.ArchiveCanonicalQueryExampleRequest],
 ) (*connect.Response[queryv1.ArchiveCanonicalQueryExampleResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
-	}
-
-	tenantID, err := parseUUIDArg(req.Msg.TenantId, "tenant_id")
+	user, err := requireUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-	exampleID, err := parseUUIDArg(req.Msg.ExampleId, "example_id")
+
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
+	if err != nil {
+		return nil, err
+	}
+	exampleID, err := parseConnectUUID(req.Msg.ExampleId, "example_id")
 	if err != nil {
 		return nil, err
 	}
@@ -346,17 +321,6 @@ func (h *QueryHandler) ArchiveCanonicalQueryExample(
 		return nil, queryMutationError(err)
 	}
 	return connect.NewResponse(&queryv1.ArchiveCanonicalQueryExampleResponse{}), nil
-}
-
-func parseUUIDArg(value, field string) (uuid.UUID, error) {
-	parsed, err := uuid.Parse(value)
-	if err != nil {
-		return uuid.UUID{}, connect.NewError(
-			connect.CodeInvalidArgument,
-			fmt.Errorf("invalid %s", field),
-		)
-	}
-	return parsed, nil
 }
 
 func queryAskError(err error, result controller.AskQuestionResult) error {

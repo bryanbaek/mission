@@ -10,7 +10,6 @@ import (
 
 	starterv1 "github.com/bryanbaek/mission/gen/go/starter/v1"
 	"github.com/bryanbaek/mission/gen/go/starter/v1/starterv1connect"
-	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
@@ -44,20 +43,14 @@ func (h *StarterQuestionsHandler) List(
 	ctx context.Context,
 	req *connect.Request[starterv1.ListStarterQuestionsRequest],
 ) (*connect.Response[starterv1.ListStarterQuestionsResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
 
 	result, err := h.ctrl.List(ctx, tenantID, user.ID)
@@ -76,20 +69,14 @@ func (h *StarterQuestionsHandler) Regenerate(
 	ctx context.Context,
 	req *connect.Request[starterv1.RegenerateStarterQuestionsRequest],
 ) (*connect.Response[starterv1.RegenerateStarterQuestionsResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
 
 	result, err := h.ctrl.Regenerate(ctx, tenantID, user.ID)

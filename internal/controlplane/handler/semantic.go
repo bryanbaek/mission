@@ -11,7 +11,6 @@ import (
 
 	semanticv1 "github.com/bryanbaek/mission/gen/go/semantic/v1"
 	"github.com/bryanbaek/mission/gen/go/semantic/v1/semanticv1connect"
-	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	"github.com/bryanbaek/mission/internal/controlplane/controller"
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/model"
@@ -59,20 +58,14 @@ func (h *SemanticLayerHandler) GetSemanticLayer(
 	ctx context.Context,
 	req *connect.Request[semanticv1.GetSemanticLayerRequest],
 ) (*connect.Response[semanticv1.GetSemanticLayerResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
 
 	result, err := h.ctrl.Get(ctx, tenantID, user.ID)
@@ -101,27 +94,18 @@ func (h *SemanticLayerHandler) DraftSemanticLayer(
 	ctx context.Context,
 	req *connect.Request[semanticv1.DraftSemanticLayerRequest],
 ) (*connect.Response[semanticv1.DraftSemanticLayerResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
-	schemaVersionID, err := uuid.Parse(req.Msg.SchemaVersionId)
+	schemaVersionID, err := parseConnectUUID(req.Msg.SchemaVersionId, "schema_version_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid schema_version_id"),
-		)
+		return nil, err
 	}
 
 	result, err := h.ctrl.Draft(
@@ -151,27 +135,18 @@ func (h *SemanticLayerHandler) UpdateSemanticLayer(
 	ctx context.Context,
 	req *connect.Request[semanticv1.UpdateSemanticLayerRequest],
 ) (*connect.Response[semanticv1.UpdateSemanticLayerResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
-	layerID, err := uuid.Parse(req.Msg.Id)
+	layerID, err := parseConnectUUID(req.Msg.Id, "semantic layer id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid semantic layer id"),
-		)
+		return nil, err
 	}
 
 	result, err := h.ctrl.Update(
@@ -194,27 +169,18 @@ func (h *SemanticLayerHandler) ApproveSemanticLayer(
 	ctx context.Context,
 	req *connect.Request[semanticv1.ApproveSemanticLayerRequest],
 ) (*connect.Response[semanticv1.ApproveSemanticLayerResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(
-			connect.CodeUnauthenticated,
-			errors.New("unauthenticated"),
-		)
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	tenantID, err := uuid.Parse(req.Msg.TenantId)
+	tenantID, err := parseConnectUUID(req.Msg.TenantId, "tenant_id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid tenant_id"),
-		)
+		return nil, err
 	}
-	layerID, err := uuid.Parse(req.Msg.Id)
+	layerID, err := parseConnectUUID(req.Msg.Id, "semantic layer id")
 	if err != nil {
-		return nil, connect.NewError(
-			connect.CodeInvalidArgument,
-			errors.New("invalid semantic layer id"),
-		)
+		return nil, err
 	}
 
 	result, err := h.ctrl.Approve(ctx, tenantID, user.ID, layerID)

@@ -21,15 +21,40 @@ import (
 type onboardingController interface {
 	ListWorkspaces(ctx context.Context, clerkUserID string) ([]model.OnboardingWorkspace, error)
 	GetState(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
-	SaveWelcome(ctx context.Context, tenantID uuid.UUID, clerkUserID, workspaceName, primaryLanguage string, confirmPrimaryLanguage, autoSave bool) (controller.OnboardingStateView, error)
+	SaveWelcome(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID, workspaceName, primaryLanguage string,
+		confirmPrimaryLanguage, autoSave bool,
+	) (controller.OnboardingStateView, error)
 	EnsureInstallBundle(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
-	GetAgentConnectionStatus(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
-	ConfigureDatabase(ctx context.Context, tenantID uuid.UUID, clerkUserID, host string, port int32, databaseName, connectionString string) (controller.OnboardingStateView, error)
+	GetAgentConnectionStatus(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+	) (controller.OnboardingStateView, error)
+	ConfigureDatabase(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID, host string,
+		port int32,
+		databaseName, connectionString string,
+	) (controller.OnboardingStateView, error)
 	RunSchemaIntrospection(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
-	MarkSemanticApproved(ctx context.Context, tenantID uuid.UUID, clerkUserID string, semanticLayerID uuid.UUID) (controller.OnboardingStateView, error)
+	MarkSemanticApproved(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+		semanticLayerID uuid.UUID,
+	) (controller.OnboardingStateView, error)
 	CompleteStarterStep(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
 	CompleteOnboarding(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
-	CreateInvites(ctx context.Context, tenantID uuid.UUID, clerkUserID string, emails []string) (controller.OnboardingStateView, []model.TenantInvite, error)
+	CreateInvites(
+		ctx context.Context,
+		tenantID uuid.UUID,
+		clerkUserID string,
+		emails []string,
+	) (controller.OnboardingStateView, []model.TenantInvite, error)
 }
 
 type OnboardingHandler struct {
@@ -45,9 +70,9 @@ func (h *OnboardingHandler) ListWorkspaces(
 	ctx context.Context,
 	_ *connect.Request[onboardingv1.ListWorkspacesRequest],
 ) (*connect.Response[onboardingv1.ListWorkspacesResponse], error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("unauthenticated"))
+	user, err := requireUser(ctx)
+	if err != nil {
+		return nil, err
 	}
 	workspaces, err := h.ctrl.ListWorkspaces(ctx, user.ID)
 	if err != nil {
@@ -176,9 +201,12 @@ func (h *OnboardingHandler) MarkSemanticApproved(
 	if err != nil {
 		return nil, err
 	}
-	semanticLayerID, parseErr := uuid.Parse(req.Msg.GetSemanticLayerId())
+	semanticLayerID, parseErr := parseConnectUUID(
+		req.Msg.GetSemanticLayerId(),
+		"semantic_layer_id",
+	)
 	if parseErr != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid semantic_layer_id"))
+		return nil, parseErr
 	}
 	state, ctrlErr := h.ctrl.MarkSemanticApproved(ctx, tenantID, user.ID, semanticLayerID)
 	if ctrlErr != nil {
@@ -279,13 +307,13 @@ func requireOnboardingUserAndTenant(
 	ctx context.Context,
 	tenantIDRaw string,
 ) (auth.User, uuid.UUID, error) {
-	user, ok := auth.FromContext(ctx)
-	if !ok {
-		return auth.User{}, uuid.UUID{}, connect.NewError(connect.CodeUnauthenticated, errors.New("unauthenticated"))
-	}
-	tenantID, err := uuid.Parse(tenantIDRaw)
+	user, err := requireUser(ctx)
 	if err != nil {
-		return auth.User{}, uuid.UUID{}, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid tenant_id"))
+		return auth.User{}, uuid.UUID{}, err
+	}
+	tenantID, err := parseConnectUUID(tenantIDRaw, "tenant_id")
+	if err != nil {
+		return auth.User{}, uuid.UUID{}, err
 	}
 	return user, tenantID, nil
 }
