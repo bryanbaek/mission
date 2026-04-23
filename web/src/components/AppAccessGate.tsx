@@ -7,6 +7,37 @@ import { onboardingStepPath } from "../lib/onboarding";
 import { useOnboardingClient } from "../lib/onboardingClient";
 import { useI18n } from "../lib/i18n";
 
+const appReadyOnboardingStep = 6;
+
+type WorkspaceAccessState = {
+  currentStep: number;
+  onboardingComplete: boolean;
+  role: WorkspaceRole;
+  tenantId: string;
+};
+
+function appAccessRedirectPath(
+  workspaces: readonly WorkspaceAccessState[],
+): string | null {
+  const ownerBlocked = workspaces.filter(
+    (workspace) =>
+      workspace.role === WorkspaceRole.OWNER &&
+      !workspace.onboardingComplete &&
+      workspace.currentStep < appReadyOnboardingStep,
+  );
+
+  if (ownerBlocked.length === 1) {
+    return onboardingStepPath(
+      ownerBlocked[0].tenantId,
+      ownerBlocked[0].currentStep,
+    );
+  }
+  if (ownerBlocked.length > 1) {
+    return "/onboarding";
+  }
+  return null;
+}
+
 export default function AppAccessGate() {
   const onboardingClient = useOnboardingClient();
   const location = useLocation();
@@ -26,26 +57,11 @@ export default function AppAccessGate() {
           return;
         }
 
-        const ownerIncomplete = response.workspaces.filter(
-          (workspace) =>
-            workspace.role === WorkspaceRole.OWNER &&
-            !workspace.onboardingComplete,
-        );
-
-        if (ownerIncomplete.length === 1) {
+        const nextRedirectPath = appAccessRedirectPath(response.workspaces);
+        if (nextRedirectPath) {
           setLocale("ko");
-          setRedirectPath(
-            onboardingStepPath(
-              ownerIncomplete[0].tenantId,
-              ownerIncomplete[0].currentStep,
-            ),
-          );
-        } else if (ownerIncomplete.length > 1) {
-          setLocale("ko");
-          setRedirectPath("/onboarding");
-        } else {
-          setRedirectPath(null);
         }
+        setRedirectPath(nextRedirectPath);
         setError(null);
       } catch (err) {
         if (!cancelled) {
