@@ -178,7 +178,7 @@ func (p *Provider) Complete(
 	if err != nil {
 		return llm.CompletionResponse{}, classifyMistralError(err)
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 
 	if httpResp.StatusCode < http.StatusOK || httpResp.StatusCode >= http.StatusMultipleChoices {
 		return llm.CompletionResponse{}, classifyMistralHTTPError(httpResp.StatusCode)

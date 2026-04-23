@@ -22,6 +22,7 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("DB_MAX_CONNS", "")
 	t.Setenv("DB_MIN_CONNS", "")
 	t.Setenv("DB_HEALTH_CHECK_PERIOD_SECONDS", "")
+	t.Setenv("DEFAULT_LLM_PROVIDER", "")
 	t.Setenv("VITE_SENTRY_DSN", "")
 	t.Setenv("VITE_SENTRY_ENVIRONMENT", "")
 	t.Setenv("VITE_SENTRY_RELEASE", "")
