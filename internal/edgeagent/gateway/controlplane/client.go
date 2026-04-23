@@ -151,7 +151,7 @@ func (c *Client) SubmitConfigureDatabaseResult(
 }
 
 type commandStream struct {
-	stream *connect.ServerStreamForClient[agentv1.ControlMessage]
+	stream *connect.ServerStreamForClient[agentv1.OpenCommandStreamResponse]
 }
 
 func (s *commandStream) Receive() bool {
@@ -212,33 +212,33 @@ func (b *bearerInterceptor) WrapStreamingHandler(
 	return next
 }
 
-func commandKind(msg *agentv1.ControlMessage) edgecontroller.CommandKind {
+func commandKind(msg *agentv1.OpenCommandStreamResponse) edgecontroller.CommandKind {
 	switch msg.Payload.(type) {
-	case *agentv1.ControlMessage_Ping:
+	case *agentv1.OpenCommandStreamResponse_Ping:
 		return edgecontroller.CommandKindPing
-	case *agentv1.ControlMessage_ExecuteQuery:
+	case *agentv1.OpenCommandStreamResponse_ExecuteQuery:
 		return edgecontroller.CommandKindExecuteQuery
-	case *agentv1.ControlMessage_IntrospectSchema:
+	case *agentv1.OpenCommandStreamResponse_IntrospectSchema:
 		return edgecontroller.CommandKindIntrospectSchema
-	case *agentv1.ControlMessage_ConfigureDatabase:
+	case *agentv1.OpenCommandStreamResponse_ConfigureDatabase:
 		return edgecontroller.CommandKindConfigureDatabase
 	default:
 		return ""
 	}
 }
 
-func commandSQL(msg *agentv1.ControlMessage) string {
+func commandSQL(msg *agentv1.OpenCommandStreamResponse) string {
 	switch payload := msg.Payload.(type) {
-	case *agentv1.ControlMessage_ExecuteQuery:
+	case *agentv1.OpenCommandStreamResponse_ExecuteQuery:
 		return payload.ExecuteQuery.GetSql()
 	default:
 		return ""
 	}
 }
 
-func commandDSN(msg *agentv1.ControlMessage) string {
+func commandDSN(msg *agentv1.OpenCommandStreamResponse) string {
 	switch payload := msg.Payload.(type) {
-	case *agentv1.ControlMessage_ConfigureDatabase:
+	case *agentv1.OpenCommandStreamResponse_ConfigureDatabase:
 		return payload.ConfigureDatabase.GetDsn()
 	default:
 		return ""

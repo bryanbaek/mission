@@ -14,28 +14,29 @@ message StarterQuestion {
   int32 ordinal = 5;
 }
 
-message ListStarterQuestionsRequest {
+message ListRequest {
   string tenant_id = 1;
+  string locale = 2;
 }
 
-message ListStarterQuestionsResponse {
+message ListResponse {
   repeated StarterQuestion questions = 1;
   google.protobuf.Timestamp generated_at = 2;
   string set_id = 3;
 }
 
-message RegenerateStarterQuestionsRequest {
+message RegenerateRequest {
   string tenant_id = 1;
+  string locale = 2;
 }
 
-message RegenerateStarterQuestionsResponse {
+message RegenerateResponse {
   repeated StarterQuestion questions = 1;
   google.protobuf.Timestamp generated_at = 2;
   string set_id = 3;
 }
 
 service StarterQuestionsService {
-  rpc List(ListStarterQuestionsRequest) returns (ListStarterQuestionsResponse);
-  rpc Regenerate(RegenerateStarterQuestionsRequest)
-      returns (RegenerateStarterQuestionsResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc Regenerate(RegenerateRequest) returns (RegenerateResponse);
 }

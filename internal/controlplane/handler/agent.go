@@ -32,7 +32,7 @@ func NewAgentHandler(sessions *controller.AgentSessionManager) *AgentHandler {
 func (h *AgentHandler) OpenCommandStream(
 	ctx context.Context,
 	req *connect.Request[agentv1.OpenCommandStreamRequest],
-	stream *connect.ServerStream[agentv1.ControlMessage],
+	stream *connect.ServerStream[agentv1.OpenCommandStreamResponse],
 ) error {
 	agent, ok := auth.AgentFromContext(ctx)
 	if !ok {
@@ -82,7 +82,7 @@ func (h *AgentHandler) OpenCommandStream(
 	// Connect's server-streaming client call doesn't complete until the server
 	// emits the first frame. Send an immediate payloadless ack so the agent can
 	// start heartbeating before any real commands are queued.
-	if err := stream.Send(&agentv1.ControlMessage{
+	if err := stream.Send(&agentv1.OpenCommandStreamResponse{
 		SessionId: req.Msg.GetSessionId(),
 	}); err != nil {
 		slog.Warn(
@@ -273,25 +273,27 @@ func queryErrorCodeFromProto(code agentv1.ExecuteQueryErrorCode) queryerror.Code
 	}
 }
 
-func commandToProto(command controller.AgentCommand) *agentv1.ControlMessage {
-	out := &agentv1.ControlMessage{
+func commandToProto(command controller.AgentCommand) *agentv1.OpenCommandStreamResponse {
+	out := &agentv1.OpenCommandStreamResponse{
 		SessionId: command.SessionID,
 		CommandId: command.CommandID,
 		IssuedAt:  timestamppb.New(command.IssuedAt),
 	}
 	switch command.Kind {
 	case controller.AgentCommandKindPing:
-		out.Payload = &agentv1.ControlMessage_Ping{Ping: &agentv1.PingCommand{}}
+		out.Payload = &agentv1.OpenCommandStreamResponse_Ping{
+			Ping: &agentv1.PingCommand{},
+		}
 	case controller.AgentCommandKindExecuteQuery:
-		out.Payload = &agentv1.ControlMessage_ExecuteQuery{
+		out.Payload = &agentv1.OpenCommandStreamResponse_ExecuteQuery{
 			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: command.SQL},
 		}
 	case controller.AgentCommandKindIntrospectSchema:
-		out.Payload = &agentv1.ControlMessage_IntrospectSchema{
+		out.Payload = &agentv1.OpenCommandStreamResponse_IntrospectSchema{
 			IntrospectSchema: &agentv1.IntrospectSchemaCommand{},
 		}
 	case controller.AgentCommandKindConfigureDatabase:
-		out.Payload = &agentv1.ControlMessage_ConfigureDatabase{
+		out.Payload = &agentv1.OpenCommandStreamResponse_ConfigureDatabase{
 			ConfigureDatabase: &agentv1.ConfigureDatabaseCommand{
 				Dsn: command.DSN,
 			},

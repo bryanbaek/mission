@@ -26,15 +26,17 @@ type recordingAgentService struct {
 func (s *recordingAgentService) OpenCommandStream(
 	ctx context.Context,
 	req *connect.Request[agentv1.OpenCommandStreamRequest],
-	stream *connect.ServerStream[agentv1.ControlMessage],
+	stream *connect.ServerStream[agentv1.OpenCommandStreamResponse],
 ) error {
 	s.lastAuthHeader = req.Header().Get("Authorization")
 	s.lastOpen = req.Msg
-	return stream.Send(&agentv1.ControlMessage{
+	return stream.Send(&agentv1.OpenCommandStreamResponse{
 		SessionId: "session-1",
 		CommandId: "command-1",
 		IssuedAt:  timestamppb.New(time.Unix(1_700_000_000, 0).UTC()),
-		Payload:   &agentv1.ControlMessage_Ping{Ping: &agentv1.PingCommand{}},
+		Payload: &agentv1.OpenCommandStreamResponse_Ping{
+			Ping: &agentv1.PingCommand{},
+		},
 	})
 }
 
@@ -234,27 +236,27 @@ func TestBearerInterceptorWrapStreamingHandler(t *testing.T) {
 func TestCommandKindUnknownPayload(t *testing.T) {
 	t.Parallel()
 
-	if got := commandKind(&agentv1.ControlMessage{}); got != "" {
+	if got := commandKind(&agentv1.OpenCommandStreamResponse{}); got != "" {
 		t.Fatalf("commandKind = %q, want empty", got)
 	}
 
-	if got := commandKind(&agentv1.ControlMessage{
-		Payload: &agentv1.ControlMessage_ExecuteQuery{
+	if got := commandKind(&agentv1.OpenCommandStreamResponse{
+		Payload: &agentv1.OpenCommandStreamResponse_ExecuteQuery{
 			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: "SELECT 1"},
 		},
 	}); got != edgecontroller.CommandKindExecuteQuery {
 		t.Fatalf("commandKind = %q, want execute_query", got)
 	}
-	if got := commandKind(&agentv1.ControlMessage{
-		Payload: &agentv1.ControlMessage_IntrospectSchema{
+	if got := commandKind(&agentv1.OpenCommandStreamResponse{
+		Payload: &agentv1.OpenCommandStreamResponse_IntrospectSchema{
 			IntrospectSchema: &agentv1.IntrospectSchemaCommand{},
 		},
 	}); got != edgecontroller.CommandKindIntrospectSchema {
 		t.Fatalf("commandKind = %q, want introspect_schema", got)
 	}
 
-	if got := commandSQL(&agentv1.ControlMessage{
-		Payload: &agentv1.ControlMessage_ExecuteQuery{
+	if got := commandSQL(&agentv1.OpenCommandStreamResponse{
+		Payload: &agentv1.OpenCommandStreamResponse_ExecuteQuery{
 			ExecuteQuery: &agentv1.ExecuteQueryCommand{Sql: "SELECT 1"},
 		},
 	}); got != "SELECT 1" {

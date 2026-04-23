@@ -45,7 +45,7 @@ func TestStarterQuestionsRepositoryInsertSetPersistsQuestions(t *testing.T) {
 			if !strings.Contains(sql, "INSERT INTO tenant_starter_questions") {
 				t.Fatalf("unexpected SQL: %q", sql)
 			}
-			if len(args) != 9 {
+			if len(args) != 10 {
 				t.Fatalf("unexpected arg count: %d", len(args))
 			}
 			if args[1] != tenantID || args[2] != semanticLayerID || args[3] != setID {
@@ -172,8 +172,9 @@ func TestStarterQuestionsRepositoryLatestActiveReturnsLatestSetInOrdinalOrder(t 
 							*(dest[5].(*string)) = "고객 수는 얼마나 되나요?"
 							*(dest[6].(*model.StarterQuestionCategory)) = model.StarterQuestionCategoryCount
 							*(dest[7].(*string)) = "customers"
-							*(dest[8].(*time.Time)) = generatedAt
-							*(dest[9].(*bool)) = true
+							*(dest[8].(*model.Locale)) = model.LocaleKorean
+							*(dest[9].(*time.Time)) = generatedAt
+							*(dest[10].(*bool)) = true
 							return nil
 						},
 						func(dest ...any) error {
@@ -185,8 +186,9 @@ func TestStarterQuestionsRepositoryLatestActiveReturnsLatestSetInOrdinalOrder(t 
 							*(dest[5].(*string)) = "최근 주문 10건을 보여주세요."
 							*(dest[6].(*model.StarterQuestionCategory)) = model.StarterQuestionCategoryLatest
 							*(dest[7].(*string)) = "orders"
-							*(dest[8].(*time.Time)) = generatedAt
-							*(dest[9].(*bool)) = true
+							*(dest[8].(*model.Locale)) = model.LocaleKorean
+							*(dest[9].(*time.Time)) = generatedAt
+							*(dest[10].(*bool)) = true
 							return nil
 						},
 					},
@@ -195,7 +197,7 @@ func TestStarterQuestionsRepositoryLatestActiveReturnsLatestSetInOrdinalOrder(t 
 		},
 	}
 
-	questions, gotSetID, gotGeneratedAt, err := repo.LatestActive(
+	questions, gotSetID, gotGeneratedAt, gotLocale, err := repo.LatestActive(
 		context.Background(),
 		tenantID,
 	)
@@ -214,6 +216,9 @@ func TestStarterQuestionsRepositoryLatestActiveReturnsLatestSetInOrdinalOrder(t 
 	if questions[0].Ordinal != 1 || questions[1].Ordinal != 2 {
 		t.Fatalf("ordinals = %d, %d", questions[0].Ordinal, questions[1].Ordinal)
 	}
+	if gotLocale != model.LocaleKorean {
+		t.Fatalf("locale = %q, want %q", gotLocale, model.LocaleKorean)
+	}
 }
 
 func TestStarterQuestionsRepositoryLatestActiveReturnsNotFound(t *testing.T) {
@@ -227,7 +232,7 @@ func TestStarterQuestionsRepositoryLatestActiveReturnsNotFound(t *testing.T) {
 		},
 	}
 
-	_, _, _, err := repo.LatestActive(context.Background(), uuid.New())
+	_, _, _, _, err := repo.LatestActive(context.Background(), uuid.New())
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}

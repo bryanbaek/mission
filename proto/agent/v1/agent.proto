@@ -80,7 +80,7 @@ message SchemaBlob {
   repeated SchemaForeignKey foreign_keys = 5;
 }
 
-message ControlMessage {
+message OpenCommandStreamResponse {
   string session_id = 1;
   string command_id = 2;
   google.protobuf.Timestamp issued_at = 3;
@@ -162,7 +162,7 @@ message SubmitCommandResultResponse {}
 
 service AgentService {
   rpc OpenCommandStream(OpenCommandStreamRequest)
-      returns (stream ControlMessage);
+      returns (stream OpenCommandStreamResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
   rpc SubmitCommandResult(SubmitCommandResultRequest)
       returns (SubmitCommandResultResponse);

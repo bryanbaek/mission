@@ -885,36 +885,36 @@ func (x *SchemaBlob) GetForeignKeys() []*SchemaForeignKey {
 	return nil
 }
 
-type ControlMessage struct {
+type OpenCommandStreamResponse struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	CommandId string                 `protobuf:"bytes,2,opt,name=command_id,json=commandId,proto3" json:"command_id,omitempty"`
 	IssuedAt  *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
-	//	*ControlMessage_Ping
-	//	*ControlMessage_ExecuteQuery
-	//	*ControlMessage_IntrospectSchema
-	//	*ControlMessage_ConfigureDatabase
-	Payload       isControlMessage_Payload `protobuf_oneof:"payload"`
+	//	*OpenCommandStreamResponse_Ping
+	//	*OpenCommandStreamResponse_ExecuteQuery
+	//	*OpenCommandStreamResponse_IntrospectSchema
+	//	*OpenCommandStreamResponse_ConfigureDatabase
+	Payload       isOpenCommandStreamResponse_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ControlMessage) Reset() {
-	*x = ControlMessage{}
+func (x *OpenCommandStreamResponse) Reset() {
+	*x = OpenCommandStreamResponse{}
 	mi := &file_agent_v1_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ControlMessage) String() string {
+func (x *OpenCommandStreamResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ControlMessage) ProtoMessage() {}
+func (*OpenCommandStreamResponse) ProtoMessage() {}
 
-func (x *ControlMessage) ProtoReflect() protoreflect.Message {
+func (x *OpenCommandStreamResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_agent_v1_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -926,102 +926,102 @@ func (x *ControlMessage) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ControlMessage.ProtoReflect.Descriptor instead.
-func (*ControlMessage) Descriptor() ([]byte, []int) {
+// Deprecated: Use OpenCommandStreamResponse.ProtoReflect.Descriptor instead.
+func (*OpenCommandStreamResponse) Descriptor() ([]byte, []int) {
 	return file_agent_v1_agent_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *ControlMessage) GetSessionId() string {
+func (x *OpenCommandStreamResponse) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
 	}
 	return ""
 }
 
-func (x *ControlMessage) GetCommandId() string {
+func (x *OpenCommandStreamResponse) GetCommandId() string {
 	if x != nil {
 		return x.CommandId
 	}
 	return ""
 }
 
-func (x *ControlMessage) GetIssuedAt() *timestamppb.Timestamp {
+func (x *OpenCommandStreamResponse) GetIssuedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.IssuedAt
 	}
 	return nil
 }
 
-func (x *ControlMessage) GetPayload() isControlMessage_Payload {
+func (x *OpenCommandStreamResponse) GetPayload() isOpenCommandStreamResponse_Payload {
 	if x != nil {
 		return x.Payload
 	}
 	return nil
 }
 
-func (x *ControlMessage) GetPing() *PingCommand {
+func (x *OpenCommandStreamResponse) GetPing() *PingCommand {
 	if x != nil {
-		if x, ok := x.Payload.(*ControlMessage_Ping); ok {
+		if x, ok := x.Payload.(*OpenCommandStreamResponse_Ping); ok {
 			return x.Ping
 		}
 	}
 	return nil
 }
 
-func (x *ControlMessage) GetExecuteQuery() *ExecuteQueryCommand {
+func (x *OpenCommandStreamResponse) GetExecuteQuery() *ExecuteQueryCommand {
 	if x != nil {
-		if x, ok := x.Payload.(*ControlMessage_ExecuteQuery); ok {
+		if x, ok := x.Payload.(*OpenCommandStreamResponse_ExecuteQuery); ok {
 			return x.ExecuteQuery
 		}
 	}
 	return nil
 }
 
-func (x *ControlMessage) GetIntrospectSchema() *IntrospectSchemaCommand {
+func (x *OpenCommandStreamResponse) GetIntrospectSchema() *IntrospectSchemaCommand {
 	if x != nil {
-		if x, ok := x.Payload.(*ControlMessage_IntrospectSchema); ok {
+		if x, ok := x.Payload.(*OpenCommandStreamResponse_IntrospectSchema); ok {
 			return x.IntrospectSchema
 		}
 	}
 	return nil
 }
 
-func (x *ControlMessage) GetConfigureDatabase() *ConfigureDatabaseCommand {
+func (x *OpenCommandStreamResponse) GetConfigureDatabase() *ConfigureDatabaseCommand {
 	if x != nil {
-		if x, ok := x.Payload.(*ControlMessage_ConfigureDatabase); ok {
+		if x, ok := x.Payload.(*OpenCommandStreamResponse_ConfigureDatabase); ok {
 			return x.ConfigureDatabase
 		}
 	}
 	return nil
 }
 
-type isControlMessage_Payload interface {
-	isControlMessage_Payload()
+type isOpenCommandStreamResponse_Payload interface {
+	isOpenCommandStreamResponse_Payload()
 }
 
-type ControlMessage_Ping struct {
+type OpenCommandStreamResponse_Ping struct {
 	Ping *PingCommand `protobuf:"bytes,10,opt,name=ping,proto3,oneof"`
 }
 
-type ControlMessage_ExecuteQuery struct {
+type OpenCommandStreamResponse_ExecuteQuery struct {
 	ExecuteQuery *ExecuteQueryCommand `protobuf:"bytes,11,opt,name=execute_query,json=executeQuery,proto3,oneof"`
 }
 
-type ControlMessage_IntrospectSchema struct {
+type OpenCommandStreamResponse_IntrospectSchema struct {
 	IntrospectSchema *IntrospectSchemaCommand `protobuf:"bytes,12,opt,name=introspect_schema,json=introspectSchema,proto3,oneof"`
 }
 
-type ControlMessage_ConfigureDatabase struct {
+type OpenCommandStreamResponse_ConfigureDatabase struct {
 	ConfigureDatabase *ConfigureDatabaseCommand `protobuf:"bytes,13,opt,name=configure_database,json=configureDatabase,proto3,oneof"`
 }
 
-func (*ControlMessage_Ping) isControlMessage_Payload() {}
+func (*OpenCommandStreamResponse_Ping) isOpenCommandStreamResponse_Payload() {}
 
-func (*ControlMessage_ExecuteQuery) isControlMessage_Payload() {}
+func (*OpenCommandStreamResponse_ExecuteQuery) isOpenCommandStreamResponse_Payload() {}
 
-func (*ControlMessage_IntrospectSchema) isControlMessage_Payload() {}
+func (*OpenCommandStreamResponse_IntrospectSchema) isOpenCommandStreamResponse_Payload() {}
 
-func (*ControlMessage_ConfigureDatabase) isControlMessage_Payload() {}
+func (*OpenCommandStreamResponse_ConfigureDatabase) isOpenCommandStreamResponse_Payload() {}
 
 type PingResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1617,8 +1617,8 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	"\x06tables\x18\x02 \x03(\v2\x15.agent.v1.SchemaTableR\x06tables\x120\n" +
 	"\acolumns\x18\x03 \x03(\v2\x16.agent.v1.SchemaColumnR\acolumns\x12=\n" +
 	"\fprimary_keys\x18\x04 \x03(\v2\x1a.agent.v1.SchemaPrimaryKeyR\vprimaryKeys\x12=\n" +
-	"\fforeign_keys\x18\x05 \x03(\v2\x1a.agent.v1.SchemaForeignKeyR\vforeignKeys\"\xac\x03\n" +
-	"\x0eControlMessage\x12\x1d\n" +
+	"\fforeign_keys\x18\x05 \x03(\v2\x1a.agent.v1.SchemaForeignKeyR\vforeignKeys\"\xb7\x03\n" +
+	"\x19OpenCommandStreamResponse\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x1d\n" +
 	"\n" +
@@ -1689,9 +1689,9 @@ const file_agent_v1_agent_proto_rawDesc = "" +
 	")CONFIGURE_DATABASE_ERROR_CODE_AUTH_FAILED\x10\x03\x123\n" +
 	"/CONFIGURE_DATABASE_ERROR_CODE_PRIVILEGE_INVALID\x10\x04\x125\n" +
 	"1CONFIGURE_DATABASE_ERROR_CODE_WRITE_CONFIG_FAILED\x10\x05\x12)\n" +
-	"%CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT\x10\x062\x8d\x02\n" +
-	"\fAgentService\x12S\n" +
-	"\x11OpenCommandStream\x12\".agent.v1.OpenCommandStreamRequest\x1a\x18.agent.v1.ControlMessage0\x01\x12D\n" +
+	"%CONFIGURE_DATABASE_ERROR_CODE_TIMEOUT\x10\x062\x98\x02\n" +
+	"\fAgentService\x12^\n" +
+	"\x11OpenCommandStream\x12\".agent.v1.OpenCommandStreamRequest\x1a#.agent.v1.OpenCommandStreamResponse0\x01\x12D\n" +
 	"\tHeartbeat\x12\x1a.agent.v1.HeartbeatRequest\x1a\x1b.agent.v1.HeartbeatResponse\x12b\n" +
 	"\x13SubmitCommandResult\x12$.agent.v1.SubmitCommandResultRequest\x1a%.agent.v1.SubmitCommandResultResponseB\x91\x01\n" +
 	"\fcom.agent.v1B\n" +
@@ -1726,7 +1726,7 @@ var file_agent_v1_agent_proto_goTypes = []any{
 	(*SchemaPrimaryKey)(nil),            // 11: agent.v1.SchemaPrimaryKey
 	(*SchemaForeignKey)(nil),            // 12: agent.v1.SchemaForeignKey
 	(*SchemaBlob)(nil),                  // 13: agent.v1.SchemaBlob
-	(*ControlMessage)(nil),              // 14: agent.v1.ControlMessage
+	(*OpenCommandStreamResponse)(nil),   // 14: agent.v1.OpenCommandStreamResponse
 	(*PingResult)(nil),                  // 15: agent.v1.PingResult
 	(*ExecuteQueryRow)(nil),             // 16: agent.v1.ExecuteQueryRow
 	(*ExecuteQueryResult)(nil),          // 17: agent.v1.ExecuteQueryResult
@@ -1745,11 +1745,11 @@ var file_agent_v1_agent_proto_depIdxs = []int32{
 	10, // 3: agent.v1.SchemaBlob.columns:type_name -> agent.v1.SchemaColumn
 	11, // 4: agent.v1.SchemaBlob.primary_keys:type_name -> agent.v1.SchemaPrimaryKey
 	12, // 5: agent.v1.SchemaBlob.foreign_keys:type_name -> agent.v1.SchemaForeignKey
-	23, // 6: agent.v1.ControlMessage.issued_at:type_name -> google.protobuf.Timestamp
-	5,  // 7: agent.v1.ControlMessage.ping:type_name -> agent.v1.PingCommand
-	6,  // 8: agent.v1.ControlMessage.execute_query:type_name -> agent.v1.ExecuteQueryCommand
-	7,  // 9: agent.v1.ControlMessage.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
-	8,  // 10: agent.v1.ControlMessage.configure_database:type_name -> agent.v1.ConfigureDatabaseCommand
+	23, // 6: agent.v1.OpenCommandStreamResponse.issued_at:type_name -> google.protobuf.Timestamp
+	5,  // 7: agent.v1.OpenCommandStreamResponse.ping:type_name -> agent.v1.PingCommand
+	6,  // 8: agent.v1.OpenCommandStreamResponse.execute_query:type_name -> agent.v1.ExecuteQueryCommand
+	7,  // 9: agent.v1.OpenCommandStreamResponse.introspect_schema:type_name -> agent.v1.IntrospectSchemaCommand
+	8,  // 10: agent.v1.OpenCommandStreamResponse.configure_database:type_name -> agent.v1.ConfigureDatabaseCommand
 	22, // 11: agent.v1.ExecuteQueryRow.values:type_name -> agent.v1.ExecuteQueryRow.ValuesEntry
 	16, // 12: agent.v1.ExecuteQueryResult.rows:type_name -> agent.v1.ExecuteQueryRow
 	0,  // 13: agent.v1.ExecuteQueryResult.error_code:type_name -> agent.v1.ExecuteQueryErrorCode
@@ -1764,7 +1764,7 @@ var file_agent_v1_agent_proto_depIdxs = []int32{
 	2,  // 22: agent.v1.AgentService.OpenCommandStream:input_type -> agent.v1.OpenCommandStreamRequest
 	3,  // 23: agent.v1.AgentService.Heartbeat:input_type -> agent.v1.HeartbeatRequest
 	20, // 24: agent.v1.AgentService.SubmitCommandResult:input_type -> agent.v1.SubmitCommandResultRequest
-	14, // 25: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.ControlMessage
+	14, // 25: agent.v1.AgentService.OpenCommandStream:output_type -> agent.v1.OpenCommandStreamResponse
 	4,  // 26: agent.v1.AgentService.Heartbeat:output_type -> agent.v1.HeartbeatResponse
 	21, // 27: agent.v1.AgentService.SubmitCommandResult:output_type -> agent.v1.SubmitCommandResultResponse
 	25, // [25:28] is the sub-list for method output_type
@@ -1780,10 +1780,10 @@ func file_agent_v1_agent_proto_init() {
 		return
 	}
 	file_agent_v1_agent_proto_msgTypes[12].OneofWrappers = []any{
-		(*ControlMessage_Ping)(nil),
-		(*ControlMessage_ExecuteQuery)(nil),
-		(*ControlMessage_IntrospectSchema)(nil),
-		(*ControlMessage_ConfigureDatabase)(nil),
+		(*OpenCommandStreamResponse_Ping)(nil),
+		(*OpenCommandStreamResponse_ExecuteQuery)(nil),
+		(*OpenCommandStreamResponse_IntrospectSchema)(nil),
+		(*OpenCommandStreamResponse_ConfigureDatabase)(nil),
 	}
 	file_agent_v1_agent_proto_msgTypes[18].OneofWrappers = []any{
 		(*SubmitCommandResultRequest_Ping)(nil),

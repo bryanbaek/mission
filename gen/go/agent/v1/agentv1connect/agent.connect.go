@@ -45,7 +45,7 @@ const (
 
 // AgentServiceClient is a client for the agent.v1.AgentService service.
 type AgentServiceClient interface {
-	OpenCommandStream(context.Context, *connect.Request[v1.OpenCommandStreamRequest]) (*connect.ServerStreamForClient[v1.ControlMessage], error)
+	OpenCommandStream(context.Context, *connect.Request[v1.OpenCommandStreamRequest]) (*connect.ServerStreamForClient[v1.OpenCommandStreamResponse], error)
 	Heartbeat(context.Context, *connect.Request[v1.HeartbeatRequest]) (*connect.Response[v1.HeartbeatResponse], error)
 	SubmitCommandResult(context.Context, *connect.Request[v1.SubmitCommandResultRequest]) (*connect.Response[v1.SubmitCommandResultResponse], error)
 }
@@ -61,7 +61,7 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 	baseURL = strings.TrimRight(baseURL, "/")
 	agentServiceMethods := v1.File_agent_v1_agent_proto.Services().ByName("AgentService").Methods()
 	return &agentServiceClient{
-		openCommandStream: connect.NewClient[v1.OpenCommandStreamRequest, v1.ControlMessage](
+		openCommandStream: connect.NewClient[v1.OpenCommandStreamRequest, v1.OpenCommandStreamResponse](
 			httpClient,
 			baseURL+AgentServiceOpenCommandStreamProcedure,
 			connect.WithSchema(agentServiceMethods.ByName("OpenCommandStream")),
@@ -84,13 +84,13 @@ func NewAgentServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // agentServiceClient implements AgentServiceClient.
 type agentServiceClient struct {
-	openCommandStream   *connect.Client[v1.OpenCommandStreamRequest, v1.ControlMessage]
+	openCommandStream   *connect.Client[v1.OpenCommandStreamRequest, v1.OpenCommandStreamResponse]
 	heartbeat           *connect.Client[v1.HeartbeatRequest, v1.HeartbeatResponse]
 	submitCommandResult *connect.Client[v1.SubmitCommandResultRequest, v1.SubmitCommandResultResponse]
 }
 
 // OpenCommandStream calls agent.v1.AgentService.OpenCommandStream.
-func (c *agentServiceClient) OpenCommandStream(ctx context.Context, req *connect.Request[v1.OpenCommandStreamRequest]) (*connect.ServerStreamForClient[v1.ControlMessage], error) {
+func (c *agentServiceClient) OpenCommandStream(ctx context.Context, req *connect.Request[v1.OpenCommandStreamRequest]) (*connect.ServerStreamForClient[v1.OpenCommandStreamResponse], error) {
 	return c.openCommandStream.CallServerStream(ctx, req)
 }
 
@@ -106,7 +106,7 @@ func (c *agentServiceClient) SubmitCommandResult(ctx context.Context, req *conne
 
 // AgentServiceHandler is an implementation of the agent.v1.AgentService service.
 type AgentServiceHandler interface {
-	OpenCommandStream(context.Context, *connect.Request[v1.OpenCommandStreamRequest], *connect.ServerStream[v1.ControlMessage]) error
+	OpenCommandStream(context.Context, *connect.Request[v1.OpenCommandStreamRequest], *connect.ServerStream[v1.OpenCommandStreamResponse]) error
 	Heartbeat(context.Context, *connect.Request[v1.HeartbeatRequest]) (*connect.Response[v1.HeartbeatResponse], error)
 	SubmitCommandResult(context.Context, *connect.Request[v1.SubmitCommandResultRequest]) (*connect.Response[v1.SubmitCommandResultResponse], error)
 }
@@ -153,7 +153,7 @@ func NewAgentServiceHandler(svc AgentServiceHandler, opts ...connect.HandlerOpti
 // UnimplementedAgentServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAgentServiceHandler struct{}
 
-func (UnimplementedAgentServiceHandler) OpenCommandStream(context.Context, *connect.Request[v1.OpenCommandStreamRequest], *connect.ServerStream[v1.ControlMessage]) error {
+func (UnimplementedAgentServiceHandler) OpenCommandStream(context.Context, *connect.Request[v1.OpenCommandStreamRequest], *connect.ServerStream[v1.OpenCommandStreamResponse]) error {
 	return connect.NewError(connect.CodeUnimplemented, errors.New("agent.v1.AgentService.OpenCommandStream is not implemented"))
 }
 

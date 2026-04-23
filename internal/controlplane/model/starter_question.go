@@ -17,6 +17,24 @@ const (
 	StarterQuestionCategoryAnomaly    StarterQuestionCategory = "anomaly"
 )
 
+type Locale string
+
+const (
+	LocaleKorean  Locale = "ko"
+	LocaleEnglish Locale = "en"
+)
+
+func NormalizeLocale(raw string) Locale {
+	switch Locale(raw) {
+	case LocaleEnglish:
+		return LocaleEnglish
+	case LocaleKorean:
+		return LocaleKorean
+	default:
+		return LocaleKorean
+	}
+}
+
 type StarterQuestion struct {
 	ID              uuid.UUID
 	SetID           uuid.UUID
@@ -26,6 +44,7 @@ type StarterQuestion struct {
 	Text            string
 	Category        StarterQuestionCategory
 	PrimaryTable    string
+	Locale          Locale
 	CreatedAt       time.Time
 	IsActive        bool
 }

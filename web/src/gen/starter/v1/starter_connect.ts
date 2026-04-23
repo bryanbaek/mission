@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ListStarterQuestionsRequest, ListStarterQuestionsResponse, RegenerateStarterQuestionsRequest, RegenerateStarterQuestionsResponse } from "./starter_pb.js";
+import { ListRequest, ListResponse, RegenerateRequest, RegenerateResponse } from "./starter_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -17,8 +17,8 @@ export const StarterQuestionsService = {
      */
     list: {
       name: "List",
-      I: ListStarterQuestionsRequest,
-      O: ListStarterQuestionsResponse,
+      I: ListRequest,
+      O: ListResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -26,8 +26,8 @@ export const StarterQuestionsService = {
      */
     regenerate: {
       name: "Regenerate",
-      I: RegenerateStarterQuestionsRequest,
-      O: RegenerateStarterQuestionsResponse,
+      I: RegenerateRequest,
+      O: RegenerateResponse,
       kind: MethodKind.Unary,
     },
   }

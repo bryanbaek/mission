@@ -76,7 +76,7 @@ func (r *StarterQuestionsRepository) ReplaceActiveSet(
 func (r *StarterQuestionsRepository) LatestActive(
 	ctx context.Context,
 	tenantID uuid.UUID,
-) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
+) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
 	rows, err := r.db.Query(ctx, `
 		WITH latest_set AS (
 			SELECT set_id
@@ -95,6 +95,7 @@ func (r *StarterQuestionsRepository) LatestActive(
 			text,
 			category,
 			primary_table,
+			locale,
 			created_at,
 			is_active
 		FROM tenant_starter_questions
@@ -104,7 +105,7 @@ func (r *StarterQuestionsRepository) LatestActive(
 		ORDER BY ordinal ASC
 	`, tenantID)
 	if err != nil {
-		return nil, uuid.Nil, time.Time{}, fmt.Errorf("select starter questions: %w", err)
+		return nil, uuid.Nil, time.Time{}, "", fmt.Errorf("select starter questions: %w", err)
 	}
 	defer rows.Close()
 
@@ -112,6 +113,7 @@ func (r *StarterQuestionsRepository) LatestActive(
 	var (
 		setID       uuid.UUID
 		generatedAt time.Time
+		locale      model.Locale
 	)
 	for rows.Next() {
 		var question model.StarterQuestion
@@ -124,24 +126,26 @@ func (r *StarterQuestionsRepository) LatestActive(
 			&question.Text,
 			&question.Category,
 			&question.PrimaryTable,
+			&question.Locale,
 			&question.CreatedAt,
 			&question.IsActive,
 		); err != nil {
-			return nil, uuid.Nil, time.Time{}, fmt.Errorf("scan starter question row: %w", err)
+			return nil, uuid.Nil, time.Time{}, "", fmt.Errorf("scan starter question row: %w", err)
 		}
 		if generatedAt.IsZero() {
 			setID = question.SetID
 			generatedAt = question.CreatedAt
+			locale = question.Locale
 		}
 		questions = append(questions, question)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, uuid.Nil, time.Time{}, fmt.Errorf("iterate starter question rows: %w", err)
+		return nil, uuid.Nil, time.Time{}, "", fmt.Errorf("iterate starter question rows: %w", err)
 	}
 	if len(questions) == 0 {
-		return nil, uuid.Nil, time.Time{}, ErrNotFound
+		return nil, uuid.Nil, time.Time{}, "", ErrNotFound
 	}
-	return questions, setID, generatedAt, nil
+	return questions, setID, generatedAt, locale, nil
 }
 
 func (r *StarterQuestionsRepository) deactivatePriorSets(
@@ -168,6 +172,10 @@ func (r *StarterQuestionsRepository) insertSet(
 	questions []model.StarterQuestion,
 ) error {
 	for _, question := range questions {
+		locale := question.Locale
+		if locale == "" {
+			locale = model.LocaleKorean
+		}
 		if _, err := db.Exec(ctx, `
 			INSERT INTO tenant_starter_questions (
 				id,
@@ -178,8 +186,9 @@ func (r *StarterQuestionsRepository) insertSet(
 				text,
 				category,
 				primary_table,
+				locale,
 				is_active
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`,
 			question.ID,
 			tenantID,
@@ -189,6 +198,7 @@ func (r *StarterQuestionsRepository) insertSet(
 			question.Text,
 			string(question.Category),
 			question.PrimaryTable,
+			string(locale),
 			question.IsActive,
 		); err != nil {
 			return fmt.Errorf("insert starter question: %w", err)

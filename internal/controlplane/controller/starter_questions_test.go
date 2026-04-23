@@ -47,7 +47,7 @@ type fakeStarterQuestionsStore struct {
 	insertSetFn        func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, []model.StarterQuestion) error
 	deactivatePriorFn  func(context.Context, uuid.UUID) error
 	replaceActiveSetFn func(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, []model.StarterQuestion) error
-	latestActiveFn     func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, error)
+	latestActiveFn     func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error)
 }
 
 func (f fakeStarterQuestionsStore) InsertSet(
@@ -85,7 +85,7 @@ func (f fakeStarterQuestionsStore) ReplaceActiveSet(
 func (f fakeStarterQuestionsStore) LatestActive(
 	ctx context.Context,
 	tenantID uuid.UUID,
-) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
+) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
 	return f.latestActiveFn(ctx, tenantID)
 }
 
@@ -327,14 +327,14 @@ func TestStarterQuestionsControllerListReturnsCachedSet(t *testing.T) {
 			},
 		},
 		fakeStarterQuestionsStore{
-			latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
-				return cached, setID, generatedAt, nil
+			latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
+				return cached, setID, generatedAt, model.LocaleKorean, nil
 			},
 		},
 		completer,
 	)
 
-	got, err := ctrl.List(context.Background(), tenantID, "user_1")
+	got, err := ctrl.List(context.Background(), tenantID, "user_1", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -370,11 +370,11 @@ func TestStarterQuestionsControllerListGeneratesAndPersistsWhenEmpty(t *testing.
 			},
 		},
 		fakeStarterQuestionsStore{
-			latestActiveFn: func(_ context.Context, _ uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
+			latestActiveFn: func(_ context.Context, _ uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
 				if len(persisted) == 0 {
-					return nil, uuid.Nil, time.Time{}, repository.ErrNotFound
+					return nil, uuid.Nil, time.Time{}, "", repository.ErrNotFound
 				}
-				return persisted, persisted[0].SetID, time.Unix(1_700_200_010, 0).UTC(), nil
+				return persisted, persisted[0].SetID, time.Unix(1_700_200_010, 0).UTC(), model.LocaleKorean, nil
 			},
 			replaceActiveSetFn: func(_ context.Context, gotTenantID, gotSemanticLayerID, setID uuid.UUID, questions []model.StarterQuestion) error {
 				if gotTenantID != tenantID {
@@ -393,7 +393,7 @@ func TestStarterQuestionsControllerListGeneratesAndPersistsWhenEmpty(t *testing.
 		completer,
 	)
 
-	got, err := ctrl.List(context.Background(), tenantID, "user_1")
+	got, err := ctrl.List(context.Background(), tenantID, "user_1", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -407,7 +407,7 @@ func TestStarterQuestionsControllerListGeneratesAndPersistsWhenEmpty(t *testing.
 		t.Fatalf("LLM calls = %d, want 1", len(completer.calls))
 	}
 	req := completer.calls[0]
-	if req.System != starterQuestionsSystemPrompt {
+	if req.System != starterQuestionsSystemPrompt(model.LocaleKorean) {
 		t.Fatalf("system prompt mismatch")
 	}
 	if req.OutputFormat == nil || req.OutputFormat.Name != "starter_questions" {
@@ -465,17 +465,17 @@ func TestStarterQuestionsControllerRegenerateRetriesAfterValidationFailure(t *te
 				}
 				return nil
 			},
-			latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
+			latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
 				if len(persisted) == 0 {
-					return nil, uuid.Nil, time.Time{}, repository.ErrNotFound
+					return nil, uuid.Nil, time.Time{}, "", repository.ErrNotFound
 				}
-				return persisted, persisted[0].SetID, time.Unix(1_700_200_030, 0).UTC(), nil
+				return persisted, persisted[0].SetID, time.Unix(1_700_200_030, 0).UTC(), model.LocaleKorean, nil
 			},
 		},
 		completer,
 	)
 
-	got, err := ctrl.Regenerate(context.Background(), tenantID, "user_1")
+	got, err := ctrl.Regenerate(context.Background(), tenantID, "user_1", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("Regenerate returned error: %v", err)
 	}
@@ -485,7 +485,7 @@ func TestStarterQuestionsControllerRegenerateRetriesAfterValidationFailure(t *te
 	if len(completer.calls) != 2 {
 		t.Fatalf("LLM calls = %d, want 2", len(completer.calls))
 	}
-	basePrompt := buildStarterQuestionsUserPrompt(starterSemanticLayerContent())
+	basePrompt := buildStarterQuestionsUserPrompt(starterSemanticLayerContent(), model.LocaleKorean)
 	if completer.calls[0].Operation != "starter_questions.generate" || completer.calls[1].Operation != "starter_questions.generate" {
 		t.Fatalf("operations = [%q %q], want starter_questions.generate", completer.calls[0].Operation, completer.calls[1].Operation)
 	}
@@ -533,11 +533,11 @@ func TestStarterQuestionsControllerRegenerateProducesDifferentSet(t *testing.T) 
 			}
 			return nil
 		},
-		latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
+		latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
 			if len(persisted) == 0 {
-				return nil, uuid.Nil, time.Time{}, repository.ErrNotFound
+				return nil, uuid.Nil, time.Time{}, "", repository.ErrNotFound
 			}
-			return persisted, persisted[0].SetID, time.Unix(1_700_200_050, 0).UTC(), nil
+			return persisted, persisted[0].SetID, time.Unix(1_700_200_050, 0).UTC(), model.LocaleKorean, nil
 		},
 	}
 
@@ -556,11 +556,11 @@ func TestStarterQuestionsControllerRegenerateProducesDifferentSet(t *testing.T) 
 		completer,
 	)
 
-	first, err := ctrl.Regenerate(context.Background(), tenantID, "user_1")
+	first, err := ctrl.Regenerate(context.Background(), tenantID, "user_1", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("first Regenerate returned error: %v", err)
 	}
-	second, err := ctrl.Regenerate(context.Background(), tenantID, "user_1")
+	second, err := ctrl.Regenerate(context.Background(), tenantID, "user_1", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("second Regenerate returned error: %v", err)
 	}
@@ -608,17 +608,17 @@ func TestStarterQuestionsGenerationIntegration(t *testing.T) {
 				}
 				return nil
 			},
-			latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, error) {
+			latestActiveFn: func(context.Context, uuid.UUID) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error) {
 				if len(persisted) == 0 {
-					return nil, uuid.Nil, time.Time{}, repository.ErrNotFound
+					return nil, uuid.Nil, time.Time{}, "", repository.ErrNotFound
 				}
-				return persisted, persisted[0].SetID, time.Unix(1_700_200_090, 0).UTC(), nil
+				return persisted, persisted[0].SetID, time.Unix(1_700_200_090, 0).UTC(), model.LocaleKorean, nil
 			},
 		},
 		provider,
 	)
 
-	got, err := ctrl.Regenerate(context.Background(), tenantID, "user_1")
+	got, err := ctrl.Regenerate(context.Background(), tenantID, "user_1", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("Regenerate returned error: %v", err)
 	}

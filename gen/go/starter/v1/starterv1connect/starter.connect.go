@@ -43,8 +43,8 @@ const (
 
 // StarterQuestionsServiceClient is a client for the starter.v1.StarterQuestionsService service.
 type StarterQuestionsServiceClient interface {
-	List(context.Context, *connect.Request[v1.ListStarterQuestionsRequest]) (*connect.Response[v1.ListStarterQuestionsResponse], error)
-	Regenerate(context.Context, *connect.Request[v1.RegenerateStarterQuestionsRequest]) (*connect.Response[v1.RegenerateStarterQuestionsResponse], error)
+	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	Regenerate(context.Context, *connect.Request[v1.RegenerateRequest]) (*connect.Response[v1.RegenerateResponse], error)
 }
 
 // NewStarterQuestionsServiceClient constructs a client for the starter.v1.StarterQuestionsService
@@ -58,13 +58,13 @@ func NewStarterQuestionsServiceClient(httpClient connect.HTTPClient, baseURL str
 	baseURL = strings.TrimRight(baseURL, "/")
 	starterQuestionsServiceMethods := v1.File_starter_v1_starter_proto.Services().ByName("StarterQuestionsService").Methods()
 	return &starterQuestionsServiceClient{
-		list: connect.NewClient[v1.ListStarterQuestionsRequest, v1.ListStarterQuestionsResponse](
+		list: connect.NewClient[v1.ListRequest, v1.ListResponse](
 			httpClient,
 			baseURL+StarterQuestionsServiceListProcedure,
 			connect.WithSchema(starterQuestionsServiceMethods.ByName("List")),
 			connect.WithClientOptions(opts...),
 		),
-		regenerate: connect.NewClient[v1.RegenerateStarterQuestionsRequest, v1.RegenerateStarterQuestionsResponse](
+		regenerate: connect.NewClient[v1.RegenerateRequest, v1.RegenerateResponse](
 			httpClient,
 			baseURL+StarterQuestionsServiceRegenerateProcedure,
 			connect.WithSchema(starterQuestionsServiceMethods.ByName("Regenerate")),
@@ -75,25 +75,25 @@ func NewStarterQuestionsServiceClient(httpClient connect.HTTPClient, baseURL str
 
 // starterQuestionsServiceClient implements StarterQuestionsServiceClient.
 type starterQuestionsServiceClient struct {
-	list       *connect.Client[v1.ListStarterQuestionsRequest, v1.ListStarterQuestionsResponse]
-	regenerate *connect.Client[v1.RegenerateStarterQuestionsRequest, v1.RegenerateStarterQuestionsResponse]
+	list       *connect.Client[v1.ListRequest, v1.ListResponse]
+	regenerate *connect.Client[v1.RegenerateRequest, v1.RegenerateResponse]
 }
 
 // List calls starter.v1.StarterQuestionsService.List.
-func (c *starterQuestionsServiceClient) List(ctx context.Context, req *connect.Request[v1.ListStarterQuestionsRequest]) (*connect.Response[v1.ListStarterQuestionsResponse], error) {
+func (c *starterQuestionsServiceClient) List(ctx context.Context, req *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
 	return c.list.CallUnary(ctx, req)
 }
 
 // Regenerate calls starter.v1.StarterQuestionsService.Regenerate.
-func (c *starterQuestionsServiceClient) Regenerate(ctx context.Context, req *connect.Request[v1.RegenerateStarterQuestionsRequest]) (*connect.Response[v1.RegenerateStarterQuestionsResponse], error) {
+func (c *starterQuestionsServiceClient) Regenerate(ctx context.Context, req *connect.Request[v1.RegenerateRequest]) (*connect.Response[v1.RegenerateResponse], error) {
 	return c.regenerate.CallUnary(ctx, req)
 }
 
 // StarterQuestionsServiceHandler is an implementation of the starter.v1.StarterQuestionsService
 // service.
 type StarterQuestionsServiceHandler interface {
-	List(context.Context, *connect.Request[v1.ListStarterQuestionsRequest]) (*connect.Response[v1.ListStarterQuestionsResponse], error)
-	Regenerate(context.Context, *connect.Request[v1.RegenerateStarterQuestionsRequest]) (*connect.Response[v1.RegenerateStarterQuestionsResponse], error)
+	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	Regenerate(context.Context, *connect.Request[v1.RegenerateRequest]) (*connect.Response[v1.RegenerateResponse], error)
 }
 
 // NewStarterQuestionsServiceHandler builds an HTTP handler from the service implementation. It
@@ -130,10 +130,10 @@ func NewStarterQuestionsServiceHandler(svc StarterQuestionsServiceHandler, opts 
 // UnimplementedStarterQuestionsServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedStarterQuestionsServiceHandler struct{}
 
-func (UnimplementedStarterQuestionsServiceHandler) List(context.Context, *connect.Request[v1.ListStarterQuestionsRequest]) (*connect.Response[v1.ListStarterQuestionsResponse], error) {
+func (UnimplementedStarterQuestionsServiceHandler) List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("starter.v1.StarterQuestionsService.List is not implemented"))
 }
 
-func (UnimplementedStarterQuestionsServiceHandler) Regenerate(context.Context, *connect.Request[v1.RegenerateStarterQuestionsRequest]) (*connect.Response[v1.RegenerateStarterQuestionsResponse], error) {
+func (UnimplementedStarterQuestionsServiceHandler) Regenerate(context.Context, *connect.Request[v1.RegenerateRequest]) (*connect.Response[v1.RegenerateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("starter.v1.StarterQuestionsService.Regenerate is not implemented"))
 }

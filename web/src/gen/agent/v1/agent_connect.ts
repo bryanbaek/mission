@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ControlMessage, HeartbeatRequest, HeartbeatResponse, OpenCommandStreamRequest, SubmitCommandResultRequest, SubmitCommandResultResponse } from "./agent_pb.js";
+import { HeartbeatRequest, HeartbeatResponse, OpenCommandStreamRequest, OpenCommandStreamResponse, SubmitCommandResultRequest, SubmitCommandResultResponse } from "./agent_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -18,7 +18,7 @@ export const AgentService = {
     openCommandStream: {
       name: "OpenCommandStream",
       I: OpenCommandStreamRequest,
-      O: ControlMessage,
+      O: OpenCommandStreamResponse,
       kind: MethodKind.ServerStreaming,
     },
     /**

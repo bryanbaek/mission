@@ -103,6 +103,7 @@ CREATE TABLE tenant_starter_questions (
     text TEXT NOT NULL,
     category TEXT NOT NULL,
     primary_table TEXT NOT NULL,
+    locale TEXT NOT NULL DEFAULT 'ko',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
@@ -141,6 +142,8 @@ CREATE TABLE tenant_query_runs (
     retrieved_example_ids_json JSONB NOT NULL DEFAULT '[]'::jsonb,
     error_stage                TEXT NULL,
     error_message              TEXT NULL,
+    reviewed_at                TIMESTAMPTZ NULL,
+    reviewed_by_user_id        TEXT NULL,
     created_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at               TIMESTAMPTZ NULL
 );
@@ -150,6 +153,9 @@ CREATE INDEX tenant_query_runs_tenant_created_idx
 
 CREATE INDEX tenant_query_runs_tenant_user_created_idx
     ON tenant_query_runs (tenant_id, clerk_user_id, created_at DESC);
+
+CREATE INDEX tenant_query_runs_review_queue_idx
+    ON tenant_query_runs (tenant_id, reviewed_at, created_at DESC);
 
 CREATE TABLE tenant_query_feedback (
     query_run_id    UUID NOT NULL REFERENCES tenant_query_runs(id) ON DELETE CASCADE,

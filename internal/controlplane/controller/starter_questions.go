@@ -51,7 +51,7 @@ type starterQuestionsStore interface {
 	LatestActive(
 		ctx context.Context,
 		tenantID uuid.UUID,
-	) ([]model.StarterQuestion, uuid.UUID, time.Time, error)
+	) ([]model.StarterQuestion, uuid.UUID, time.Time, model.Locale, error)
 }
 
 type StarterQuestionsControllerConfig struct {
@@ -124,36 +124,40 @@ func (c *StarterQuestionsController) List(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	clerkUserID string,
+	locale model.Locale,
 ) (StarterQuestionsListResult, error) {
 	if err := c.ensureMembership(ctx, tenantID, clerkUserID); err != nil {
 		return StarterQuestionsListResult{}, err
 	}
 
-	questions, setID, generatedAt, err := c.questions.LatestActive(ctx, tenantID)
+	questions, setID, generatedAt, cachedLocale, err := c.questions.LatestActive(ctx, tenantID)
 	switch {
 	case err == nil:
-		return StarterQuestionsListResult{
-			Questions:   questions,
-			GeneratedAt: generatedAt,
-			SetID:       setID,
-		}, nil
+		if cachedLocale == locale {
+			return StarterQuestionsListResult{
+				Questions:   questions,
+				GeneratedAt: generatedAt,
+				SetID:       setID,
+			}, nil
+		}
 	case !errors.Is(err, repository.ErrNotFound):
 		return StarterQuestionsListResult{}, err
 	}
 
-	return c.generateAndPersist(ctx, tenantID)
+	return c.generateAndPersist(ctx, tenantID, locale)
 }
 
 func (c *StarterQuestionsController) Regenerate(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	clerkUserID string,
+	locale model.Locale,
 ) (StarterQuestionsListResult, error) {
 	if err := c.ensureMembership(ctx, tenantID, clerkUserID); err != nil {
 		return StarterQuestionsListResult{}, err
 	}
 
-	return c.generateAndPersist(ctx, tenantID)
+	return c.generateAndPersist(ctx, tenantID, locale)
 }
 
 func (c *StarterQuestionsController) ensureMembership(
@@ -173,8 +177,9 @@ func (c *StarterQuestionsController) ensureMembership(
 func (c *StarterQuestionsController) generateAndPersist(
 	ctx context.Context,
 	tenantID uuid.UUID,
+	locale model.Locale,
 ) (StarterQuestionsListResult, error) {
-	layer, candidates, err := c.generate(ctx, tenantID)
+	layer, candidates, err := c.generate(ctx, tenantID, locale)
 	if err != nil {
 		return StarterQuestionsListResult{}, err
 	}
@@ -191,6 +196,7 @@ func (c *StarterQuestionsController) generateAndPersist(
 			Text:            strings.TrimSpace(candidate.Text),
 			Category:        model.StarterQuestionCategory(strings.TrimSpace(candidate.Category)),
 			PrimaryTable:    strings.TrimSpace(candidate.PrimaryTable),
+			Locale:          locale,
 			IsActive:        true,
 		})
 	}
@@ -199,7 +205,7 @@ func (c *StarterQuestionsController) generateAndPersist(
 		return StarterQuestionsListResult{}, err
 	}
 
-	persisted, persistedSetID, generatedAt, err := c.questions.LatestActive(ctx, tenantID)
+	persisted, persistedSetID, generatedAt, _, err := c.questions.LatestActive(ctx, tenantID)
 	if err != nil {
 		return StarterQuestionsListResult{}, err
 	}
@@ -214,6 +220,7 @@ func (c *StarterQuestionsController) generateAndPersist(
 func (c *StarterQuestionsController) generate(
 	ctx context.Context,
 	tenantID uuid.UUID,
+	locale model.Locale,
 ) (model.TenantSemanticLayer, []starterQuestionCandidate, error) {
 	layer, err := c.layers.LatestApprovedByTenant(ctx, tenantID)
 	if errors.Is(err, repository.ErrNotFound) {
@@ -228,17 +235,17 @@ func (c *StarterQuestionsController) generate(
 		return model.TenantSemanticLayer{}, nil, fmt.Errorf("decode semantic layer content: %w", err)
 	}
 
-	basePrompt := buildStarterQuestionsUserPrompt(content)
+	basePrompt := buildStarterQuestionsUserPrompt(content, locale)
 	validationFeedback := ""
 
 	for attempt := 0; attempt < 2; attempt++ {
 		completion, err := c.completer.Complete(ctx, llm.CompletionRequest{
 			Operation: "starter_questions.generate",
-			System:    starterQuestionsSystemPrompt,
+			System:    starterQuestionsSystemPrompt(locale),
 			Messages: []llm.Message{{
 				Role:          "user",
 				CachedContent: basePrompt,
-				Content:       buildStarterQuestionsRetryPrompt(validationFeedback),
+				Content:       buildStarterQuestionsRetryPrompt(validationFeedback, locale),
 			}},
 			Model:          c.model,
 			ProviderModels: llm.CloneProviderModels(c.providerModels),
@@ -258,7 +265,7 @@ func (c *StarterQuestionsController) generate(
 
 		var payload starterQuestionsOutput
 		if err := json.Unmarshal([]byte(completion.Content), &payload); err != nil {
-			validationFeedback = "응답 JSON을 디코드할 수 없습니다: " + err.Error()
+			validationFeedback = starterQuestionsRetryDecodeFeedback(locale, err)
 			if attempt == 0 {
 				continue
 			}

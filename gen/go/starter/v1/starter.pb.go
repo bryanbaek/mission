@@ -98,27 +98,28 @@ func (x *StarterQuestion) GetOrdinal() int32 {
 	return 0
 }
 
-type ListStarterQuestionsRequest struct {
+type ListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Locale        string                 `protobuf:"bytes,2,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListStarterQuestionsRequest) Reset() {
-	*x = ListStarterQuestionsRequest{}
+func (x *ListRequest) Reset() {
+	*x = ListRequest{}
 	mi := &file_starter_v1_starter_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListStarterQuestionsRequest) String() string {
+func (x *ListRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListStarterQuestionsRequest) ProtoMessage() {}
+func (*ListRequest) ProtoMessage() {}
 
-func (x *ListStarterQuestionsRequest) ProtoReflect() protoreflect.Message {
+func (x *ListRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_starter_v1_starter_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -130,19 +131,26 @@ func (x *ListStarterQuestionsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListStarterQuestionsRequest.ProtoReflect.Descriptor instead.
-func (*ListStarterQuestionsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
+func (*ListRequest) Descriptor() ([]byte, []int) {
 	return file_starter_v1_starter_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListStarterQuestionsRequest) GetTenantId() string {
+func (x *ListRequest) GetTenantId() string {
 	if x != nil {
 		return x.TenantId
 	}
 	return ""
 }
 
-type ListStarterQuestionsResponse struct {
+func (x *ListRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+type ListResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Questions     []*StarterQuestion     `protobuf:"bytes,1,rep,name=questions,proto3" json:"questions,omitempty"`
 	GeneratedAt   *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
@@ -151,20 +159,20 @@ type ListStarterQuestionsResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListStarterQuestionsResponse) Reset() {
-	*x = ListStarterQuestionsResponse{}
+func (x *ListResponse) Reset() {
+	*x = ListResponse{}
 	mi := &file_starter_v1_starter_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListStarterQuestionsResponse) String() string {
+func (x *ListResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListStarterQuestionsResponse) ProtoMessage() {}
+func (*ListResponse) ProtoMessage() {}
 
-func (x *ListStarterQuestionsResponse) ProtoReflect() protoreflect.Message {
+func (x *ListResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_starter_v1_starter_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -176,53 +184,54 @@ func (x *ListStarterQuestionsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListStarterQuestionsResponse.ProtoReflect.Descriptor instead.
-func (*ListStarterQuestionsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
+func (*ListResponse) Descriptor() ([]byte, []int) {
 	return file_starter_v1_starter_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListStarterQuestionsResponse) GetQuestions() []*StarterQuestion {
+func (x *ListResponse) GetQuestions() []*StarterQuestion {
 	if x != nil {
 		return x.Questions
 	}
 	return nil
 }
 
-func (x *ListStarterQuestionsResponse) GetGeneratedAt() *timestamppb.Timestamp {
+func (x *ListResponse) GetGeneratedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.GeneratedAt
 	}
 	return nil
 }
 
-func (x *ListStarterQuestionsResponse) GetSetId() string {
+func (x *ListResponse) GetSetId() string {
 	if x != nil {
 		return x.SetId
 	}
 	return ""
 }
 
-type RegenerateStarterQuestionsRequest struct {
+type RegenerateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Locale        string                 `protobuf:"bytes,2,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RegenerateStarterQuestionsRequest) Reset() {
-	*x = RegenerateStarterQuestionsRequest{}
+func (x *RegenerateRequest) Reset() {
+	*x = RegenerateRequest{}
 	mi := &file_starter_v1_starter_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegenerateStarterQuestionsRequest) String() string {
+func (x *RegenerateRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegenerateStarterQuestionsRequest) ProtoMessage() {}
+func (*RegenerateRequest) ProtoMessage() {}
 
-func (x *RegenerateStarterQuestionsRequest) ProtoReflect() protoreflect.Message {
+func (x *RegenerateRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_starter_v1_starter_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -234,19 +243,26 @@ func (x *RegenerateStarterQuestionsRequest) ProtoReflect() protoreflect.Message 
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegenerateStarterQuestionsRequest.ProtoReflect.Descriptor instead.
-func (*RegenerateStarterQuestionsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use RegenerateRequest.ProtoReflect.Descriptor instead.
+func (*RegenerateRequest) Descriptor() ([]byte, []int) {
 	return file_starter_v1_starter_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *RegenerateStarterQuestionsRequest) GetTenantId() string {
+func (x *RegenerateRequest) GetTenantId() string {
 	if x != nil {
 		return x.TenantId
 	}
 	return ""
 }
 
-type RegenerateStarterQuestionsResponse struct {
+func (x *RegenerateRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+type RegenerateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Questions     []*StarterQuestion     `protobuf:"bytes,1,rep,name=questions,proto3" json:"questions,omitempty"`
 	GeneratedAt   *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=generated_at,json=generatedAt,proto3" json:"generated_at,omitempty"`
@@ -255,20 +271,20 @@ type RegenerateStarterQuestionsResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RegenerateStarterQuestionsResponse) Reset() {
-	*x = RegenerateStarterQuestionsResponse{}
+func (x *RegenerateResponse) Reset() {
+	*x = RegenerateResponse{}
 	mi := &file_starter_v1_starter_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RegenerateStarterQuestionsResponse) String() string {
+func (x *RegenerateResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RegenerateStarterQuestionsResponse) ProtoMessage() {}
+func (*RegenerateResponse) ProtoMessage() {}
 
-func (x *RegenerateStarterQuestionsResponse) ProtoReflect() protoreflect.Message {
+func (x *RegenerateResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_starter_v1_starter_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -280,26 +296,26 @@ func (x *RegenerateStarterQuestionsResponse) ProtoReflect() protoreflect.Message
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RegenerateStarterQuestionsResponse.ProtoReflect.Descriptor instead.
-func (*RegenerateStarterQuestionsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use RegenerateResponse.ProtoReflect.Descriptor instead.
+func (*RegenerateResponse) Descriptor() ([]byte, []int) {
 	return file_starter_v1_starter_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *RegenerateStarterQuestionsResponse) GetQuestions() []*StarterQuestion {
+func (x *RegenerateResponse) GetQuestions() []*StarterQuestion {
 	if x != nil {
 		return x.Questions
 	}
 	return nil
 }
 
-func (x *RegenerateStarterQuestionsResponse) GetGeneratedAt() *timestamppb.Timestamp {
+func (x *RegenerateResponse) GetGeneratedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.GeneratedAt
 	}
 	return nil
 }
 
-func (x *RegenerateStarterQuestionsResponse) GetSetId() string {
+func (x *RegenerateResponse) GetSetId() string {
 	if x != nil {
 		return x.SetId
 	}
@@ -317,23 +333,25 @@ const file_starter_v1_starter_proto_rawDesc = "" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x1a\n" +
 	"\bcategory\x18\x03 \x01(\tR\bcategory\x12#\n" +
 	"\rprimary_table\x18\x04 \x01(\tR\fprimaryTable\x12\x18\n" +
-	"\aordinal\x18\x05 \x01(\x05R\aordinal\":\n" +
-	"\x1bListStarterQuestionsRequest\x12\x1b\n" +
-	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\xaf\x01\n" +
-	"\x1cListStarterQuestionsResponse\x129\n" +
+	"\aordinal\x18\x05 \x01(\x05R\aordinal\"B\n" +
+	"\vListRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x16\n" +
+	"\x06locale\x18\x02 \x01(\tR\x06locale\"\x9f\x01\n" +
+	"\fListResponse\x129\n" +
 	"\tquestions\x18\x01 \x03(\v2\x1b.starter.v1.StarterQuestionR\tquestions\x12=\n" +
 	"\fgenerated_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vgeneratedAt\x12\x15\n" +
-	"\x06set_id\x18\x03 \x01(\tR\x05setId\"@\n" +
-	"!RegenerateStarterQuestionsRequest\x12\x1b\n" +
-	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"\xb5\x01\n" +
-	"\"RegenerateStarterQuestionsResponse\x129\n" +
+	"\x06set_id\x18\x03 \x01(\tR\x05setId\"H\n" +
+	"\x11RegenerateRequest\x12\x1b\n" +
+	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x16\n" +
+	"\x06locale\x18\x02 \x01(\tR\x06locale\"\xa5\x01\n" +
+	"\x12RegenerateResponse\x129\n" +
 	"\tquestions\x18\x01 \x03(\v2\x1b.starter.v1.StarterQuestionR\tquestions\x12=\n" +
 	"\fgenerated_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vgeneratedAt\x12\x15\n" +
-	"\x06set_id\x18\x03 \x01(\tR\x05setId2\xe1\x01\n" +
-	"\x17StarterQuestionsService\x12Y\n" +
-	"\x04List\x12'.starter.v1.ListStarterQuestionsRequest\x1a(.starter.v1.ListStarterQuestionsResponse\x12k\n" +
+	"\x06set_id\x18\x03 \x01(\tR\x05setId2\xa1\x01\n" +
+	"\x17StarterQuestionsService\x129\n" +
+	"\x04List\x12\x17.starter.v1.ListRequest\x1a\x18.starter.v1.ListResponse\x12K\n" +
 	"\n" +
-	"Regenerate\x12-.starter.v1.RegenerateStarterQuestionsRequest\x1a..starter.v1.RegenerateStarterQuestionsResponseB\xa1\x01\n" +
+	"Regenerate\x12\x1d.starter.v1.RegenerateRequest\x1a\x1e.starter.v1.RegenerateResponseB\xa1\x01\n" +
 	"\x0ecom.starter.v1B\fStarterProtoP\x01Z8github.com/bryanbaek/mission/gen/go/starter/v1;starterv1\xa2\x02\x03SXX\xaa\x02\n" +
 	"Starter.V1\xca\x02\n" +
 	"Starter\\V1\xe2\x02\x16Starter\\V1\\GPBMetadata\xea\x02\vStarter::V1b\x06proto3"
@@ -352,22 +370,22 @@ func file_starter_v1_starter_proto_rawDescGZIP() []byte {
 
 var file_starter_v1_starter_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_starter_v1_starter_proto_goTypes = []any{
-	(*StarterQuestion)(nil),                    // 0: starter.v1.StarterQuestion
-	(*ListStarterQuestionsRequest)(nil),        // 1: starter.v1.ListStarterQuestionsRequest
-	(*ListStarterQuestionsResponse)(nil),       // 2: starter.v1.ListStarterQuestionsResponse
-	(*RegenerateStarterQuestionsRequest)(nil),  // 3: starter.v1.RegenerateStarterQuestionsRequest
-	(*RegenerateStarterQuestionsResponse)(nil), // 4: starter.v1.RegenerateStarterQuestionsResponse
-	(*timestamppb.Timestamp)(nil),              // 5: google.protobuf.Timestamp
+	(*StarterQuestion)(nil),       // 0: starter.v1.StarterQuestion
+	(*ListRequest)(nil),           // 1: starter.v1.ListRequest
+	(*ListResponse)(nil),          // 2: starter.v1.ListResponse
+	(*RegenerateRequest)(nil),     // 3: starter.v1.RegenerateRequest
+	(*RegenerateResponse)(nil),    // 4: starter.v1.RegenerateResponse
+	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_starter_v1_starter_proto_depIdxs = []int32{
-	0, // 0: starter.v1.ListStarterQuestionsResponse.questions:type_name -> starter.v1.StarterQuestion
-	5, // 1: starter.v1.ListStarterQuestionsResponse.generated_at:type_name -> google.protobuf.Timestamp
-	0, // 2: starter.v1.RegenerateStarterQuestionsResponse.questions:type_name -> starter.v1.StarterQuestion
-	5, // 3: starter.v1.RegenerateStarterQuestionsResponse.generated_at:type_name -> google.protobuf.Timestamp
-	1, // 4: starter.v1.StarterQuestionsService.List:input_type -> starter.v1.ListStarterQuestionsRequest
-	3, // 5: starter.v1.StarterQuestionsService.Regenerate:input_type -> starter.v1.RegenerateStarterQuestionsRequest
-	2, // 6: starter.v1.StarterQuestionsService.List:output_type -> starter.v1.ListStarterQuestionsResponse
-	4, // 7: starter.v1.StarterQuestionsService.Regenerate:output_type -> starter.v1.RegenerateStarterQuestionsResponse
+	0, // 0: starter.v1.ListResponse.questions:type_name -> starter.v1.StarterQuestion
+	5, // 1: starter.v1.ListResponse.generated_at:type_name -> google.protobuf.Timestamp
+	0, // 2: starter.v1.RegenerateResponse.questions:type_name -> starter.v1.StarterQuestion
+	5, // 3: starter.v1.RegenerateResponse.generated_at:type_name -> google.protobuf.Timestamp
+	1, // 4: starter.v1.StarterQuestionsService.List:input_type -> starter.v1.ListRequest
+	3, // 5: starter.v1.StarterQuestionsService.Regenerate:input_type -> starter.v1.RegenerateRequest
+	2, // 6: starter.v1.StarterQuestionsService.List:output_type -> starter.v1.ListResponse
+	4, // 7: starter.v1.StarterQuestionsService.Regenerate:output_type -> starter.v1.RegenerateResponse
 	6, // [6:8] is the sub-list for method output_type
 	4, // [4:6] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

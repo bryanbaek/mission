@@ -20,11 +20,13 @@ type starterQuestionsController interface {
 		ctx context.Context,
 		tenantID uuid.UUID,
 		clerkUserID string,
+		locale model.Locale,
 	) (controller.StarterQuestionsListResult, error)
 	Regenerate(
 		ctx context.Context,
 		tenantID uuid.UUID,
 		clerkUserID string,
+		locale model.Locale,
 	) (controller.StarterQuestionsListResult, error)
 }
 
@@ -41,8 +43,8 @@ func NewStarterQuestionsHandler(
 
 func (h *StarterQuestionsHandler) List(
 	ctx context.Context,
-	req *connect.Request[starterv1.ListStarterQuestionsRequest],
-) (*connect.Response[starterv1.ListStarterQuestionsResponse], error) {
+	req *connect.Request[starterv1.ListRequest],
+) (*connect.Response[starterv1.ListResponse], error) {
 	user, err := requireUser(ctx)
 	if err != nil {
 		return nil, err
@@ -53,12 +55,13 @@ func (h *StarterQuestionsHandler) List(
 		return nil, err
 	}
 
-	result, err := h.ctrl.List(ctx, tenantID, user.ID)
+	locale := model.NormalizeLocale(req.Msg.Locale)
+	result, err := h.ctrl.List(ctx, tenantID, user.ID, locale)
 	if err != nil {
 		return nil, starterQuestionsError(err)
 	}
 
-	return connect.NewResponse(&starterv1.ListStarterQuestionsResponse{
+	return connect.NewResponse(&starterv1.ListResponse{
 		Questions:   starterQuestionsToProto(result.Questions),
 		GeneratedAt: timestamppb.New(result.GeneratedAt),
 		SetId:       result.SetID.String(),
@@ -67,8 +70,8 @@ func (h *StarterQuestionsHandler) List(
 
 func (h *StarterQuestionsHandler) Regenerate(
 	ctx context.Context,
-	req *connect.Request[starterv1.RegenerateStarterQuestionsRequest],
-) (*connect.Response[starterv1.RegenerateStarterQuestionsResponse], error) {
+	req *connect.Request[starterv1.RegenerateRequest],
+) (*connect.Response[starterv1.RegenerateResponse], error) {
 	user, err := requireUser(ctx)
 	if err != nil {
 		return nil, err
@@ -79,12 +82,13 @@ func (h *StarterQuestionsHandler) Regenerate(
 		return nil, err
 	}
 
-	result, err := h.ctrl.Regenerate(ctx, tenantID, user.ID)
+	locale := model.NormalizeLocale(req.Msg.Locale)
+	result, err := h.ctrl.Regenerate(ctx, tenantID, user.ID, locale)
 	if err != nil {
 		return nil, starterQuestionsError(err)
 	}
 
-	return connect.NewResponse(&starterv1.RegenerateStarterQuestionsResponse{
+	return connect.NewResponse(&starterv1.RegenerateResponse{
 		Questions:   starterQuestionsToProto(result.Questions),
 		GeneratedAt: timestamppb.New(result.GeneratedAt),
 		SetId:       result.SetID.String(),

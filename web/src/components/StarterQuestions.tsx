@@ -51,7 +51,7 @@ export default function StarterQuestions({
   onPick: (text: string) => void;
 }) {
   const client = useStarterQuestionsClient();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const [questions, setQuestions] = useState<StarterQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +64,7 @@ export default function StarterQuestions({
     setError(null);
 
     void client
-      .list({ tenantId })
+      .list({ tenantId, locale })
       .then((response) => {
         if (cancelled) {
           return;
@@ -90,13 +90,13 @@ export default function StarterQuestions({
     return () => {
       cancelled = true;
     };
-  }, [client, t, tenantId]);
+  }, [client, locale, t, tenantId]);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
     setError(null);
     try {
-      const response = await client.regenerate({ tenantId });
+      const response = await client.regenerate({ tenantId, locale });
       setQuestions(sortQuestions(response.questions));
     } catch (err) {
       const detail = normalizeStarterQuestionsError(err);

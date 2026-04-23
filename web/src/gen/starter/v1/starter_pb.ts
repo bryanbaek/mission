@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file starter/v1/starter.proto.
  */
 export const file_starter_v1_starter: GenFile = /*@__PURE__*/
-  fileDesc("ChhzdGFydGVyL3YxL3N0YXJ0ZXIucHJvdG8SCnN0YXJ0ZXIudjEiZQoPU3RhcnRlclF1ZXN0aW9uEgoKAmlkGAEgASgJEgwKBHRleHQYAiABKAkSEAoIY2F0ZWdvcnkYAyABKAkSFQoNcHJpbWFyeV90YWJsZRgEIAEoCRIPCgdvcmRpbmFsGAUgASgFIjAKG0xpc3RTdGFydGVyUXVlc3Rpb25zUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkikAEKHExpc3RTdGFydGVyUXVlc3Rpb25zUmVzcG9uc2USLgoJcXVlc3Rpb25zGAEgAygLMhsuc3RhcnRlci52MS5TdGFydGVyUXVlc3Rpb24SMAoMZ2VuZXJhdGVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIOCgZzZXRfaWQYAyABKAkiNgohUmVnZW5lcmF0ZVN0YXJ0ZXJRdWVzdGlvbnNSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCSKWAQoiUmVnZW5lcmF0ZVN0YXJ0ZXJRdWVzdGlvbnNSZXNwb25zZRIuCglxdWVzdGlvbnMYASADKAsyGy5zdGFydGVyLnYxLlN0YXJ0ZXJRdWVzdGlvbhIwCgxnZW5lcmF0ZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnNldF9pZBgDIAEoCTLhAQoXU3RhcnRlclF1ZXN0aW9uc1NlcnZpY2USWQoETGlzdBInLnN0YXJ0ZXIudjEuTGlzdFN0YXJ0ZXJRdWVzdGlvbnNSZXF1ZXN0Giguc3RhcnRlci52MS5MaXN0U3RhcnRlclF1ZXN0aW9uc1Jlc3BvbnNlEmsKClJlZ2VuZXJhdGUSLS5zdGFydGVyLnYxLlJlZ2VuZXJhdGVTdGFydGVyUXVlc3Rpb25zUmVxdWVzdBouLnN0YXJ0ZXIudjEuUmVnZW5lcmF0ZVN0YXJ0ZXJRdWVzdGlvbnNSZXNwb25zZUKhAQoOY29tLnN0YXJ0ZXIudjFCDFN0YXJ0ZXJQcm90b1ABWjhnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9zdGFydGVyL3YxO3N0YXJ0ZXJ2MaICA1NYWKoCClN0YXJ0ZXIuVjHKAgpTdGFydGVyXFYx4gIWU3RhcnRlclxWMVxHUEJNZXRhZGF0YeoCC1N0YXJ0ZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("ChhzdGFydGVyL3YxL3N0YXJ0ZXIucHJvdG8SCnN0YXJ0ZXIudjEiZQoPU3RhcnRlclF1ZXN0aW9uEgoKAmlkGAEgASgJEgwKBHRleHQYAiABKAkSEAoIY2F0ZWdvcnkYAyABKAkSFQoNcHJpbWFyeV90YWJsZRgEIAEoCRIPCgdvcmRpbmFsGAUgASgFIjAKC0xpc3RSZXF1ZXN0EhEKCXRlbmFudF9pZBgBIAEoCRIOCgZsb2NhbGUYAiABKAkigAEKDExpc3RSZXNwb25zZRIuCglxdWVzdGlvbnMYASADKAsyGy5zdGFydGVyLnYxLlN0YXJ0ZXJRdWVzdGlvbhIwCgxnZW5lcmF0ZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEg4KBnNldF9pZBgDIAEoCSI2ChFSZWdlbmVyYXRlUmVxdWVzdBIRCgl0ZW5hbnRfaWQYASABKAkSDgoGbG9jYWxlGAIgASgJIoYBChJSZWdlbmVyYXRlUmVzcG9uc2USLgoJcXVlc3Rpb25zGAEgAygLMhsuc3RhcnRlci52MS5TdGFydGVyUXVlc3Rpb24SMAoMZ2VuZXJhdGVkX2F0GAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIOCgZzZXRfaWQYAyABKAkyoQEKF1N0YXJ0ZXJRdWVzdGlvbnNTZXJ2aWNlEjkKBExpc3QSFy5zdGFydGVyLnYxLkxpc3RSZXF1ZXN0Ghguc3RhcnRlci52MS5MaXN0UmVzcG9uc2USSwoKUmVnZW5lcmF0ZRIdLnN0YXJ0ZXIudjEuUmVnZW5lcmF0ZVJlcXVlc3QaHi5zdGFydGVyLnYxLlJlZ2VuZXJhdGVSZXNwb25zZUKhAQoOY29tLnN0YXJ0ZXIudjFCDFN0YXJ0ZXJQcm90b1ABWjhnaXRodWIuY29tL2JyeWFuYmFlay9taXNzaW9uL2dlbi9nby9zdGFydGVyL3YxO3N0YXJ0ZXJ2MaICA1NYWKoCClN0YXJ0ZXIuVjHKAgpTdGFydGVyXFYx4gIWU3RhcnRlclxWMVxHUEJNZXRhZGF0YeoCC1N0YXJ0ZXI6OlYxYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message starter.v1.StarterQuestion
@@ -52,26 +52,31 @@ export const StarterQuestionSchema: GenMessage<StarterQuestion> = /*@__PURE__*/
   messageDesc(file_starter_v1_starter, 0);
 
 /**
- * @generated from message starter.v1.ListStarterQuestionsRequest
+ * @generated from message starter.v1.ListRequest
  */
-export type ListStarterQuestionsRequest = Message<"starter.v1.ListStarterQuestionsRequest"> & {
+export type ListRequest = Message<"starter.v1.ListRequest"> & {
   /**
    * @generated from field: string tenant_id = 1;
    */
   tenantId: string;
+
+  /**
+   * @generated from field: string locale = 2;
+   */
+  locale: string;
 };
 
 /**
- * Describes the message starter.v1.ListStarterQuestionsRequest.
- * Use `create(ListStarterQuestionsRequestSchema)` to create a new message.
+ * Describes the message starter.v1.ListRequest.
+ * Use `create(ListRequestSchema)` to create a new message.
  */
-export const ListStarterQuestionsRequestSchema: GenMessage<ListStarterQuestionsRequest> = /*@__PURE__*/
+export const ListRequestSchema: GenMessage<ListRequest> = /*@__PURE__*/
   messageDesc(file_starter_v1_starter, 1);
 
 /**
- * @generated from message starter.v1.ListStarterQuestionsResponse
+ * @generated from message starter.v1.ListResponse
  */
-export type ListStarterQuestionsResponse = Message<"starter.v1.ListStarterQuestionsResponse"> & {
+export type ListResponse = Message<"starter.v1.ListResponse"> & {
   /**
    * @generated from field: repeated starter.v1.StarterQuestion questions = 1;
    */
@@ -89,33 +94,38 @@ export type ListStarterQuestionsResponse = Message<"starter.v1.ListStarterQuesti
 };
 
 /**
- * Describes the message starter.v1.ListStarterQuestionsResponse.
- * Use `create(ListStarterQuestionsResponseSchema)` to create a new message.
+ * Describes the message starter.v1.ListResponse.
+ * Use `create(ListResponseSchema)` to create a new message.
  */
-export const ListStarterQuestionsResponseSchema: GenMessage<ListStarterQuestionsResponse> = /*@__PURE__*/
+export const ListResponseSchema: GenMessage<ListResponse> = /*@__PURE__*/
   messageDesc(file_starter_v1_starter, 2);
 
 /**
- * @generated from message starter.v1.RegenerateStarterQuestionsRequest
+ * @generated from message starter.v1.RegenerateRequest
  */
-export type RegenerateStarterQuestionsRequest = Message<"starter.v1.RegenerateStarterQuestionsRequest"> & {
+export type RegenerateRequest = Message<"starter.v1.RegenerateRequest"> & {
   /**
    * @generated from field: string tenant_id = 1;
    */
   tenantId: string;
+
+  /**
+   * @generated from field: string locale = 2;
+   */
+  locale: string;
 };
 
 /**
- * Describes the message starter.v1.RegenerateStarterQuestionsRequest.
- * Use `create(RegenerateStarterQuestionsRequestSchema)` to create a new message.
+ * Describes the message starter.v1.RegenerateRequest.
+ * Use `create(RegenerateRequestSchema)` to create a new message.
  */
-export const RegenerateStarterQuestionsRequestSchema: GenMessage<RegenerateStarterQuestionsRequest> = /*@__PURE__*/
+export const RegenerateRequestSchema: GenMessage<RegenerateRequest> = /*@__PURE__*/
   messageDesc(file_starter_v1_starter, 3);
 
 /**
- * @generated from message starter.v1.RegenerateStarterQuestionsResponse
+ * @generated from message starter.v1.RegenerateResponse
  */
-export type RegenerateStarterQuestionsResponse = Message<"starter.v1.RegenerateStarterQuestionsResponse"> & {
+export type RegenerateResponse = Message<"starter.v1.RegenerateResponse"> & {
   /**
    * @generated from field: repeated starter.v1.StarterQuestion questions = 1;
    */
@@ -133,10 +143,10 @@ export type RegenerateStarterQuestionsResponse = Message<"starter.v1.RegenerateS
 };
 
 /**
- * Describes the message starter.v1.RegenerateStarterQuestionsResponse.
- * Use `create(RegenerateStarterQuestionsResponseSchema)` to create a new message.
+ * Describes the message starter.v1.RegenerateResponse.
+ * Use `create(RegenerateResponseSchema)` to create a new message.
  */
-export const RegenerateStarterQuestionsResponseSchema: GenMessage<RegenerateStarterQuestionsResponse> = /*@__PURE__*/
+export const RegenerateResponseSchema: GenMessage<RegenerateResponse> = /*@__PURE__*/
   messageDesc(file_starter_v1_starter, 4);
 
 /**
@@ -148,16 +158,16 @@ export const StarterQuestionsService: GenService<{
    */
   list: {
     methodKind: "unary";
-    input: typeof ListStarterQuestionsRequestSchema;
-    output: typeof ListStarterQuestionsResponseSchema;
+    input: typeof ListRequestSchema;
+    output: typeof ListResponseSchema;
   },
   /**
    * @generated from rpc starter.v1.StarterQuestionsService.Regenerate
    */
   regenerate: {
     methodKind: "unary";
-    input: typeof RegenerateStarterQuestionsRequestSchema;
-    output: typeof RegenerateStarterQuestionsResponseSchema;
+    input: typeof RegenerateRequestSchema;
+    output: typeof RegenerateResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_starter_v1_starter, 0);

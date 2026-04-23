@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS tenant_canonical_query_examples;
 DROP INDEX IF EXISTS tenant_query_feedback_user_updated_idx;
 DROP TABLE IF EXISTS tenant_query_feedback;
 
+DROP INDEX IF EXISTS tenant_query_runs_review_queue_idx;
 DROP INDEX IF EXISTS tenant_query_runs_tenant_user_created_idx;
 DROP INDEX IF EXISTS tenant_query_runs_tenant_created_idx;
 DROP TABLE IF EXISTS tenant_query_runs;

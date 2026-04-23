@@ -17,24 +17,26 @@ import (
 )
 
 type fakeStarterQuestionsController struct {
-	listFn       func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error)
-	regenerateFn func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error)
+	listFn       func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error)
+	regenerateFn func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error)
 }
 
 func (f fakeStarterQuestionsController) List(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	clerkUserID string,
+	locale model.Locale,
 ) (controller.StarterQuestionsListResult, error) {
-	return f.listFn(ctx, tenantID, clerkUserID)
+	return f.listFn(ctx, tenantID, clerkUserID, locale)
 }
 
 func (f fakeStarterQuestionsController) Regenerate(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	clerkUserID string,
+	locale model.Locale,
 ) (controller.StarterQuestionsListResult, error) {
-	return f.regenerateFn(ctx, tenantID, clerkUserID)
+	return f.regenerateFn(ctx, tenantID, clerkUserID, locale)
 }
 
 func starterQuestionsHandlerContext() context.Context {
@@ -45,17 +47,17 @@ func TestStarterQuestionsHandlerValidationAndErrorMapping(t *testing.T) {
 	t.Parallel()
 
 	handler := NewStarterQuestionsHandler(fakeStarterQuestionsController{
-		listFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+		listFn: func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error) {
 			return controller.StarterQuestionsListResult{}, controller.ErrStarterQuestionsAccessDenied
 		},
-		regenerateFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+		regenerateFn: func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error) {
 			return controller.StarterQuestionsListResult{}, controller.ErrStarterQuestionsNoLayer
 		},
 	})
 
 	_, err := handler.List(
 		context.Background(),
-		connect.NewRequest(&starterv1.ListStarterQuestionsRequest{
+		connect.NewRequest(&starterv1.ListRequest{
 			TenantId: uuid.NewString(),
 		}),
 	)
@@ -63,7 +65,7 @@ func TestStarterQuestionsHandlerValidationAndErrorMapping(t *testing.T) {
 
 	_, err = handler.List(
 		starterQuestionsHandlerContext(),
-		connect.NewRequest(&starterv1.ListStarterQuestionsRequest{
+		connect.NewRequest(&starterv1.ListRequest{
 			TenantId: "bad",
 		}),
 	)
@@ -71,7 +73,7 @@ func TestStarterQuestionsHandlerValidationAndErrorMapping(t *testing.T) {
 
 	_, err = handler.List(
 		starterQuestionsHandlerContext(),
-		connect.NewRequest(&starterv1.ListStarterQuestionsRequest{
+		connect.NewRequest(&starterv1.ListRequest{
 			TenantId: uuid.NewString(),
 		}),
 	)
@@ -79,7 +81,7 @@ func TestStarterQuestionsHandlerValidationAndErrorMapping(t *testing.T) {
 
 	_, err = handler.Regenerate(
 		starterQuestionsHandlerContext(),
-		connect.NewRequest(&starterv1.RegenerateStarterQuestionsRequest{
+		connect.NewRequest(&starterv1.RegenerateRequest{
 			TenantId: uuid.NewString(),
 		}),
 	)
@@ -93,7 +95,7 @@ func TestStarterQuestionsHandlerMapsResultToProto(t *testing.T) {
 	setID := uuid.New()
 	generatedAt := time.Unix(1_700_200_200, 0).UTC()
 	handler := NewStarterQuestionsHandler(fakeStarterQuestionsController{
-		listFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID string) (controller.StarterQuestionsListResult, error) {
+		listFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID string, _ model.Locale) (controller.StarterQuestionsListResult, error) {
 			if gotTenantID != tenantID {
 				t.Fatalf("tenantID = %s, want %s", gotTenantID, tenantID)
 			}
@@ -117,14 +119,14 @@ func TestStarterQuestionsHandlerMapsResultToProto(t *testing.T) {
 				GeneratedAt: generatedAt,
 			}, nil
 		},
-		regenerateFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+		regenerateFn: func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error) {
 			return controller.StarterQuestionsListResult{}, errors.New("unexpected Regenerate call")
 		},
 	})
 
 	resp, err := handler.List(
 		starterQuestionsHandlerContext(),
-		connect.NewRequest(&starterv1.ListStarterQuestionsRequest{
+		connect.NewRequest(&starterv1.ListRequest{
 			TenantId: tenantID.String(),
 		}),
 	)
@@ -149,20 +151,20 @@ func TestStarterQuestionsHandlerMapsLLMUnavailableToUnavailable(t *testing.T) {
 	t.Parallel()
 
 	handler := NewStarterQuestionsHandler(fakeStarterQuestionsController{
-		listFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+		listFn: func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error) {
 			return controller.StarterQuestionsListResult{}, llm.NewUnavailableError(
 				[]string{"anthropic", "openai"},
 				errors.New("provider outage"),
 			)
 		},
-		regenerateFn: func(context.Context, uuid.UUID, string) (controller.StarterQuestionsListResult, error) {
+		regenerateFn: func(context.Context, uuid.UUID, string, model.Locale) (controller.StarterQuestionsListResult, error) {
 			return controller.StarterQuestionsListResult{}, errors.New("unexpected Regenerate call")
 		},
 	})
 
 	_, err := handler.List(
 		starterQuestionsHandlerContext(),
-		connect.NewRequest(&starterv1.ListStarterQuestionsRequest{
+		connect.NewRequest(&starterv1.ListRequest{
 			TenantId: uuid.NewString(),
 		}),
 	)
