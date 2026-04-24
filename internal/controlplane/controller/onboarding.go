@@ -351,6 +351,7 @@ func (c *OnboardingController) ConfigureDatabase(
 	clerkUserID, host string,
 	port int32,
 	databaseName, connectionString string,
+	locale model.Locale,
 ) (OnboardingStateView, error) {
 	workspace, err := c.loadWorkspace(ctx, tenantID, clerkUserID)
 	if err != nil {
@@ -419,7 +420,7 @@ func (c *OnboardingController) ConfigureDatabase(
 
 	if result.Error != "" || result.ErrorCode != AgentConfigureDatabaseErrorCodeUnspecified {
 		payload.DBErrorCode = string(result.ErrorCode)
-		payload.DBErrorMessageKO = databaseErrorMessageKO(result.ErrorCode)
+		payload.DBErrorMessageKO = databaseErrorMessage(result.ErrorCode, locale)
 		record, payload, err = c.persistState(
 			ctx,
 			tenantID,

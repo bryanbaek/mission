@@ -181,6 +181,7 @@ describe("OnboardingStepPage", () => {
         databaseName: "mysql-1",
         connectionString:
           "okta_ai_ro:X1bXqFdQjYGVEBCvlPgnPRXN@tcp(db.internal:3306)/mysql-1",
+        locale: "ko",
       });
     });
   });

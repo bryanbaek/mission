@@ -58,7 +58,7 @@ export default function ChatPage() {
     submitFeedback,
     submitQuestion,
     submitting,
-  } = useChatMutations(queryClient, selectedTenant, loadPersistentHistory);
+  } = useChatMutations(queryClient, selectedTenant, loadPersistentHistory, locale);
 
   const defaultQuestion = t("chat.form.defaultQuestion");
   const previousDefaultQuestion = useRef(defaultQuestion);

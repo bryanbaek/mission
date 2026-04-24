@@ -19,6 +19,7 @@ import (
 	"github.com/bryanbaek/mission/gen/go/agent/v1/agentv1connect"
 	"github.com/bryanbaek/mission/internal/controlplane/auth"
 	cpcontroller "github.com/bryanbaek/mission/internal/controlplane/controller"
+	"github.com/bryanbaek/mission/internal/controlplane/model"
 	cpdb "github.com/bryanbaek/mission/internal/controlplane/db"
 	"github.com/bryanbaek/mission/internal/controlplane/gateway/llm"
 	"github.com/bryanbaek/mission/internal/controlplane/repository"
@@ -215,11 +216,11 @@ INSERT INTO employees (department_id, position_id, manager_id, full_name, employ
 	}
 
 	question := "이번 달 핵심 수치를 한 줄로 알려줘"
-	resultA, err := queryCtrl.AskQuestion(ctx, tenantA.ID, "user_123", question)
+	resultA, err := queryCtrl.AskQuestion(ctx, tenantA.ID, "user_123", question, model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("queryCtrl.AskQuestion tenantA returned error: %v", err)
 	}
-	resultB, err := queryCtrl.AskQuestion(ctx, tenantB.ID, "user_123", question)
+	resultB, err := queryCtrl.AskQuestion(ctx, tenantB.ID, "user_123", question, model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("queryCtrl.AskQuestion tenantB returned error: %v", err)
 	}

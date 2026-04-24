@@ -186,6 +186,7 @@ export function useChatMutations(
   queryClient: QueryClient,
   selectedTenant: Tenant | null,
   loadPersistentHistory: (tenantId: string) => Promise<void>,
+  locale: string,
 ) {
   const [history, setHistory] = useState<QueryHistoryItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -202,6 +203,7 @@ export function useChatMutations(
         const response = await queryClient.askQuestion({
           tenantId: selectedTenant.id,
           question: trimmedQuestion,
+          locale,
         });
         setHistory((current) => [
           {
@@ -238,7 +240,7 @@ export function useChatMutations(
         setSubmitting(false);
       }
     },
-    [loadPersistentHistory, queryClient, selectedTenant, submitting],
+    [loadPersistentHistory, locale, queryClient, selectedTenant, submitting],
   );
 
   const submitFeedback = useCallback(

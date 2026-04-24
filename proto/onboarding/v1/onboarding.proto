@@ -115,6 +115,9 @@ message ConfigureDatabaseRequest {
   int32 port = 3;
   string database_name = 4;
   string connection_string = 5;
+  // BCP-47 locale tag ("ko" or "en"). Controls the language of user-facing
+  // error messages such as db_error_message_ko. Defaults to "ko" when empty.
+  string locale = 6;
 }
 
 message ConfigureDatabaseResponse {

@@ -17,7 +17,7 @@ import (
 )
 
 type fakeQueryController struct {
-	askFn              func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error)
+	askFn              func(context.Context, uuid.UUID, string, string, model.Locale) (controller.AskQuestionResult, error)
 	listMyRunsFn       func(context.Context, uuid.UUID, string, int32) (controller.ListMyQueryRunsResult, error)
 	listReviewFn       func(context.Context, uuid.UUID, string, model.ReviewQueueFilter, int32) (controller.ListReviewQueueResult, error)
 	markReviewedFn     func(context.Context, uuid.UUID, string, uuid.UUID) (controller.MarkQueryRunReviewedResult, error)
@@ -32,8 +32,9 @@ func (f fakeQueryController) AskQuestion(
 	tenantID uuid.UUID,
 	clerkUserID string,
 	question string,
+	locale model.Locale,
 ) (controller.AskQuestionResult, error) {
-	return f.askFn(ctx, tenantID, clerkUserID, question)
+	return f.askFn(ctx, tenantID, clerkUserID, question, locale)
 }
 
 func (f fakeQueryController) ListMyQueryRuns(
@@ -110,7 +111,7 @@ func TestQueryHandlerRejectsUnauthenticated(t *testing.T) {
 	t.Parallel()
 
 	handler := NewQueryHandler(fakeQueryController{
-		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+		askFn: func(context.Context, uuid.UUID, string, string, model.Locale) (controller.AskQuestionResult, error) {
 			t.Fatal("controller should not be invoked without auth")
 			return controller.AskQuestionResult{}, nil
 		},
@@ -132,7 +133,7 @@ func TestQueryHandlerMapsResultToProto(t *testing.T) {
 	tenantID := uuid.New()
 	queryRunID := uuid.New()
 	handler := NewQueryHandler(fakeQueryController{
-		askFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID, question string) (controller.AskQuestionResult, error) {
+		askFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID, question string, _ model.Locale) (controller.AskQuestionResult, error) {
 			if gotTenantID != tenantID {
 				t.Fatalf("tenantID = %s, want %s", gotTenantID, tenantID)
 			}
@@ -201,7 +202,7 @@ func TestQueryHandlerAttachesTerminalFailureDetails(t *testing.T) {
 
 	queryRunID := uuid.New()
 	handler := NewQueryHandler(fakeQueryController{
-		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+		askFn: func(context.Context, uuid.UUID, string, string, model.Locale) (controller.AskQuestionResult, error) {
 			return controller.AskQuestionResult{
 				QueryRunID: queryRunID,
 				Warnings:   []string{"원본 스키마만 사용"},
@@ -252,7 +253,7 @@ func TestQueryHandlerMapsLLMUnavailableToUnavailable(t *testing.T) {
 	t.Parallel()
 
 	handler := NewQueryHandler(fakeQueryController{
-		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+		askFn: func(context.Context, uuid.UUID, string, string, model.Locale) (controller.AskQuestionResult, error) {
 			return controller.AskQuestionResult{
 					Warnings: []string{"llm retry exhausted"},
 				}, llm.NewUnavailableError(
@@ -280,7 +281,7 @@ func TestQueryHandlerListMyQueryRunsMapsResultToProto(t *testing.T) {
 	createdAt := time.Unix(1_700_003_000, 0).UTC()
 	completedAt := createdAt.Add(15 * time.Second)
 	handler := NewQueryHandler(fakeQueryController{
-		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+		askFn: func(context.Context, uuid.UUID, string, string, model.Locale) (controller.AskQuestionResult, error) {
 			return controller.AskQuestionResult{}, errors.New("unexpected AskQuestion call")
 		},
 		listMyRunsFn: func(_ context.Context, gotTenantID uuid.UUID, clerkUserID string, limit int32) (controller.ListMyQueryRunsResult, error) {
@@ -366,7 +367,7 @@ func TestQueryHandlerListMyQueryRunsMapsAccessDenied(t *testing.T) {
 	t.Parallel()
 
 	handler := NewQueryHandler(fakeQueryController{
-		askFn: func(context.Context, uuid.UUID, string, string) (controller.AskQuestionResult, error) {
+		askFn: func(context.Context, uuid.UUID, string, string, model.Locale) (controller.AskQuestionResult, error) {
 			return controller.AskQuestionResult{}, errors.New("unexpected AskQuestion call")
 		},
 		listMyRunsFn: func(context.Context, uuid.UUID, string, int32) (controller.ListMyQueryRunsResult, error) {

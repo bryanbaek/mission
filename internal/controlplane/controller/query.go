@@ -339,6 +339,7 @@ func (c *QueryController) AskQuestion(
 	tenantID uuid.UUID,
 	clerkUserID string,
 	question string,
+	locale model.Locale,
 ) (AskQuestionResult, error) {
 	pipelineStart := time.Now()
 	question, latestSchema, err := c.validateAskQuestionRequest(
@@ -357,6 +358,7 @@ func (c *QueryController) AskQuestion(
 		clerkUserID,
 		question,
 		latestSchema,
+		locale,
 	)
 	if err != nil {
 		return prepared.result, err
@@ -368,6 +370,7 @@ func (c *QueryController) AskQuestion(
 		tenantID,
 		question,
 		prepared,
+		locale,
 	)
 }
 

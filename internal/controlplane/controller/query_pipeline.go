@@ -21,6 +21,7 @@ func (c *QueryController) executeAskQuestionPipeline(
 	tenantID uuid.UUID,
 	question string,
 	prepared preparedAskQuestion,
+	locale model.Locale,
 ) (AskQuestionResult, error) {
 	attempts := make([]AskQuestionAttempt, 0, 2)
 	const maxAttempts = 2
@@ -171,6 +172,7 @@ func (c *QueryController) executeAskQuestionPipeline(
 			guardResult,
 			execResult,
 			attempts,
+			locale,
 		)
 	}
 
@@ -194,6 +196,7 @@ func (c *QueryController) completeSuccessfulAskQuestion(
 	guardResult sqlguard.Result,
 	execResult AgentExecuteQueryResult,
 	attempts []AskQuestionAttempt,
+	locale model.Locale,
 ) (AskQuestionResult, error) {
 	warnings := append([]string(nil), prepared.warnings...)
 	summaryStart := time.Now()
@@ -210,21 +213,12 @@ func (c *QueryController) completeSuccessfulAskQuestion(
 	}
 	if summaryErr != nil {
 		summaryAttrs = append(summaryAttrs, "error", summaryErr.Error())
-		warnings = append(
-			warnings,
-			fmt.Sprintf("요약 생성에 실패했습니다: %v", summaryErr),
-		)
+		warnings = append(warnings, warnSummaryFailed(locale, summaryErr))
 	}
 	reqlog.Logger(ctx).InfoContext(ctx, "query.summarize", summaryAttrs...)
 
 	if guardResult.LimitInjected {
-		warnings = append(
-			warnings,
-			fmt.Sprintf(
-				"안전을 위해 LIMIT %d을(를) 자동 적용했습니다.",
-				sqlguard.DefaultRowLimit,
-			),
-		)
+		warnings = append(warnings, warnLimitInjected(locale))
 	}
 
 	result := AskQuestionResult{

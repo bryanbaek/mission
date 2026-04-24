@@ -39,6 +39,7 @@ type onboardingController interface {
 		clerkUserID, host string,
 		port int32,
 		databaseName, connectionString string,
+		locale model.Locale,
 	) (controller.OnboardingStateView, error)
 	RunSchemaIntrospection(ctx context.Context, tenantID uuid.UUID, clerkUserID string) (controller.OnboardingStateView, error)
 	MarkSemanticApproved(
@@ -159,6 +160,7 @@ func (h *OnboardingHandler) ConfigureDatabase(
 	ctx context.Context,
 	req *connect.Request[onboardingv1.ConfigureDatabaseRequest],
 ) (*connect.Response[onboardingv1.ConfigureDatabaseResponse], error) {
+	locale := model.NormalizeLocale(req.Msg.GetLocale())
 	state, err := h.runStateOnly(ctx, req.Msg.GetTenantId(), func(userID string, tenantID uuid.UUID) (controller.OnboardingStateView, error) {
 		return h.ctrl.ConfigureDatabase(
 			ctx,
@@ -168,6 +170,7 @@ func (h *OnboardingHandler) ConfigureDatabase(
 			req.Msg.GetPort(),
 			req.Msg.GetDatabaseName(),
 			req.Msg.GetConnectionString(),
+			locale,
 		)
 	})
 	if err != nil {

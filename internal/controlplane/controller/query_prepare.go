@@ -40,12 +40,14 @@ func (c *QueryController) prepareAskQuestion(
 	clerkUserID string,
 	question string,
 	latestSchema model.TenantSchemaVersion,
+	locale model.Locale,
 ) (preparedAskQuestion, error) {
 	promptCtxCh, retrievedExamplesCh := c.startAskQuestionPreparation(
 		ctx,
 		tenantID,
 		latestSchema,
 		question,
+		locale,
 	)
 
 	promptCtxResult := <-promptCtxCh
@@ -104,6 +106,7 @@ func (c *QueryController) startAskQuestionPreparation(
 	tenantID uuid.UUID,
 	latestSchema model.TenantSchemaVersion,
 	question string,
+	locale model.Locale,
 ) (
 	<-chan queryPromptContextResult,
 	<-chan queryRetrievedExamplesResult,
@@ -116,6 +119,7 @@ func (c *QueryController) startAskQuestionPreparation(
 			ctx,
 			tenantID,
 			latestSchema,
+			locale,
 		)
 		promptCtxCh <- queryPromptContextResult{
 			promptCtx: promptCtx,
@@ -215,6 +219,7 @@ func (c *QueryController) resolvePromptContext(
 	ctx context.Context,
 	tenantID uuid.UUID,
 	schemaVersion model.TenantSchemaVersion,
+	locale model.Locale,
 ) (queryPromptContext, []string, error) {
 	var blob model.SchemaBlob
 	if err := json.Unmarshal(schemaVersion.Blob, &blob); err != nil {
@@ -260,10 +265,7 @@ func (c *QueryController) resolvePromptContext(
 		if decodeErr != nil {
 			return queryPromptContext{}, nil, decodeErr
 		}
-		warnings = append(
-			warnings,
-			"승인된 시맨틱 레이어가 없어 초안(draft) 레이어를 사용했습니다.",
-		)
+		warnings = append(warnings, warnUsedDraftLayer(locale))
 		draftID := draft.ID
 		return queryPromptContext{
 			schemaBlob:      blob,
@@ -276,10 +278,7 @@ func (c *QueryController) resolvePromptContext(
 		return queryPromptContext{}, nil, err
 	}
 
-	warnings = append(
-		warnings,
-		"시맨틱 레이어가 없어 원본 스키마만으로 SQL을 생성했습니다. 정확도가 낮을 수 있습니다.",
-	)
+	warnings = append(warnings, warnUsedRawSchema(locale))
 	return queryPromptContext{
 		schemaBlob: blob,
 		schemaRaw:  schemaVersion.Blob,

@@ -453,7 +453,7 @@ func TestQueryControllerAskQuestionPersistsSuccessfulRun(t *testing.T) {
 		completer,
 	)
 
-	got, err := ctrl.AskQuestion(context.Background(), tenantID, "user_1", "측정소별 pH 평균은?")
+	got, err := ctrl.AskQuestion(context.Background(), tenantID, "user_1", "측정소별 pH 평균은?", model.LocaleKorean)
 	if err != nil {
 		t.Fatalf("AskQuestion returned error: %v", err)
 	}
@@ -553,7 +553,7 @@ func TestQueryControllerAskQuestionPersistsFailedRun(t *testing.T) {
 		completer,
 	)
 
-	got, err := ctrl.AskQuestion(context.Background(), tenantID, "user_1", "지워줘")
+	got, err := ctrl.AskQuestion(context.Background(), tenantID, "user_1", "지워줘", model.LocaleKorean)
 	if !errors.Is(err, ErrQueryAllAttemptsFailed) {
 		t.Fatalf("AskQuestion error = %v, want ErrQueryAllAttemptsFailed", err)
 	}
@@ -639,7 +639,7 @@ func TestQueryControllerAskQuestionFallsBackToTenantWideExamples(t *testing.T) {
 		},
 	)
 
-	if _, err := ctrl.AskQuestion(context.Background(), tenantID, "user_1", "전체 평균 pH는?"); err != nil {
+	if _, err := ctrl.AskQuestion(context.Background(), tenantID, "user_1", "전체 평균 pH는?", model.LocaleKorean); err != nil {
 		t.Fatalf("AskQuestion returned error: %v", err)
 	}
 	if len(examples.searches) != 2 {
@@ -741,6 +741,7 @@ func TestQueryControllerAskQuestionFailsRunWhenExampleLookupFails(t *testing.T) 
 		tenantID,
 		"user_1",
 		"승인된 예시를 찾아줘",
+		model.LocaleKorean,
 	)
 	if err == nil || !strings.Contains(err.Error(), "search canonical examples") {
 		t.Fatalf("AskQuestion error = %v, want canonical-example lookup error", err)
@@ -842,6 +843,7 @@ func TestQueryControllerAskQuestionReturnsAgentOffline(t *testing.T) {
 		tenantID,
 		"user_1",
 		"에이전트가 연결되지 않았나요?",
+		model.LocaleKorean,
 	)
 	if !errors.Is(err, ErrQueryAgentOffline) {
 		t.Fatalf("AskQuestion error = %v, want ErrQueryAgentOffline", err)

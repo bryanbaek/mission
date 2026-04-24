@@ -715,6 +715,7 @@ func TestConfigureDatabaseUsesReboundTokenAfterTenantFallback(t *testing.T) {
 		3306,
 		"analytics",
 		"mysql://readonly@db.internal/analytics",
+		model.LocaleKorean,
 	)
 	if err != nil {
 		t.Fatalf("ConfigureDatabase returned error: %v", err)

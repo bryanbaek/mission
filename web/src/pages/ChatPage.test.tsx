@@ -306,6 +306,7 @@ describe("ChatPage", () => {
       expect(askQuestion).toHaveBeenCalledWith({
         tenantId: "tenant-1",
         question: "지난 30일 동안 측정소별 평균 pH를 보여줘",
+        locale: "en",
       }),
     );
 
@@ -360,6 +361,7 @@ describe("ChatPage", () => {
       expect(askQuestion).toHaveBeenCalledWith({
         tenantId: "tenant-1",
         question: "저장된 최근 질문",
+        locale: "en",
       }),
     );
     expect(textarea).toHaveValue("저장된 최근 질문");
@@ -545,6 +547,7 @@ describe("ChatPage", () => {
       expect(askQuestion).toHaveBeenCalledWith({
         tenantId: "tenant-1",
         question: "이번 달 신규 고객 수는 몇 명인가요?",
+        locale: "en",
       }),
     );
   });
@@ -576,6 +579,7 @@ describe("ChatPage", () => {
       expect(askQuestion).toHaveBeenCalledWith({
         tenantId: "tenant-1",
         question: "최근 주문 10건을 보여주세요.",
+        locale: "en",
       }),
     );
   });

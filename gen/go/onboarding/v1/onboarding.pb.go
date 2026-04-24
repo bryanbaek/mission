@@ -1018,8 +1018,11 @@ type ConfigureDatabaseRequest struct {
 	Port             int32                  `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	DatabaseName     string                 `protobuf:"bytes,4,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
 	ConnectionString string                 `protobuf:"bytes,5,opt,name=connection_string,json=connectionString,proto3" json:"connection_string,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// BCP-47 locale tag ("ko" or "en"). Controls the language of user-facing
+	// error messages such as db_error_message_ko. Defaults to "ko" when empty.
+	Locale        string `protobuf:"bytes,6,opt,name=locale,proto3" json:"locale,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ConfigureDatabaseRequest) Reset() {
@@ -1083,6 +1086,13 @@ func (x *ConfigureDatabaseRequest) GetDatabaseName() string {
 func (x *ConfigureDatabaseRequest) GetConnectionString() string {
 	if x != nil {
 		return x.ConnectionString
+	}
+	return ""
+}
+
+func (x *ConfigureDatabaseRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
 	}
 	return ""
 }
@@ -1679,13 +1689,14 @@ const file_onboarding_v1_onboarding_proto_rawDesc = "" +
 	"\x1fGetAgentConnectionStatusRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\"X\n" +
 	" GetAgentConnectionStatusResponse\x124\n" +
-	"\x05state\x18\x01 \x01(\v2\x1e.onboarding.v1.OnboardingStateR\x05state\"\xb1\x01\n" +
+	"\x05state\x18\x01 \x01(\v2\x1e.onboarding.v1.OnboardingStateR\x05state\"\xc9\x01\n" +
 	"\x18ConfigureDatabaseRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x12\n" +
 	"\x04host\x18\x02 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\x05R\x04port\x12#\n" +
 	"\rdatabase_name\x18\x04 \x01(\tR\fdatabaseName\x12+\n" +
-	"\x11connection_string\x18\x05 \x01(\tR\x10connectionString\"Q\n" +
+	"\x11connection_string\x18\x05 \x01(\tR\x10connectionString\x12\x16\n" +
+	"\x06locale\x18\x06 \x01(\tR\x06locale\"Q\n" +
 	"\x19ConfigureDatabaseResponse\x124\n" +
 	"\x05state\x18\x01 \x01(\v2\x1e.onboarding.v1.OnboardingStateR\x05state\"<\n" +
 	"\x1dRunSchemaIntrospectionRequest\x12\x1b\n" +

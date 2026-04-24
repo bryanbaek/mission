@@ -34,7 +34,7 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
   const params = useParams();
   const tenantId = params.tenantId;
   const onboardingClient = useOnboardingClient();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -316,6 +316,7 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
                 host: dbHost,
                 port: Number.parseInt(dbPort, 10) || 3306,
                 databaseName: dbName,
+                locale,
               })
               .then((response) => {
                 const nextState = response.state ?? null;
@@ -363,6 +364,7 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
                 port: Number.parseInt(dbPort, 10) || 3306,
                 databaseName: dbName,
                 connectionString: nextConnectionString,
+                locale,
               })
               .then((response) => {
                 const nextState = response.state ?? null;

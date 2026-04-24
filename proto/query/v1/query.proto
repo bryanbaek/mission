@@ -12,6 +12,9 @@ option go_package = "github.com/bryanbaek/mission/gen/go/query/v1;queryv1";
 message AskQuestionRequest {
   string tenant_id = 1;
   string question = 2;
+  // BCP-47 locale tag ("ko" or "en"). Controls the language of user-facing
+  // warnings and summaries. Defaults to "ko" when empty or unrecognised.
+  string locale = 3;
 }
 
 // Row is one result row, mapped as column_name -> stringified value. Values

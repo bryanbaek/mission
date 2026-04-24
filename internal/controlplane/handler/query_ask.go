@@ -22,6 +22,7 @@ type queryServiceController interface {
 		tenantID uuid.UUID,
 		clerkUserID string,
 		question string,
+		locale model.Locale,
 	) (controller.AskQuestionResult, error)
 	ListMyQueryRuns(
 		ctx context.Context,
@@ -94,7 +95,8 @@ func (h *QueryHandler) AskQuestion(
 		return nil, err
 	}
 
-	result, err := h.ctrl.AskQuestion(ctx, tenantID, user.ID, req.Msg.Question)
+	locale := model.NormalizeLocale(req.Msg.GetLocale())
+	result, err := h.ctrl.AskQuestion(ctx, tenantID, user.ID, req.Msg.Question, locale)
 	if err != nil {
 		return nil, queryAskError(err, result)
 	}

@@ -228,9 +228,12 @@ func (ReviewQueueFilter) EnumDescriptor() ([]byte, []int) {
 // The control plane is responsible for resolving the tenant's approved
 // semantic layer (falling back to draft or raw schema) and generating SQL.
 type AskQuestionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
-	Question      string                 `protobuf:"bytes,2,opt,name=question,proto3" json:"question,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	TenantId string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	Question string                 `protobuf:"bytes,2,opt,name=question,proto3" json:"question,omitempty"`
+	// BCP-47 locale tag ("ko" or "en"). Controls the language of user-facing
+	// warnings and summaries. Defaults to "ko" when empty or unrecognised.
+	Locale        string `protobuf:"bytes,3,opt,name=locale,proto3" json:"locale,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -275,6 +278,13 @@ func (x *AskQuestionRequest) GetTenantId() string {
 func (x *AskQuestionRequest) GetQuestion() string {
 	if x != nil {
 		return x.Question
+	}
+	return ""
+}
+
+func (x *AskQuestionRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
 	}
 	return ""
 }
@@ -1653,10 +1663,11 @@ var File_query_v1_query_proto protoreflect.FileDescriptor
 
 const file_query_v1_query_proto_rawDesc = "" +
 	"\n" +
-	"\x14query/v1/query.proto\x12\bquery.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"M\n" +
+	"\x14query/v1/query.proto\x12\bquery.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"e\n" +
 	"\x12AskQuestionRequest\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1a\n" +
-	"\bquestion\x18\x02 \x01(\tR\bquestion\"s\n" +
+	"\bquestion\x18\x02 \x01(\tR\bquestion\x12\x16\n" +
+	"\x06locale\x18\x03 \x01(\tR\x06locale\"s\n" +
 	"\x03Row\x121\n" +
 	"\x06values\x18\x01 \x03(\v2\x19.query.v1.Row.ValuesEntryR\x06values\x1a9\n" +
 	"\vValuesEntry\x12\x10\n" +
