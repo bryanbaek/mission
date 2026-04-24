@@ -8,6 +8,8 @@ import {
 import { useAuth } from "@clerk/clerk-react";
 
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
+import ErrorBanner from "../components/ErrorBanner";
+import { errorMessage } from "../lib/errorUtils";
 import { useI18n } from "../lib/i18n";
 import { useTenantClient } from "../lib/tenantClient";
 
@@ -59,10 +61,6 @@ const styles = {
     "px-4 py-2 text-sm font-medium text-white transition",
     "hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300",
   ].join(" "),
-  errorBanner: [
-    "rounded-2xl border border-rose-200 bg-rose-50",
-    "px-4 py-3 text-sm text-rose-700",
-  ].join(" "),
   statusPill:
     "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
   statusOnline: "bg-emerald-100 text-emerald-700",
@@ -76,10 +74,6 @@ const styles = {
   ].join(" "),
   muted: "text-sm text-slate-500",
 };
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 function statusClass(status: QueryStatus["status"] | undefined) {
   return [
@@ -369,11 +363,7 @@ export default function QueryPage() {
             </div>
           </form>
 
-          {queryError ? (
-            <div className="mt-5">
-              <div className={styles.errorBanner}>{queryError}</div>
-            </div>
-          ) : null}
+          <ErrorBanner message={queryError} className="mt-5" />
 
           {queryResult ? (
             <div className={styles.resultShell}>

@@ -11,6 +11,7 @@ import type { OnboardingState } from "../../gen/onboarding/v1/onboarding_pb";
 import { useI18n } from "../../lib/i18n";
 import { onboardingStepPath } from "../../lib/onboarding";
 import { useOnboardingClient } from "../../lib/onboardingClient";
+import ErrorBanner from "../ErrorBanner";
 import SemanticReviewStep from "./SemanticReviewStep";
 import {
   CompleteStep,
@@ -249,7 +250,7 @@ export default function OnboardingStepScreen({ step }: { step: number }) {
       nextText={stepMeta.nextText}
       backHref={backHref}
     >
-      {error ? <div className={styles.bannerError}>{error}</div> : null}
+      <ErrorBanner message={error} />
       {success ? <div className={styles.bannerSuccess}>{success}</div> : null}
 
       {step === 1 ? (

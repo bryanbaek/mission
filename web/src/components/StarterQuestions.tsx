@@ -2,6 +2,7 @@ import { ConnectError } from "@connectrpc/connect";
 import { useEffect, useState } from "react";
 
 import type { StarterQuestion } from "../gen/starter/v1/starter_pb";
+import ErrorBanner from "./ErrorBanner";
 import { useI18n } from "../lib/i18n";
 import { useStarterQuestionsClient } from "../lib/starterQuestionsClient";
 
@@ -17,10 +18,6 @@ const styles = {
   loadingBox: [
     "mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3",
     "text-sm text-slate-600",
-  ].join(" "),
-  errorBox: [
-    "mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3",
-    "text-sm text-rose-700",
   ].join(" "),
   emptyBox: [
     "mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3",
@@ -134,7 +131,7 @@ export default function StarterQuestions({
         <div className={styles.loadingBox}>{t("starterQuestions.loading")}</div>
       ) : null}
 
-      {!loading && error ? <div className={styles.errorBox}>{error}</div> : null}
+      {!loading ? <ErrorBanner message={error} className="mt-5" /> : null}
 
       {!loading && !error && questions.length === 0 ? (
         <div className={styles.emptyBox}>{t("starterQuestions.empty")}</div>

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import type { OnboardingState } from "../../gen/onboarding/v1/onboarding_pb";
 import { useI18n } from "../../lib/i18n";
+import ErrorBanner from "../ErrorBanner";
 import StarterQuestions from "../StarterQuestions";
 import { formatTimestamp, styles } from "./onboardingStepUtils";
 
@@ -350,11 +351,7 @@ export function DatabaseStep({
             placeholder={t("onboarding.step3.connectionPlaceholder")}
           />
         </label>
-        {state.dbErrorMessageKo ? (
-          <div className={`${styles.bannerError} mt-4`}>
-            {state.dbErrorMessageKo}
-          </div>
-        ) : null}
+        <ErrorBanner message={state.dbErrorMessageKo} className="mt-4" />
         {state.dbVerifiedAt ? (
           <div className={`${styles.bannerSuccess} mt-4`}>
             {t("onboarding.step3.verifiedAt", {

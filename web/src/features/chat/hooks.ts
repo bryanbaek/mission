@@ -9,9 +9,9 @@ import type { CanonicalQueryExample, QueryFeedbackRating, QueryRunHistoryItem } 
 import type { Tenant } from "../../gen/tenant/v1/tenant_pb";
 import type { QueryClient } from "../../lib/queryClient";
 import type { TenantClient } from "../../lib/tenantClient";
+import { errorMessage } from "../../lib/errorUtils";
 import {
   extractErrorResult,
-  normalizeError,
   type CreateCanonicalExampleArgs,
   type QueryHistoryItem,
   type SubmitQueryFeedbackArgs,
@@ -38,7 +38,7 @@ export function useChatTenants(
         setSelectedID(requestedTenant?.id ?? resp.tenants[0].id);
       }
     } catch (err) {
-      setTenantsError(normalizeError(err));
+      setTenantsError(errorMessage(err));
     }
   }, [requestedTenantID, selectedID, tenantClient]);
 
@@ -86,7 +86,7 @@ export function usePersistentHistory(
         setPersistentHistoryError(null);
       } catch (err) {
         setPersistentHistory([]);
-        setPersistentHistoryError(normalizeError(err));
+        setPersistentHistoryError(errorMessage(err));
       } finally {
         setLoadingPersistentHistory(false);
       }
@@ -141,7 +141,7 @@ export function useCanonicalExamples(
         }));
       } catch (err) {
         setCanonicalExamples([]);
-        setCanonicalExamplesError(normalizeError(err));
+        setCanonicalExamplesError(errorMessage(err));
       } finally {
         setLoadingExamples(false);
       }
@@ -228,7 +228,7 @@ export function useChatMutations(
             createdAt: Date.now(),
             status: "error",
             response: extractErrorResult(err),
-            error: normalizeError(err),
+            error: errorMessage(err),
           },
           ...current,
         ]);

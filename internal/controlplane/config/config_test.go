@@ -30,6 +30,7 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("RATE_LIMIT_RPM", "")
 	t.Setenv("RATE_LIMIT_LLM_RPM", "")
 	t.Setenv("MAX_REQUEST_BODY_BYTES", "")
+	t.Setenv("LLM_TIMEOUT_SECONDS", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -98,6 +99,9 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if cfg.MaxRequestBodyBytes != 1048576 {
 		t.Fatalf("MaxRequestBodyBytes = %d, want 1048576", cfg.MaxRequestBodyBytes)
+	}
+	if cfg.LLMTimeoutSeconds != 90 {
+		t.Fatalf("LLMTimeoutSeconds = %d, want 90", cfg.LLMTimeoutSeconds)
 	}
 }
 
@@ -392,6 +396,42 @@ func TestLoadRejectsInvalidRateLimitConfig(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("Load returned nil error for invalid RATE_LIMIT_RPM")
+	}
+}
+
+func TestLoadLLMTimeoutConfig(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("LLM_TIMEOUT_SECONDS", "120")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.LLMTimeoutSeconds != 120 {
+		t.Fatalf("LLMTimeoutSeconds = %d, want 120", cfg.LLMTimeoutSeconds)
+	}
+}
+
+func TestLoadRejectsInvalidLLMTimeout(t *testing.T) {
+	tests := []struct {
+		name string
+		val  string
+	}{
+		{name: "not a number", val: "abc"},
+		{name: "zero", val: "0"},
+		{name: "negative", val: "-5"},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+			t.Setenv("LLM_TIMEOUT_SECONDS", tc.val)
+
+			_, err := Load()
+			if err == nil {
+				t.Fatal("Load returned nil error for invalid LLM_TIMEOUT_SECONDS")
+			}
+		})
 	}
 }
 

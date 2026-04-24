@@ -10,7 +10,9 @@ import type {
   GetSemanticLayerResponse,
 } from "../gen/semantic/v1/semantic_pb";
 import type { Tenant } from "../gen/tenant/v1/tenant_pb";
+import ErrorBanner from "./ErrorBanner";
 import SemanticLayerEditor from "./SemanticLayerEditor";
+import { errorMessage } from "../lib/errorUtils";
 import { useI18n } from "../lib/i18n";
 import { useSemanticClient } from "../lib/semanticClient";
 import { useTenantClient } from "../lib/tenantClient";
@@ -33,10 +35,6 @@ const styles = {
   rowActive: "rounded-lg bg-slate-950 text-white",
   rowIdle: "rounded-lg hover:bg-slate-100",
   muted: "text-sm text-slate-500",
-  bannerError: [
-    "rounded-2xl border border-rose-200 bg-rose-50",
-    "px-4 py-3 text-sm text-rose-700",
-  ].join(" "),
   bannerInfo: [
     "rounded-2xl border border-sky-200 bg-sky-50",
     "px-4 py-3 text-sm text-sky-800",
@@ -46,10 +44,6 @@ const styles = {
     "px-4 py-3 text-sm text-emerald-800",
   ].join(" "),
 };
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 function deepCloneContent(content: SemanticLayerContent): SemanticLayerContent {
   return JSON.parse(JSON.stringify(content)) as SemanticLayerContent;
@@ -266,7 +260,7 @@ export default function SemanticLayerWorkspace() {
         </p>
       </section>
 
-      {pageError ? <div className={styles.bannerError}>{pageError}</div> : null}
+      <ErrorBanner message={pageError} />
       {notice ? <div className={styles.bannerInfo}>{notice}</div> : null}
       {success ? <div className={styles.bannerSuccess}>{success}</div> : null}
 

@@ -83,10 +83,6 @@ export const styles = {
     "text-xs font-medium text-rose-700 transition hover:bg-rose-50",
     "disabled:cursor-not-allowed disabled:text-slate-300",
   ].join(" "),
-  bannerError: [
-    "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3",
-    "text-sm text-rose-700",
-  ].join(" "),
   bannerInfo: [
     "rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3",
     "text-sm text-sky-800",
@@ -148,10 +144,6 @@ export const styles = {
   detailsBody: "border-t border-slate-200 px-4 py-4",
   exampleItem: "rounded-2xl border border-slate-200 bg-slate-50 p-4",
 } as const;
-
-export function normalizeError(err: unknown): string {
-  return ConnectError.from(err).rawMessage;
-}
 
 export function extractErrorResult(err: unknown): AskQuestionResponse | null {
   const connectErr = ConnectError.from(err);

@@ -354,6 +354,9 @@ func buildLLMRuntime(
 		return nil, nil, nil, fmt.Errorf("unsupported DEFAULT_LLM_PROVIDER %q", defaultProvider)
 	}
 
+	llmHTTPClient := &http.Client{
+		Timeout: time.Duration(cfg.LLMTimeoutSeconds) * time.Second,
+	}
 	providers := make([]llmgateway.Provider, 0, len(llmprovider.Specs()))
 	configured := make(map[string]struct{}, len(llmprovider.Specs()))
 	for _, spec := range llmprovider.Specs() {
@@ -362,7 +365,7 @@ func buildLLMRuntime(
 			continue
 		}
 
-		provider, err := llmprovider.Build(spec.Name, apiKey, nil)
+		provider, err := llmprovider.Build(spec.Name, apiKey, llmHTTPClient)
 		if err != nil {
 			return nil, nil, nil, err
 		}

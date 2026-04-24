@@ -18,7 +18,9 @@ import {
   StoredQueryRunCard,
   TenantSelectionPanel,
 } from "../features/chat/ui";
-import { normalizeError, styles, timestampToMillis } from "../features/chat/shared";
+import { styles, timestampToMillis } from "../features/chat/shared";
+import ErrorBanner from "../components/ErrorBanner";
+import { errorMessage } from "../lib/errorUtils";
 import { useI18n } from "../lib/i18n";
 import { useOnboardingClient } from "../lib/onboardingClient";
 import { useQueryClient } from "../lib/queryClient";
@@ -115,7 +117,7 @@ function ReviewQueueCard({
       });
       await onRefresh();
     } catch (err) {
-      setActionError(normalizeError(err));
+      setActionError(errorMessage(err));
     } finally {
       setCreatingExample(false);
     }
@@ -128,7 +130,7 @@ function ReviewQueueCard({
       await onMarkReviewed(run.id);
       await onRefresh();
     } catch (err) {
-      setActionError(normalizeError(err));
+      setActionError(errorMessage(err));
     } finally {
       setMarkingReviewed(false);
     }
@@ -220,9 +222,7 @@ function ReviewQueueCard({
         </div>
       )}
 
-      {actionError ? (
-        <div className={`${styles.bannerError} mt-4`}>{actionError}</div>
-      ) : null}
+      <ErrorBanner message={actionError} className="mt-4" />
 
       {!resolved ? (
         <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
@@ -354,7 +354,7 @@ export default function ReviewPage() {
         );
       } catch (err) {
         if (!cancelled) {
-          setTenantsError(normalizeError(err));
+          setTenantsError(errorMessage(err));
         }
       }
     };
@@ -383,7 +383,7 @@ export default function ReviewPage() {
       setQueueError(null);
     } catch (err) {
       setItems([]);
-      setQueueError(normalizeError(err));
+      setQueueError(errorMessage(err));
     } finally {
       setLoadingQueue(false);
     }
@@ -467,9 +467,7 @@ export default function ReviewPage() {
             </div>
           </div>
 
-          {queueError ? (
-            <div className={`${styles.bannerError} mt-4`}>{queueError}</div>
-          ) : null}
+          <ErrorBanner message={queueError} className="mt-4" />
 
           {selectedID == null && tenants.length === 0 && !tenantsError ? (
             <div className={`${styles.bannerInfo} mt-4`}>

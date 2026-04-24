@@ -8,6 +8,7 @@ import type { OnboardingState } from "../../gen/onboarding/v1/onboarding_pb";
 import { useI18n } from "../../lib/i18n";
 import { useOnboardingClient } from "../../lib/onboardingClient";
 import { useSemanticClient } from "../../lib/semanticClient";
+import ErrorBanner from "../ErrorBanner";
 import SemanticLayerEditor from "../SemanticLayerEditor";
 import {
   deepCloneContent,
@@ -195,7 +196,7 @@ export default function SemanticReviewStep({
 
   return (
     <>
-      {pageError ? <div className={styles.bannerError}>{pageError}</div> : null}
+      <ErrorBanner message={pageError} />
       {notice ? <div className={styles.bannerSuccess}>{notice}</div> : null}
       {success ? <div className={styles.bannerSuccess}>{success}</div> : null}
       <SemanticLayerEditor

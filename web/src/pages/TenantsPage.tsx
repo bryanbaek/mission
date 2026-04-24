@@ -12,6 +12,8 @@ import {
   type Tenant,
   type TenantTokenSummary,
 } from "../gen/tenant/v1/tenant_pb";
+import ErrorBanner from "../components/ErrorBanner";
+import { errorMessage } from "../lib/errorUtils";
 import { useI18n } from "../lib/i18n";
 import { useTenantClient } from "../lib/tenantClient";
 
@@ -51,10 +53,6 @@ const styles = {
     "text-xs font-medium text-rose-600 transition",
     "hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300",
   ].join(" "),
-  errorBanner: [
-    "rounded-2xl border border-rose-200 bg-rose-50",
-    "px-4 py-3 text-sm text-rose-700",
-  ].join(" "),
   successBanner: [
     "rounded-2xl border border-emerald-200 bg-emerald-50",
     "px-4 py-3 text-sm text-emerald-800",
@@ -66,10 +64,6 @@ const styles = {
   metaLabel: "text-xs uppercase tracking-[0.14em] text-slate-400",
   mono: "font-mono text-xs text-slate-700",
 };
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 export default function TenantsPage() {
   const client = useTenantClient();
@@ -233,9 +227,7 @@ export default function TenantsPage() {
         </p>
       </section>
 
-      {actionError ? (
-        <div className={styles.errorBanner}>{actionError}</div>
-      ) : null}
+      <ErrorBanner message={actionError} />
 
       <div className={styles.twoCol}>
         <section className={styles.sectionCard}>

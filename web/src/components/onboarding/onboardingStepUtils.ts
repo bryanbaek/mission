@@ -11,10 +11,6 @@ export const styles = {
     "flex flex-col gap-4",
   ].join(" "),
   card: "rounded-[32px] border border-slate-200 bg-white p-6 shadow-sm",
-  bannerError: [
-    "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3",
-    "text-sm text-rose-700",
-  ].join(" "),
   bannerSuccess: [
     "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3",
     "text-sm text-emerald-800",

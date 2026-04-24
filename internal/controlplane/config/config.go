@@ -42,6 +42,7 @@ type Config struct {
 	RateLimitRPM                int
 	RateLimitLLMRPM             int
 	MaxRequestBodyBytes         int64
+	LLMTimeoutSeconds           int
 }
 
 func Load() (Config, error) {
@@ -149,6 +150,15 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("invalid MAX_REQUEST_BODY_BYTES: %w", err)
 	}
 	cfg.MaxRequestBodyBytes = maxBody
+
+	llmTimeout, err := strconv.Atoi(getenv("LLM_TIMEOUT_SECONDS", "90"))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid LLM_TIMEOUT_SECONDS: %w", err)
+	}
+	if llmTimeout <= 0 {
+		return Config{}, fmt.Errorf("LLM_TIMEOUT_SECONDS must be greater than 0")
+	}
+	cfg.LLMTimeoutSeconds = llmTimeout
 
 	cfg.EdgeAgentImage = resolveEdgeAgentImage(
 		os.Getenv("EDGE_AGENT_IMAGE"),

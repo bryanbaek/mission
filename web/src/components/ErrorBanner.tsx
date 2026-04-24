@@ -1,15 +1,25 @@
+import type { ReactNode } from "react";
+
 interface ErrorBannerProps {
-  message: string | null | undefined;
+  /** Simple string message. Ignored when children are provided. */
+  message?: string | null | undefined;
+  /** Structured content rendered inside the banner (takes precedence over message). */
+  children?: ReactNode;
   className?: string;
 }
 
 /**
  * Shared error banner component used across pages and features.
- * Renders a rose-colored banner with the error message, or nothing if the
- * message is falsy.
+ * Renders a rose-colored banner with `role="alert"`. Pass either a plain
+ * `message` string or structured `children`; returns null when both are falsy.
  */
-export default function ErrorBanner({ message, className }: ErrorBannerProps) {
-  if (!message) return null;
+export default function ErrorBanner({
+  message,
+  children,
+  className,
+}: ErrorBannerProps) {
+  const content = children ?? message;
+  if (!content) return null;
   return (
     <div
       className={[
@@ -20,7 +30,7 @@ export default function ErrorBanner({ message, className }: ErrorBannerProps) {
         .join(" ")}
       role="alert"
     >
-      {message}
+      {content}
     </div>
   );
 }

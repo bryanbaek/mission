@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import ErrorBanner from "../components/ErrorBanner";
+import { errorMessage } from "../lib/errorUtils";
 import { type Locale, useI18n } from "../lib/i18n";
 
 type Health = { status: string; database: string };
@@ -38,10 +40,6 @@ const styles = {
   countPill:
     "rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600",
   emptyState: "px-8 py-16 text-center text-sm text-slate-500",
-  errorBanner: [
-    "mt-4 rounded-2xl border border-rose-200 bg-rose-50",
-    "px-4 py-3 text-sm text-rose-700",
-  ].join(" "),
   healthCard: [
     "grid gap-3 rounded-2xl bg-slate-950 px-5 py-4",
     "text-sm text-slate-50",
@@ -84,9 +82,6 @@ function statusClass(isOnline: boolean) {
   ].join(" ");
 }
 
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 function sessionCountLabel(
   count: number,
@@ -235,7 +230,7 @@ export default function AgentsPage() {
             </div>
           </div>
         </div>
-        {error ? <div className={styles.errorBanner}>{error}</div> : null}
+        <ErrorBanner message={error} className="mt-4" />
       </section>
 
       <section className={styles.sectionCard}>

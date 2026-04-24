@@ -13,10 +13,11 @@ import {
   type QueryRunHistoryItem,
 } from "../../gen/query/v1/query_pb";
 import { type Locale, useI18n } from "../../lib/i18n";
+import ErrorBanner from "../../components/ErrorBanner";
 import StarterQuestions from "../../components/StarterQuestions";
+import { errorMessage } from "../../lib/errorUtils";
 import {
   historyCountLabel,
-  normalizeError,
   queryPromptContextLabel,
   queryRunStatusChipClass,
   queryRunStatusLabel,
@@ -172,7 +173,7 @@ function QueryResultCard({
       });
       setFeedbackSuccess(t("chat.feedback.success"));
     } catch (err) {
-      setFeedbackError(normalizeError(err));
+      setFeedbackError(errorMessage(err));
     } finally {
       setSubmittingFeedback(false);
     }
@@ -197,7 +198,7 @@ function QueryResultCard({
       setExampleSuccess(t("chat.examples.createSuccess"));
       await onCanonicalExampleChanged(item.tenantId);
     } catch (err) {
-      setExampleError(normalizeError(err));
+      setExampleError(errorMessage(err));
     } finally {
       setCreatingExample(false);
     }
@@ -238,9 +239,7 @@ function QueryResultCard({
         </span>
       </div>
 
-      {item.error ? (
-        <div className={`${styles.bannerError} mt-4`}>{item.error}</div>
-      ) : null}
+      <ErrorBanner message={item.error} className="mt-4" />
 
       {response?.summaryKo ? (
         <div className={`${styles.summaryCard} mt-4`}>
@@ -385,9 +384,7 @@ function QueryResultCard({
             <code className={styles.chip}>{queryRunId}</code>
           </div>
 
-          {feedbackError ? (
-            <div className={`${styles.bannerError} mt-4`}>{feedbackError}</div>
-          ) : null}
+          <ErrorBanner message={feedbackError} className="mt-4" />
           {feedbackSuccess ? (
             <div className={`${styles.bannerSuccess} mt-4`}>
               {feedbackSuccess}
@@ -465,9 +462,7 @@ function QueryResultCard({
             </p>
           </div>
 
-          {exampleError ? (
-            <div className={`${styles.bannerError} mt-4`}>{exampleError}</div>
-          ) : null}
+          <ErrorBanner message={exampleError} className="mt-4" />
           {exampleSuccess ? (
             <div className={`${styles.bannerSuccess} mt-4`}>
               {exampleSuccess}
@@ -637,14 +632,14 @@ export function StoredQueryRunCard({
       </div>
 
       {item.errorMessage ? (
-        <div className={`${styles.bannerError} mt-4`}>
+        <ErrorBanner className="mt-4">
           <p className="font-medium">{t("chat.persistent.failure")}</p>
           <p className="mt-1">
             {item.errorStage
               ? `${stageLabel(item.errorStage, t)} · ${item.errorMessage}`
               : item.errorMessage}
           </p>
-        </div>
+        </ErrorBanner>
       ) : null}
 
       <details className={`${styles.details} mt-4`}>
@@ -712,9 +707,7 @@ export function TenantSelectionPanel({
         </div>
       </div>
 
-      {tenantsError ? (
-        <div className={`${styles.bannerError} mt-4`}>{tenantsError}</div>
-      ) : null}
+      <ErrorBanner message={tenantsError} className="mt-4" />
 
       <ul className="mt-4 flex flex-col gap-1">
         {tenants.length === 0 ? (
@@ -783,7 +776,7 @@ export function CanonicalExamplesPanel({
     try {
       await onArchive(exampleId);
     } catch (err) {
-      setArchiveError(normalizeError(err));
+      setArchiveError(errorMessage(err));
     } finally {
       setArchivingID(null);
     }
@@ -801,10 +794,8 @@ export function CanonicalExamplesPanel({
         ) : null}
       </div>
 
-      {error ? <div className={`${styles.bannerError} mt-4`}>{error}</div> : null}
-      {archiveError ? (
-        <div className={`${styles.bannerError} mt-4`}>{archiveError}</div>
-      ) : null}
+      <ErrorBanner message={error} className="mt-4" />
+      <ErrorBanner message={archiveError} className="mt-4" />
 
       {loading ? (
         <div className={`${styles.bannerInfo} mt-4`}>
@@ -987,7 +978,7 @@ export function PersistentHistoryPanel({
         ) : null}
       </div>
 
-      {error ? <div className={`${styles.bannerError} mt-4`}>{error}</div> : null}
+      <ErrorBanner message={error} className="mt-4" />
 
       {loading ? (
         <div className={`${styles.bannerInfo} mt-4`}>

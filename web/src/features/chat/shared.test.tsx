@@ -9,10 +9,10 @@ import {
 } from "../../gen/query/v1/query_pb";
 import { useI18n } from "../../lib/i18n";
 import { renderWithI18n } from "../../test/renderWithI18n";
+import { errorMessage } from "../../lib/errorUtils";
 import {
   extractErrorResult,
   historyCountLabel,
-  normalizeError,
   queryPromptContextLabel,
   queryRunStatusChipClass,
   queryRunStatusLabel,
@@ -164,7 +164,7 @@ describe("chat shared helpers", () => {
       ],
     );
 
-    expect(normalizeError(err)).toBe("query failed");
+    expect(errorMessage(err)).toBe("query failed");
     expect(extractErrorResult(err)?.queryRunId).toBe("run-1");
     expect(extractErrorResult(new Error("plain error"))).toBeNull();
   });
