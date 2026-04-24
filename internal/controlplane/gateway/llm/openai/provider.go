@@ -197,7 +197,7 @@ func buildChatCompletionParams(
 	}
 
 	params := openai.ChatCompletionNewParams{
-		Model:    openai.ChatModel(req.Model),
+		Model:    req.Model,
 		Messages: messages,
 	}
 	if req.MaxTokens > 0 {

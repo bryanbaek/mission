@@ -18,6 +18,8 @@ import (
 	"github.com/getsentry/sentry-go/attribute"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"golang.org/x/sync/errgroup"
@@ -225,6 +227,16 @@ func run() error {
 		})
 	})
 	r.Use(middleware.RealIP)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   cfg.CORSAllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Connect-Protocol-Version"},
+		ExposedHeaders:   []string{"Grpc-Status", "Grpc-Message"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+	r.Use(httprate.LimitByIP(cfg.RateLimitRPM, 1*time.Minute))
+	r.Use(maxBodySize(cfg.MaxRequestBodyBytes))
 	r.Use(middleware.Recoverer)
 	r.Use(sentryMiddleware())
 
@@ -244,9 +256,11 @@ func run() error {
 
 	// Query service gets a longer timeout because the pipeline may make two
 	// LLM calls (generation + summarization) plus an edge-agent round trip.
+	// A stricter per-IP rate limit protects upstream LLM spend.
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Timeout(90 * time.Second))
 		r.Use(auth.RequireAuth(verifier))
+		r.Use(httprate.LimitByIP(cfg.RateLimitLLMRPM, 1*time.Minute))
 		r.Mount(queryPath, querySvc)
 		r.Mount(starterQuestionsPath, starterQuestionsSvc)
 	})
@@ -275,15 +289,22 @@ func run() error {
 	})
 
 	if cfg.Env != "production" {
-		r.Get("/api/debug/agents", debugAgentHandler.ListSessions)
-		r.Post("/api/debug/agents/{sessionID}/ping", debugAgentHandler.PingSession)
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireAuth(verifier))
+			r.Get("/api/debug/agents", debugAgentHandler.ListSessions)
+			r.Post("/api/debug/agents/{sessionID}/ping", debugAgentHandler.PingSession)
+		})
 	}
 	registerFrontendRoutes(r, frontendHandler)
 
 	// h2c lets the agent tunnel use HTTP/2 over cleartext TCP (no TLS required
 	// locally). Connect server-streaming requires HTTP/2; without this the
 	// server falls back to HTTP/1.1 and the stream closes immediately.
-	// ReadTimeout is disabled because long-lived streams would be cut at 30s.
+	//
+	// ReadTimeout and WriteTimeout are intentionally 0: the agent command
+	// stream is a long-lived HTTP/2 server-stream that can stay open for
+	// hours. Setting a global write timeout would kill those connections.
+	// Per-route timeouts are enforced via chi middleware.Timeout instead.
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
 		Handler:           h2c.NewHandler(r, &http2.Server{}),
@@ -483,5 +504,17 @@ func (r *statusRecorder) Write(body []byte) (int, error) {
 func (r *statusRecorder) Flush() {
 	if f, ok := r.ResponseWriter.(http.Flusher); ok {
 		f.Flush()
+	}
+}
+
+// maxBodySize returns middleware that limits the size of incoming request
+// bodies. Requests that exceed the limit receive a 413 status when the body is
+// read by the downstream handler.
+func maxBodySize(n int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.Body = http.MaxBytesReader(w, r.Body, n)
+			next.ServeHTTP(w, r)
+		})
 	}
 }

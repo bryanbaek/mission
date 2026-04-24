@@ -26,6 +26,10 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("VITE_SENTRY_DSN", "")
 	t.Setenv("VITE_SENTRY_ENVIRONMENT", "")
 	t.Setenv("VITE_SENTRY_RELEASE", "")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "")
+	t.Setenv("RATE_LIMIT_RPM", "")
+	t.Setenv("RATE_LIMIT_LLM_RPM", "")
+	t.Setenv("MAX_REQUEST_BODY_BYTES", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -82,6 +86,18 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if len(cfg.QueryProviderModels) != 0 {
 		t.Fatalf("QueryProviderModels = %#v, want empty", cfg.QueryProviderModels)
+	}
+	if len(cfg.CORSAllowedOrigins) != 1 || cfg.CORSAllowedOrigins[0] != "*" {
+		t.Fatalf("CORSAllowedOrigins = %#v, want [*]", cfg.CORSAllowedOrigins)
+	}
+	if cfg.RateLimitRPM != 120 {
+		t.Fatalf("RateLimitRPM = %d, want 120", cfg.RateLimitRPM)
+	}
+	if cfg.RateLimitLLMRPM != 30 {
+		t.Fatalf("RateLimitLLMRPM = %d, want 30", cfg.RateLimitLLMRPM)
+	}
+	if cfg.MaxRequestBodyBytes != 1048576 {
+		t.Fatalf("MaxRequestBodyBytes = %d, want 1048576", cfg.MaxRequestBodyBytes)
 	}
 }
 
@@ -315,6 +331,67 @@ func TestGetenvUsesFallback(t *testing.T) {
 	t.Setenv("EXAMPLE_KEY", "configured")
 	if got := getenv("EXAMPLE_KEY", "fallback"); got != "configured" {
 		t.Fatalf("getenv configured = %q, want configured", got)
+	}
+}
+
+func TestLoadCORSOrigins(t *testing.T) {
+	tests := []struct {
+		name string
+		env  string
+		want []string
+	}{
+		{name: "empty defaults to wildcard", env: "", want: []string{"*"}},
+		{name: "whitespace defaults to wildcard", env: "  ", want: []string{"*"}},
+		{name: "single origin", env: "https://app.example.com", want: []string{"https://app.example.com"}},
+		{name: "multiple origins", env: "https://app.example.com,https://admin.example.com", want: []string{"https://app.example.com", "https://admin.example.com"}},
+		{name: "trims whitespace", env: " https://a.com , https://b.com ", want: []string{"https://a.com", "https://b.com"}},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("CORS_ALLOWED_ORIGINS", tc.env)
+			got := loadCORSOrigins()
+			if len(got) != len(tc.want) {
+				t.Fatalf("loadCORSOrigins() = %v, want %v", got, tc.want)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("loadCORSOrigins()[%d] = %q, want %q", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestLoadRateLimitConfig(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("RATE_LIMIT_RPM", "200")
+	t.Setenv("RATE_LIMIT_LLM_RPM", "50")
+	t.Setenv("MAX_REQUEST_BODY_BYTES", "2097152")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if cfg.RateLimitRPM != 200 {
+		t.Fatalf("RateLimitRPM = %d, want 200", cfg.RateLimitRPM)
+	}
+	if cfg.RateLimitLLMRPM != 50 {
+		t.Fatalf("RateLimitLLMRPM = %d, want 50", cfg.RateLimitLLMRPM)
+	}
+	if cfg.MaxRequestBodyBytes != 2097152 {
+		t.Fatalf("MaxRequestBodyBytes = %d, want 2097152", cfg.MaxRequestBodyBytes)
+	}
+}
+
+func TestLoadRejectsInvalidRateLimitConfig(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://mission:mission@localhost:5432/mission")
+	t.Setenv("RATE_LIMIT_RPM", "not-a-number")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load returned nil error for invalid RATE_LIMIT_RPM")
 	}
 }
 

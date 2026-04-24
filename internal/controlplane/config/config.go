@@ -38,6 +38,10 @@ type Config struct {
 	SentryDSN                   string
 	SentryEnvironment           string
 	SentryRelease               string
+	CORSAllowedOrigins          []string
+	RateLimitRPM                int
+	RateLimitLLMRPM             int
+	MaxRequestBodyBytes         int64
 }
 
 func Load() (Config, error) {
@@ -122,10 +126,30 @@ func Load() (Config, error) {
 			"EDGE_AGENT_IMAGE_REPOSITORY",
 			"registry.digitalocean.com/mission/edge-agent",
 		),
-		SentryDSN:         os.Getenv("SENTRY_DSN"),
-		SentryEnvironment: getenv("SENTRY_ENVIRONMENT", getenv("ENV", "development")),
-		SentryRelease:     os.Getenv("SENTRY_RELEASE"),
+		SentryDSN:          os.Getenv("SENTRY_DSN"),
+		SentryEnvironment:  getenv("SENTRY_ENVIRONMENT", getenv("ENV", "development")),
+		SentryRelease:      os.Getenv("SENTRY_RELEASE"),
+		CORSAllowedOrigins: loadCORSOrigins(),
 	}
+
+	rateLimitRPM, err := strconv.Atoi(getenv("RATE_LIMIT_RPM", "120"))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid RATE_LIMIT_RPM: %w", err)
+	}
+	cfg.RateLimitRPM = rateLimitRPM
+
+	rateLimitLLMRPM, err := strconv.Atoi(getenv("RATE_LIMIT_LLM_RPM", "30"))
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid RATE_LIMIT_LLM_RPM: %w", err)
+	}
+	cfg.RateLimitLLMRPM = rateLimitLLMRPM
+
+	maxBody, err := strconv.ParseInt(getenv("MAX_REQUEST_BODY_BYTES", "1048576"), 10, 64)
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid MAX_REQUEST_BODY_BYTES: %w", err)
+	}
+	cfg.MaxRequestBodyBytes = maxBody
+
 	cfg.EdgeAgentImage = resolveEdgeAgentImage(
 		os.Getenv("EDGE_AGENT_IMAGE"),
 		cfg.EdgeAgentImageRepo,
@@ -192,6 +216,24 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func loadCORSOrigins() []string {
+	raw := strings.TrimSpace(os.Getenv("CORS_ALLOWED_ORIGINS"))
+	if raw == "" {
+		return []string{"*"}
+	}
+	parts := strings.Split(raw, ",")
+	origins := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			origins = append(origins, trimmed)
+		}
+	}
+	if len(origins) == 0 {
+		return []string{"*"}
+	}
+	return origins
 }
 
 func loadProviderMap(envKey func(llmprovider.Spec) string) map[string]string {

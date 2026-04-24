@@ -336,7 +336,8 @@ func connectErrorForSession(err error) error {
 		errors.Is(err, controller.ErrTenantNotConnected):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
 	default:
-		return connect.NewError(connect.CodeInternal, err)
+		slog.Error("agent session error", "err", err)
+		return connect.NewError(connect.CodeInternal, errors.New("internal server error"))
 	}
 }
 
@@ -491,8 +492,9 @@ func (h *AgentDebugHandler) PingSession(
 			"error": "ping timed out",
 		})
 	default:
+		slog.Error("debug ping failed", "session_id", sessionID, "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": "internal server error",
 		})
 	}
 }
@@ -500,5 +502,7 @@ func (h *AgentDebugHandler) PingSession(
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		slog.Error("failed to encode JSON response", "err", err)
+	}
 }

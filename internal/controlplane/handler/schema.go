@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -70,8 +71,9 @@ func (h *SchemaDebugHandler) Introspect(
 		})
 		return
 	case err != nil:
+		slog.Error("schema introspection failed", "tenant_id", tenantID, "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": "internal server error",
 		})
 		return
 	}
@@ -116,8 +118,9 @@ func (h *SchemaDebugHandler) authorizeOwner(
 		})
 		return uuid.UUID{}, false
 	case err != nil:
+		slog.Error("membership check failed", "tenant_id", tenantID, "err", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": "internal server error",
 		})
 		return uuid.UUID{}, false
 	}

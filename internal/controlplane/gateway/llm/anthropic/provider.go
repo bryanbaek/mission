@@ -90,10 +90,10 @@ func (p *Provider) Complete(
 	return llm.CompletionResponse{
 		Content:  strings.Join(parts, ""),
 		Provider: p.Name(),
-		Model:    string(resp.Model),
+		Model:    resp.Model,
 		Usage: llm.Usage{
 			Provider:                 p.Name(),
-			Model:                    string(resp.Model),
+			Model:                    resp.Model,
 			InputTokens:              int(resp.Usage.InputTokens),
 			OutputTokens:             int(resp.Usage.OutputTokens),
 			CacheCreationInputTokens: int(resp.Usage.CacheCreationInputTokens),
@@ -138,7 +138,7 @@ func buildMessageParams(
 	req llm.CompletionRequest,
 ) (anthropic.MessageNewParams, error) {
 	params := anthropic.MessageNewParams{
-		Model:     anthropic.Model(req.Model),
+		Model:     req.Model,
 		MaxTokens: int64(req.MaxTokens),
 		Messages:  make([]anthropic.MessageParam, 0, len(req.Messages)),
 	}

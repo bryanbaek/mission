@@ -1,0 +1,74 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - bodyclose
+    - durationcheck
+    - errname
+    - gocritic
+    - makezero
+    - nilerr
+    - sqlclosecheck
+    - unconvert
+    - wastedassign
+
+  settings:
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+        - singleCaseSwitch
+        - dupBranchBody
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
+
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+
+    rules:
+      # Test files: relax linters.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gocritic
+          - bodyclose
+          - wastedassign
+          - sqlclosecheck
+
+      # Generated code should not be linted.
+      - path: gen/
+        linters:
+          - all
+
+      # nilerr: intentional — these convert parse errors into domain-specific
+      # deny results rather than propagating the raw error.
+      - path: sqlguard\.go
+        linters: [nilerr]
+      - path: edgeagent/controller/agent\.go
+        linters: [nilerr]
+
+      # sqlclosecheck: false positives — rows are closed via defer but the
+      # linter cannot trace the closure pattern.
+      - path: edgeagent/gateway/mysql
+        linters: [sqlclosecheck]
+      - path: edgeagent/introspect
+        linters: [sqlclosecheck]

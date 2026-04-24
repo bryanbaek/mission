@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import AppAccessGate from "./components/AppAccessGate";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 
 const AgentsPage = lazy(() => import("./pages/AgentsPage"));
@@ -16,6 +17,7 @@ const TenantsPage = lazy(() => import("./pages/TenantsPage"));
 export default function App() {
   return (
     <BrowserRouter>
+      <ErrorBoundary>
       <Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading...</div>}>
         <Routes>
           <Route path="onboarding" element={<OnboardingHomePage />} />
@@ -62,6 +64,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }
